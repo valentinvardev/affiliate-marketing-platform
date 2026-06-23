@@ -1,0 +1,30 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+}
+
+model Campaign {
+    id             String   @id @default(cuid())
+    name           String
+    slug           String   @unique
+    templateSlug   String   @default("gonza-gb-sn-fc")
+    locale         String   @default("en")
+    currencySymbol String   @default("£")
+    currencyCode   String   @default("GBP")
+    ctaUrl         String
+    logoUrl        String?
+    colorPrimary   String   @default("oklch(0.74 0.19 55)")
+    colorBg        String   @default("oklch(0.16 0.04 265)")
+    isActive       Boolean  @default(true)
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    @@index([slug])
+    @@index([isActive])
+}
