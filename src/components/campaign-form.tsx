@@ -9,7 +9,7 @@ import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import {
   Loader2, Upload, Copy, Check, X,
-  ExternalLink, Smartphone, ChevronLeft,
+  ExternalLink, Smartphone, ChevronLeft, ChevronDown,
 } from "lucide-react";
 
 /* ─── Color presets ─── */
@@ -108,23 +108,121 @@ function Input({
   );
 }
 
-/* ─── Select ─── */
-function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  const [focused, setFocused] = useState(false);
+/* ─── Dropdown ─── */
+function Dropdown({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string; prefix?: string; meta?: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    function onMouse(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onMouse);
+    return () => document.removeEventListener("mousedown", onMouse);
+  }, [open]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
+    if (open) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Scroll selected item into view when panel opens
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const active = listRef.current.querySelector("[data-selected]") as HTMLElement | null;
+    active?.scrollIntoView({ block: "nearest" });
+  }, [open]);
+
   return (
-    <select
-      {...props}
-      className="w-full rounded-md px-3 py-2 text-sm outline-none appearance-none cursor-pointer"
-      style={{
-        background: "var(--color-surface-overlay)",
-        border: `1px solid ${focused ? "var(--color-border-focus)" : "var(--color-border)"}`,
-        color: "var(--color-foreground)",
-      }}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    >
-      {children}
-    </select>
+    <div ref={ref} className="relative">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors"
+        style={{
+          background: "var(--color-surface-overlay)",
+          border: `1px solid ${open ? "var(--color-border-focus)" : "var(--color-border)"}`,
+          color: "var(--color-foreground)",
+        }}
+      >
+        <span className="flex items-center gap-2 truncate">
+          {selected?.prefix && <span className="shrink-0 text-base leading-none">{selected.prefix}</span>}
+          <span className="truncate">{selected?.label ?? "Seleccionar…"}</span>
+          {selected?.meta && (
+            <span className="shrink-0 text-xs" style={{ color: "var(--color-subtle)" }}>{selected.meta}</span>
+          )}
+        </span>
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 transition-transform duration-150"
+          style={{
+            color: "var(--color-subtle)",
+            transform: open ? "rotate(180deg)" : "none",
+          }}
+        />
+      </button>
+
+      {/* Panel */}
+      {open && (
+        <div
+          className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-lg"
+          style={{
+            background: "var(--color-surface-raised)",
+            border: "1px solid var(--color-border)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+          }}
+        >
+          <div ref={listRef} className="max-h-60 overflow-y-auto py-1">
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  data-selected={isSelected ? true : undefined}
+                  onClick={() => { onChange(opt.value); setOpen(false); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors"
+                  style={{
+                    background: isSelected ? "rgba(255,255,255,0.06)" : "transparent",
+                    color: isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-foreground)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = isSelected ? "rgba(255,255,255,0.06)" : "transparent";
+                    (e.currentTarget as HTMLElement).style.color = isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)";
+                  }}
+                >
+                  {opt.prefix && (
+                    <span className="shrink-0 text-base leading-none">{opt.prefix}</span>
+                  )}
+                  <span className="flex-1 truncate">{opt.label}</span>
+                  {opt.meta && (
+                    <span className="shrink-0 text-[11px]" style={{ color: "var(--color-subtle)" }}>{opt.meta}</span>
+                  )}
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -468,19 +566,19 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
             {/* Row 2: Idioma | Moneda */}
             <Field label="Idioma / País">
-              <Select value={values.locale} onChange={(e) => handleLocaleChange(e.target.value)}>
-                {LOCALES.map((l) => (
-                  <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
-                ))}
-              </Select>
+              <Dropdown
+                value={values.locale}
+                onChange={handleLocaleChange}
+                options={LOCALES.map((l) => ({ value: l.code, label: l.label, prefix: l.flag }))}
+              />
             </Field>
 
             <Field label="Moneda" hint={`Símbolo: ${values.currencySymbol}`}>
-              <Select value={values.currencyCode} onChange={(e) => handleCurrencyChange(e.target.value)}>
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
-                ))}
-              </Select>
+              <Dropdown
+                value={values.currencyCode}
+                onChange={handleCurrencyChange}
+                options={CURRENCIES.map((c) => ({ value: c.code, label: c.label, meta: c.symbol }))}
+              />
             </Field>
           </div>
         </Section>
