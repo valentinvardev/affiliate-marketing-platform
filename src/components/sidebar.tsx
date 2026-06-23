@@ -32,7 +32,7 @@ export function Sidebar() {
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="TapSur" width={40} height={40} className="shrink-0 rounded-md" />
+        <img src="/logo.png" alt="TapSur" width={52} height={52} className="shrink-0 rounded-md" />
         <span className="text-sm font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
           TapSur
         </span>
