@@ -2,17 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Settings, BookOpen } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/campaigns", icon: LayoutGrid, label: "Campañas" },
-  { href: "/campaigns/new", icon: BookOpen, label: "Nueva" },
-  { href: "#", icon: Settings, label: "Config", disabled: true },
+const NAV_BASE = [
+  { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
+  { href: "/campaigns/new", icon: BookOpen,   label: "Nueva campaña" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+  const username = session?.user?.name ?? "…";
+
+  const nav = isAdmin
+    ? [...NAV_BASE, { href: "/admin", icon: ShieldCheck, label: "Admin" }]
+    : NAV_BASE;
 
   return (
     <aside
@@ -44,55 +51,38 @@ export function Sidebar() {
           General
         </p>
         <ul className="space-y-0.5">
-          {NAV.map(({ href, icon: Icon, label, disabled }) => {
-            const active = href !== "#" && pathname.startsWith(href) && !(href === "/campaigns" && pathname === "/campaigns/new");
+          {nav.map(({ href, icon: Icon, label }) => {
+            const active =
+              href !== "#" &&
+              pathname.startsWith(href) &&
+              !(href === "/campaigns" && pathname === "/campaigns/new");
             return (
               <li key={href}>
                 <Link
-                  href={disabled ? "#" : href}
-                  aria-disabled={disabled}
+                  href={href}
                   className={cn(
                     "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
-                    active
-                      ? "font-medium"
-                      : "font-normal",
-                    disabled && "pointer-events-none",
+                    active ? "font-medium" : "font-normal",
                   )}
                   style={{
                     background: active ? "var(--color-surface-raised)" : "transparent",
-                    color: active
-                      ? "var(--color-foreground)"
-                      : disabled
-                        ? "var(--color-subtle)"
-                        : "var(--color-muted-foreground)",
+                    color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
                   }}
                   onMouseEnter={(e) => {
-                    if (!active && !disabled)
+                    if (!active) {
                       (e.currentTarget as HTMLElement).style.background = "var(--color-surface-raised)";
-                    if (!active && !disabled)
                       (e.currentTarget as HTMLElement).style.color = "var(--color-foreground)";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    if (!active)
+                    if (!active) {
                       (e.currentTarget as HTMLElement).style.background = "transparent";
-                    if (!active && !disabled)
                       (e.currentTarget as HTMLElement).style.color = "var(--color-muted-foreground)";
+                    }
                   }}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   {label}
-                  {disabled && (
-                    <span
-                      className="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium"
-                      style={{
-                        background: "var(--color-surface-overlay)",
-                        color: "var(--color-subtle)",
-                        border: "1px solid var(--color-border)",
-                      }}
-                    >
-                      Pronto
-                    </span>
-                  )}
                 </Link>
               </li>
             );
@@ -100,14 +90,34 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Footer */}
+      {/* User footer */}
       <div
-        className="px-4 py-3"
+        className="px-3 py-3"
         style={{ borderTop: "1px solid var(--color-border)" }}
       >
-        <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>
-          v0.1.0 · T3 + Supabase
-        </p>
+        <div className="flex items-center gap-2.5 rounded-md px-2.5 py-2">
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+            style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)" }}
+          >
+            {username[0]?.toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-xs font-medium" style={{ color: "var(--color-foreground)" }}>{username}</p>
+            {isAdmin && (
+              <p className="text-[10px]" style={{ color: "var(--color-subtle)" }}>Admin</p>
+            )}
+          </div>
+          <button
+            type="button"
+            title="Cerrar sesión"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="shrink-0 transition-opacity hover:opacity-70"
+            style={{ color: "var(--color-subtle)" }}
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </aside>
   );

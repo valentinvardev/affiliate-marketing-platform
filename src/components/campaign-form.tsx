@@ -9,18 +9,8 @@ import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import {
   Loader2, Upload, Copy, Check, X,
-  ExternalLink, Smartphone, ChevronLeft, ChevronDown,
+  ExternalLink, Smartphone, ChevronLeft, ChevronDown, ImageIcon,
 } from "lucide-react";
-
-/* ─── Color presets ─── */
-const COLOR_PRESETS = [
-  { label: "Dorado",  primary: "oklch(0.74 0.19 55)",  bg: "oklch(0.16 0.04 265)" },
-  { label: "Verde",   primary: "oklch(0.72 0.19 145)", bg: "oklch(0.15 0.04 165)" },
-  { label: "Azul",    primary: "oklch(0.65 0.22 255)", bg: "oklch(0.14 0.05 255)" },
-  { label: "Naranja", primary: "oklch(0.68 0.22 35)",  bg: "oklch(0.15 0.04 20)"  },
-  { label: "Morado",  primary: "oklch(0.65 0.22 295)", bg: "oklch(0.14 0.05 280)" },
-  { label: "Rosa",    primary: "oklch(0.72 0.18 350)", bg: "oklch(0.15 0.04 330)" },
-];
 
 /* ─── Types ─── */
 type UrlStatus = "idle" | "checking" | "valid" | "invalid";
@@ -445,6 +435,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  const { data: colorPresets = [] } = api.preset.colorList.useQuery();
+
   const [values, setValues] = useState<FormValues>({
     name:          campaign?.name          ?? "",
     slug:          campaign?.slug          ?? "",
@@ -623,33 +615,29 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         {/* ── Logo ── */}
         <Section title="Logo">
           <div className="flex items-center gap-4">
-            {values.logoUrl ? (
-              <div className="relative shrink-0">
-                <Image
-                  src={values.logoUrl}
-                  alt="Logo"
-                  width={56}
-                  height={56}
-                  className="h-14 w-14 rounded-xl object-contain"
-                  style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => set("logoUrl", "")}
-                  className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full"
-                  style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl"
-                style={{ border: "1px dashed var(--color-border)", background: "var(--color-surface-overlay)" }}
-              >
-                <span className="text-2xl">🖼</span>
-              </div>
-            )}
+            {/* Box: always visible, shows icon / spinner / image */}
+            <div
+              className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl"
+              style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
+            >
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--color-muted-foreground)" }} />
+              ) : values.logoUrl ? (
+                <>
+                  <Image src={values.logoUrl} alt="Logo" fill className="object-contain p-2" />
+                  <button
+                    type="button"
+                    onClick={() => set("logoUrl", "")}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
+                    style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </>
+              ) : (
+                <ImageIcon className="h-7 w-7" style={{ color: "var(--color-subtle)" }} />
+              )}
+            </div>
 
             <label
               className="inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
@@ -660,9 +648,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
               }}
             >
               <input type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
-              {uploading
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Subiendo…</>
-                : <><Upload className="h-4 w-4" /> Subir logo</>}
+              <Upload className="h-4 w-4" />
+              Subir logo
             </label>
           </div>
         </Section>
@@ -671,40 +658,41 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
         {/* ── Colores ── */}
         <Section title="Colores">
-          {/* Presets */}
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {COLOR_PRESETS.map((p) => {
-              const active = values.colorPrimary === p.primary;
-              return (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => { set("colorPrimary", p.primary); set("colorBg", p.bg); }}
-                  className="group relative flex flex-col items-center gap-1.5 rounded-lg p-2 text-[11px] transition-colors"
-                  style={{
-                    border: `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
-                    background: active ? "var(--color-surface-overlay)" : "transparent",
-                    color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-                  }}
-                >
-                  {/* Mini preview pill */}
-                  <span
-                    className="h-7 w-full rounded-md"
-                    style={{ background: p.bg, border: "1px solid rgba(255,255,255,0.06)" }}
+          {/* Presets from DB */}
+          {colorPresets.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {colorPresets.map((p) => {
+                const active = values.colorPrimary === p.colorPrimary;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { set("colorPrimary", p.colorPrimary); set("colorBg", p.colorBg); }}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
+                    style={{
+                      border: `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
+                      background: active ? "var(--color-surface-overlay)" : "transparent",
+                      color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                    }}
                   >
-                    <span
-                      className="block mx-auto mt-1 h-2 w-1/2 rounded-full"
-                      style={{ background: p.primary }}
-                    />
-                  </span>
-                  {p.label}
-                  {active && (
-                    <Check className="absolute right-1.5 top-1.5 h-3 w-3" style={{ color: "var(--color-success)" }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    <span className="flex gap-0.5 shrink-0">
+                      <span className="h-3.5 w-3.5 rounded-sm" style={{ background: p.colorPrimary }} />
+                      <span className="h-3.5 w-3.5 rounded-sm" style={{ background: p.colorBg }} />
+                    </span>
+                    {p.name}
+                    {active && <Check className="h-3 w-3 shrink-0" style={{ color: "var(--color-success)" }} />}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
+              Sin presets. El admin puede agregar en{" "}
+              <a href="/admin?tab=colors" className="underline" style={{ color: "var(--color-muted-foreground)" }}>
+                /admin → Colores
+              </a>.
+            </p>
+          )}
 
           {/* Custom inputs */}
           <div className="grid grid-cols-2 gap-4">

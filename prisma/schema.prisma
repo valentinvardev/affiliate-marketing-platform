@@ -37,15 +37,41 @@ model CampaignOffer {
 
     name       String
     imageUrl   String?
-    tag        String   @default("1 hr")   // task/time label shown on the card
-    badge      String   @default("TOP")    // TOP | HOT | NEW | etc.
-    amount     Float                       // numeric, formatted by template using currencySymbol
+    tag        String   @default("1 hr")
+    badge      String   @default("TOP")
+    amount     Float
     rating     Float    @default(4.9)
-    note       String?                     // optional small footnote
-    position   Int      @default(0)        // sort order (0 = first)
+    note       String?
+    position   Int      @default(0)
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
 
     @@index([campaignId, position])
+}
+
+model User {
+    id        String   @id @default(cuid())
+    username  String   @unique
+    email     String?
+    password  String
+    role      String   @default("user")
+    approved  Boolean  @default(false)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model ColorPreset {
+    id           String   @id @default(cuid())
+    name         String
+    colorPrimary String
+    colorBg      String
+    createdAt    DateTime @default(now())
+}
+
+model LogoPreset {
+    id        String   @id @default(cuid())
+    name      String
+    imageUrl  String
+    createdAt DateTime @default(now())
 }
