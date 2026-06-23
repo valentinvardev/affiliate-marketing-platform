@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import ReactCountryFlag from "react-country-flag";
 import Image from "next/image";
 import { api } from "@/trpc/react";
 import { CURRENCIES } from "@/lib/currencies";
@@ -106,7 +107,7 @@ function Dropdown({
 }: {
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string; prefix?: string; meta?: string }[];
+  options: { value: string; label: string; prefix?: string; countryCode?: string; meta?: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -148,7 +149,13 @@ function Dropdown({
         }}
       >
         <span className="flex items-center gap-2 truncate">
-          {selected?.prefix && <span className="shrink-0 text-base leading-none">{selected.prefix}</span>}
+          {selected?.countryCode && (
+            <ReactCountryFlag countryCode={selected.countryCode} svg
+              style={{ width: "1.25em", height: "0.95em", borderRadius: 2, flexShrink: 0 }} />
+          )}
+          {!selected?.countryCode && selected?.prefix && (
+            <span className="shrink-0 text-base leading-none">{selected.prefix}</span>
+          )}
           <span className="truncate">{selected?.label ?? "Seleccionar…"}</span>
           {selected?.meta && (
             <span className="shrink-0 text-xs" style={{ color: "var(--color-subtle)" }}>{selected.meta}</span>
@@ -196,7 +203,11 @@ function Dropdown({
                     (e.currentTarget as HTMLElement).style.color = isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)";
                   }}
                 >
-                  {opt.prefix && (
+                  {opt.countryCode && (
+                    <ReactCountryFlag countryCode={opt.countryCode} svg
+                      style={{ width: "1.25em", height: "0.95em", borderRadius: 2, flexShrink: 0 }} />
+                  )}
+                  {!opt.countryCode && opt.prefix && (
                     <span className="shrink-0 text-base leading-none">{opt.prefix}</span>
                   )}
                   <span className="flex-1 truncate">{opt.label}</span>
@@ -561,7 +572,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
               <Dropdown
                 value={values.locale}
                 onChange={handleLocaleChange}
-                options={LOCALES.map((l) => ({ value: l.code, label: l.label, prefix: l.flag }))}
+                options={LOCALES.map((l) => ({ value: l.code, label: l.label, countryCode: l.countryCode }))}
               />
             </Field>
 
