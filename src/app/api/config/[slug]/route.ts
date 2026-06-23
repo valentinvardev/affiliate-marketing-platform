@@ -17,24 +17,41 @@ export async function GET(
 ) {
   const { slug } = await params;
 
-  const campaign = await db.campaign.findUnique({ where: { slug } });
+  const campaign = await db.campaign.findUnique({
+    where: { slug },
+    include: {
+      offers: {
+        orderBy: { position: "asc" },
+      },
+    },
+  });
 
-  if (!campaign || !campaign.isActive) {
+  if (!campaign?.isActive) {
     return NextResponse.json({ error: "not found" }, { status: 404, headers: CORS });
   }
 
   return NextResponse.json(
     {
-      id: campaign.id,
-      slug: campaign.slug,
-      templateSlug: campaign.templateSlug,
-      locale: campaign.locale,
+      id:            campaign.id,
+      slug:          campaign.slug,
+      templateSlug:  campaign.templateSlug,
+      locale:        campaign.locale,
       currencySymbol: campaign.currencySymbol,
-      currencyCode: campaign.currencyCode,
-      ctaUrl: campaign.ctaUrl,
-      logoUrl: campaign.logoUrl,
-      colorPrimary: campaign.colorPrimary,
-      colorBg: campaign.colorBg,
+      currencyCode:  campaign.currencyCode,
+      ctaUrl:        campaign.ctaUrl,
+      logoUrl:       campaign.logoUrl,
+      colorPrimary:  campaign.colorPrimary,
+      colorBg:       campaign.colorBg,
+      offers: campaign.offers.map((o) => ({
+        id:       o.id,
+        name:     o.name,
+        imageUrl: o.imageUrl,
+        tag:      o.tag,
+        badge:    o.badge,
+        amount:   o.amount,
+        rating:   o.rating,
+        note:     o.note,
+      })),
     },
     { headers: CORS },
   );

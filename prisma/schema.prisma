@@ -10,21 +10,42 @@ datasource db {
 }
 
 model Campaign {
-    id             String   @id @default(cuid())
+    id             String          @id @default(cuid())
     name           String
-    slug           String   @unique
-    templateSlug   String   @default("gonza-gb-sn-fc")
-    locale         String   @default("en")
-    currencySymbol String   @default("£")
-    currencyCode   String   @default("GBP")
+    slug           String          @unique
+    templateSlug   String          @default("gonza-gb-sn-fc")
+    locale         String          @default("en")
+    currencySymbol String          @default("£")
+    currencyCode   String          @default("GBP")
     ctaUrl         String
     logoUrl        String?
-    colorPrimary   String   @default("oklch(0.74 0.19 55)")
-    colorBg        String   @default("oklch(0.16 0.04 265)")
-    isActive       Boolean  @default(true)
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+    colorPrimary   String          @default("oklch(0.74 0.19 55)")
+    colorBg        String          @default("oklch(0.16 0.04 265)")
+    isActive       Boolean         @default(true)
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt
+    offers         CampaignOffer[]
 
     @@index([slug])
     @@index([isActive])
+}
+
+model CampaignOffer {
+    id         String   @id @default(cuid())
+    campaignId String
+    campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+    name       String
+    imageUrl   String?
+    tag        String   @default("1 hr")   // task/time label shown on the card
+    badge      String   @default("TOP")    // TOP | HOT | NEW | etc.
+    amount     Float                       // numeric, formatted by template using currencySymbol
+    rating     Float    @default(4.9)
+    note       String?                     // optional small footnote
+    position   Int      @default(0)        // sort order (0 = first)
+
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@index([campaignId, position])
 }
