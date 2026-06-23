@@ -7,56 +7,95 @@ import { api } from "@/trpc/react";
 import { CURRENCIES } from "@/lib/currencies";
 import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2, Upload, Copy, Check, ExternalLink } from "lucide-react";
 
+/* ─── Color presets ─── */
 const COLOR_PRESETS = [
-  { label: "Dorado (default)",  primary: "oklch(0.74 0.19 55)",  bg: "oklch(0.16 0.04 265)" },
-  { label: "Verde",             primary: "oklch(0.72 0.19 145)", bg: "oklch(0.15 0.04 165)" },
-  { label: "Azul",              primary: "oklch(0.65 0.22 255)", bg: "oklch(0.14 0.05 255)" },
-  { label: "Rojo/Naranja",      primary: "oklch(0.68 0.22 35)",  bg: "oklch(0.15 0.04 20)"  },
-  { label: "Morado",            primary: "oklch(0.65 0.22 295)", bg: "oklch(0.14 0.05 280)" },
-  { label: "Rosa",              primary: "oklch(0.72 0.18 350)", bg: "oklch(0.15 0.04 330)" },
+  { label: "Dorado",  primary: "oklch(0.74 0.19 55)",  bg: "oklch(0.16 0.04 265)" },
+  { label: "Verde",   primary: "oklch(0.72 0.19 145)", bg: "oklch(0.15 0.04 165)" },
+  { label: "Azul",    primary: "oklch(0.65 0.22 255)", bg: "oklch(0.14 0.05 255)" },
+  { label: "Naranja", primary: "oklch(0.68 0.22 35)",  bg: "oklch(0.15 0.04 20)"  },
+  { label: "Morado",  primary: "oklch(0.65 0.22 295)", bg: "oklch(0.14 0.05 280)" },
+  { label: "Rosa",    primary: "oklch(0.72 0.18 350)", bg: "oklch(0.15 0.04 330)" },
 ];
 
 type FormValues = {
-  name: string;
-  slug: string;
-  templateSlug: string;
-  locale: string;
-  currencyCode: string;
-  currencySymbol: string;
-  ctaUrl: string;
-  logoUrl: string;
-  colorPrimary: string;
-  colorBg: string;
-  isActive: boolean;
+  name: string; slug: string; templateSlug: string;
+  locale: string; currencyCode: string; currencySymbol: string;
+  ctaUrl: string; logoUrl: string;
+  colorPrimary: string; colorBg: string; isActive: boolean;
 };
 
 type Campaign = {
-  id: string;
-  name: string;
-  slug: string;
-  templateSlug: string;
-  locale: string;
-  currencyCode: string;
-  currencySymbol: string;
-  ctaUrl: string;
-  logoUrl: string | null;
-  colorPrimary: string;
-  colorBg: string;
-  isActive: boolean;
+  id: string; name: string; slug: string; templateSlug: string;
+  locale: string; currencyCode: string; currencySymbol: string;
+  ctaUrl: string; logoUrl: string | null;
+  colorPrimary: string; colorBg: string; isActive: boolean;
 };
 
+/* ─── Field wrapper ─── */
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1.5">
+      <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
+        {label}
+      </label>
+      {children}
+      {hint && <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{hint}</p>}
+    </div>
+  );
+}
+
+/* ─── Input ─── */
+function Input({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={`w-full rounded-md px-3 py-2 text-sm outline-none transition-colors ${className}`}
+      style={{
+        background: "var(--color-surface-overlay)",
+        border: "1px solid var(--color-border)",
+        color: "var(--color-foreground)",
+        ...((props.style) ?? {}),
+      }}
+      onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-border-focus)"; props.onFocus?.(e); }}
+      onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; props.onBlur?.(e); }}
+    />
+  );
+}
+
+/* ─── Select ─── */
+function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className="w-full rounded-md px-3 py-2 text-sm outline-none appearance-none cursor-pointer"
+      style={{
+        background: "var(--color-surface-overlay)",
+        border: "1px solid var(--color-border)",
+        color: "var(--color-foreground)",
+      }}
+      onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-border-focus)"; }}
+      onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)"; }}
+    >
+      {children}
+    </select>
+  );
+}
+
+/* ─── Section divider ─── */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+/* ─── Main form ─── */
 export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -77,15 +116,11 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     isActive: campaign?.isActive ?? true,
   });
 
-  const create = api.campaign.create.useMutation({
-    onSuccess: (c) => router.push(`/campaigns/${c.id}`),
-  });
-  const update = api.campaign.update.useMutation({
-    onSuccess: () => router.refresh(),
-  });
+  const create = api.campaign.create.useMutation({ onSuccess: (c) => router.push(`/campaigns/${c.id}`) });
+  const update = api.campaign.update.useMutation({ onSuccess: () => router.refresh() });
 
   function set<K extends keyof FormValues>(key: K, val: FormValues[K]) {
-    setValues((prev) => ({ ...prev, [key]: val }));
+    setValues((p) => ({ ...p, [key]: val }));
   }
 
   function handleNameChange(name: string) {
@@ -94,23 +129,17 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   }
 
   function handleLocaleChange(locale: string) {
-    const loc = LOCALES.find((l) => l.code === locale);
     set("locale", locale);
+    const loc = LOCALES.find((l) => l.code === locale);
     if (loc) {
       const cur = CURRENCIES.find((c) => c.code === loc.defaultCurrencyCode);
-      if (cur) {
-        set("currencyCode", cur.code);
-        set("currencySymbol", cur.symbol);
-      }
+      if (cur) { set("currencyCode", cur.code); set("currencySymbol", cur.symbol); }
     }
   }
 
   function handleCurrencyChange(code: string) {
     const cur = CURRENCIES.find((c) => c.code === code);
-    if (cur) {
-      set("currencyCode", cur.code);
-      set("currencySymbol", cur.symbol);
-    }
+    if (cur) { set("currencyCode", cur.code); set("currencySymbol", cur.symbol); }
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -120,7 +149,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     const fd = new FormData();
     fd.append("file", file);
     const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = (await res.json()) as { url?: string; error?: string };
+    const data = (await res.json()) as { url?: string };
     if (data.url) set("logoUrl", data.url);
     setUploading(false);
   }
@@ -128,292 +157,313 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(() => {
-      const payload = {
-        ...values,
-        logoUrl: values.logoUrl || null,
-      };
-      if (campaign) {
-        update.mutate({ id: campaign.id, ...payload });
-      } else {
-        create.mutate(payload);
-      }
+      const payload = { ...values, logoUrl: values.logoUrl || null };
+      if (campaign) update.mutate({ id: campaign.id, ...payload });
+      else create.mutate(payload);
     });
   }
 
   function copySlugUrl() {
     const slug = values.slug || campaign?.slug;
     if (!slug) return;
-    const url = `${window.location.origin}/api/config/${slug}`;
-    void navigator.clipboard.writeText(url);
+    void navigator.clipboard.writeText(`${window.location.origin}/api/config/${slug}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   const isSaving = pending || create.isPending || update.isPending;
+  const error = create.error?.message ?? update.error?.message;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* ── Identidad ── */}
-      <section className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nombre de la campaña</Label>
-          <Input
-            id="name"
-            placeholder="UK Marzo 2025"
-            value={values.name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="slug">Slug (ID público)</Label>
-          <div className="flex gap-2">
+      <Section title="Identidad">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Nombre">
             <Input
-              id="slug"
-              placeholder="uk-marzo-2025"
-              value={values.slug}
-              onChange={(e) => set("slug", e.target.value)}
+              placeholder="UK Marzo 2025"
+              value={values.name}
+              onChange={(e) => handleNameChange(e.target.value)}
               required
             />
-            {(values.slug || campaign?.slug) && (
-              <Button type="button" variant="outline" size="icon" onClick={copySlugUrl} title="Copiar URL de config">
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            La plantilla lo usa como <code>?c=slug</code>
-          </p>
-        </div>
-      </section>
+          </Field>
 
-      {/* ── Idioma y Moneda ── */}
-      <section className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Idioma / Mercado</Label>
-          <Select value={values.locale} onValueChange={handleLocaleChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+          <Field label="Slug (ID público)" hint="Usado como ?c=slug en tu plantilla">
+            <div className="flex gap-2">
+              <Input
+                placeholder="uk-marzo-2025"
+                value={values.slug}
+                onChange={(e) => set("slug", e.target.value)}
+                required
+                className="flex-1"
+              />
+              {values.slug && (
+                <button
+                  type="button"
+                  onClick={copySlugUrl}
+                  title="Copiar URL"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
+                  style={{
+                    background: "var(--color-surface-overlay)",
+                    border: "1px solid var(--color-border)",
+                    color: copied ? "var(--color-success)" : "var(--color-muted-foreground)",
+                  }}
+                >
+                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              )}
+            </div>
+          </Field>
+        </div>
+      </Section>
+
+      <Divider />
+
+      {/* ── Mercado ── */}
+      <Section title="Mercado">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Idioma / País">
+            <Select value={values.locale} onChange={(e) => handleLocaleChange(e.target.value)}>
               {LOCALES.map((l) => (
-                <SelectItem key={l.code} value={l.code}>
-                  {l.flag} {l.label}
-                </SelectItem>
+                <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+            </Select>
+          </Field>
 
-        <div className="space-y-2">
-          <Label>Moneda</Label>
-          <Select value={values.currencyCode} onValueChange={handleCurrencyChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+          <Field label="Moneda" hint={`Símbolo activo: ${values.currencySymbol}`}>
+            <Select value={values.currencyCode} onChange={(e) => handleCurrencyChange(e.target.value)}>
               {CURRENCIES.map((c) => (
-                <SelectItem key={c.code} value={c.code}>
-                  {c.label}
-                </SelectItem>
+                <option key={c.code} value={c.code}>{c.label}</option>
               ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Símbolo activo: <strong>{values.currencySymbol}</strong>
-          </p>
+            </Select>
+          </Field>
         </div>
-      </section>
+      </Section>
+
+      <Divider />
 
       {/* ── CTA ── */}
-      <div className="space-y-2">
-        <Label htmlFor="ctaUrl">CTA URL (enlace de afiliado)</Label>
-        <div className="flex gap-2">
-          <Input
-            id="ctaUrl"
-            type="url"
-            placeholder="https://taprkr.com/r/..."
-            value={values.ctaUrl}
-            onChange={(e) => set("ctaUrl", e.target.value)}
-            required
-          />
-          {values.ctaUrl && (
-            <Button type="button" variant="outline" size="icon" asChild>
-              <a href={values.ctaUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4" />
+      <Section title="CTA">
+        <Field label="URL de afiliado">
+          <div className="flex gap-2">
+            <Input
+              type="url"
+              placeholder="https://taprkr.com/r/..."
+              value={values.ctaUrl}
+              onChange={(e) => set("ctaUrl", e.target.value)}
+              required
+              className="flex-1"
+            />
+            {values.ctaUrl && (
+              <a
+                href={values.ctaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
+                style={{
+                  background: "var(--color-surface-overlay)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-muted-foreground)",
+                }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
               </a>
-            </Button>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </Field>
+      </Section>
+
+      <Divider />
 
       {/* ── Logo ── */}
-      <div className="space-y-2">
-        <Label>Logo</Label>
+      <Section title="Logo">
         <div className="flex items-center gap-4">
           {values.logoUrl && (
             <Image
               src={values.logoUrl}
-              alt="Logo preview"
-              width={64}
-              height={64}
-              className="h-16 w-16 rounded-lg object-contain border bg-white/5"
+              alt="Logo"
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-lg object-contain"
+              style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
             />
           )}
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={handleLogoUpload}
-            />
-            <span className="inline-flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm hover:bg-accent transition-colors">
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? "Subiendo…" : "Subir logo"}
-            </span>
-          </label>
-          {values.logoUrl && (
-            <Input
-              placeholder="O pega URL directamente"
-              value={values.logoUrl}
-              onChange={(e) => set("logoUrl", e.target.value)}
-              className="flex-1"
-            />
-          )}
-        </div>
-        {!values.logoUrl && (
-          <Input
-            placeholder="URL del logo (opcional)"
-            value={values.logoUrl}
-            onChange={(e) => set("logoUrl", e.target.value)}
-          />
-        )}
-      </div>
-
-      {/* ── Colores ── */}
-      <div className="space-y-4">
-        <Label>Colores</Label>
-
-        {/* Presets */}
-        <div className="flex flex-wrap gap-2">
-          {COLOR_PRESETS.map((p) => (
-            <button
-              key={p.label}
-              type="button"
-              onClick={() => {
-                set("colorPrimary", p.primary);
-                set("colorBg", p.bg);
-              }}
-              title={p.label}
-              className="flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+          <div className="flex flex-col gap-2 flex-1">
+            <label
+              className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
               style={{
-                borderColor:
-                  values.colorPrimary === p.primary ? "currentColor" : "transparent",
+                background: "var(--color-surface-overlay)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-foreground)",
               }}
             >
-              <span
-                className="h-4 w-4 rounded-full shrink-0"
-                style={{ background: p.primary }}
-              />
-              {p.label}
-            </button>
-          ))}
+              <input type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploading ? "Subiendo…" : "Subir logo"}
+            </label>
+            <Input
+              placeholder="O pega una URL directamente"
+              value={values.logoUrl}
+              onChange={(e) => set("logoUrl", e.target.value)}
+            />
+          </div>
+        </div>
+      </Section>
+
+      <Divider />
+
+      {/* ── Colores ── */}
+      <Section title="Colores">
+        {/* Presets */}
+        <div className="flex flex-wrap gap-2">
+          {COLOR_PRESETS.map((p) => {
+            const active = values.colorPrimary === p.primary;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => { set("colorPrimary", p.primary); set("colorBg", p.bg); }}
+                className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors"
+                style={{
+                  border: `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
+                  background: active ? "var(--color-surface-overlay)" : "transparent",
+                  color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                }}
+              >
+                <span className="h-3 w-3 rounded-full shrink-0" style={{ background: p.primary }} />
+                {p.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="colorPrimary">Color principal</Label>
+          <Field label="Color principal">
             <div className="flex gap-2 items-center">
               <input
                 type="color"
-                className="h-9 w-12 cursor-pointer rounded border border-input p-0.5"
-                value={oklchToHex(values.colorPrimary)}
+                className="h-9 w-10 cursor-pointer rounded-md border-0 p-0.5"
+                style={{
+                  background: "var(--color-surface-overlay)",
+                  border: "1px solid var(--color-border)",
+                }}
+                value={toHex(values.colorPrimary)}
                 onChange={(e) => set("colorPrimary", e.target.value)}
               />
               <Input
-                id="colorPrimary"
                 value={values.colorPrimary}
                 onChange={(e) => set("colorPrimary", e.target.value)}
-                placeholder="oklch(0.74 0.19 55) o #f59e0b"
+                placeholder="oklch(0.74 0.19 55)"
+                className="flex-1 font-mono text-xs"
               />
             </div>
-          </div>
+          </Field>
 
-          <div className="space-y-2">
-            <Label htmlFor="colorBg">Color de fondo</Label>
+          <Field label="Color de fondo">
             <div className="flex gap-2 items-center">
               <input
                 type="color"
-                className="h-9 w-12 cursor-pointer rounded border border-input p-0.5"
-                value={oklchToHex(values.colorBg)}
+                className="h-9 w-10 cursor-pointer rounded-md p-0.5"
+                style={{
+                  background: "var(--color-surface-overlay)",
+                  border: "1px solid var(--color-border)",
+                }}
+                value={toHex(values.colorBg)}
                 onChange={(e) => set("colorBg", e.target.value)}
               />
               <Input
-                id="colorBg"
                 value={values.colorBg}
                 onChange={(e) => set("colorBg", e.target.value)}
-                placeholder="oklch(0.16 0.04 265) o #1e1b4b"
+                placeholder="oklch(0.16 0.04 265)"
+                className="flex-1 font-mono text-xs"
               />
             </div>
-          </div>
+          </Field>
         </div>
 
-        {/* Preview de colores */}
+        {/* Live preview */}
         <div
-          className="rounded-xl p-6 flex items-center gap-4"
-          style={{ background: values.colorBg }}
+          className="flex items-center gap-4 rounded-xl p-5"
+          style={{ background: values.colorBg, border: "1px solid var(--color-border)" }}
         >
           <div
-            className="h-12 w-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
+            className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold text-white"
             style={{ background: values.colorPrimary }}
           >
-            A
+            Aa
           </div>
-          <div>
-            <p className="text-white font-bold">Preview de colores</p>
-            <p style={{ color: values.colorPrimary }} className="text-sm font-semibold">
-              Color principal
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-white">Preview</p>
+            <p className="text-xs font-medium" style={{ color: values.colorPrimary }}>
+              Color principal · {values.currencySymbol}99
             </p>
           </div>
         </div>
-      </div>
+      </Section>
+
+      <Divider />
 
       {/* ── Estado ── */}
-      <div className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          id="isActive"
-          checked={values.isActive}
-          onChange={(e) => set("isActive", e.target.checked)}
-          className="h-4 w-4 cursor-pointer accent-primary"
-        />
-        <Label htmlFor="isActive">Campaña activa (visible en API pública)</Label>
-      </div>
+      <Section title="Estado">
+        <label className="flex cursor-pointer items-center gap-3">
+          <div
+            onClick={() => set("isActive", !values.isActive)}
+            className="relative h-5 w-9 rounded-full transition-colors cursor-pointer"
+            style={{ background: values.isActive ? "var(--color-success)" : "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}
+          >
+            <span
+              className="absolute top-0.5 h-4 w-4 rounded-full transition-transform"
+              style={{
+                background: values.isActive ? "#000" : "var(--color-subtle)",
+                left: values.isActive ? "calc(100% - 18px)" : "1px",
+              }}
+            />
+          </div>
+          <span className="text-sm" style={{ color: "var(--color-foreground)" }}>
+            {values.isActive ? "Campaña activa" : "Campaña pausada"}
+          </span>
+        </label>
+        <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>
+          Las campañas pausadas no aparecen en la API pública.
+        </p>
+      </Section>
+
+      <Divider />
 
       {/* ── Actions ── */}
-      <div className="flex gap-3">
-        <Button type="submit" disabled={isSaving}>
-          {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-50"
+          style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+        >
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {campaign ? "Guardar cambios" : "Crear campaña"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-md px-4 py-2 text-sm transition-opacity hover:opacity-70"
+          style={{ color: "var(--color-muted-foreground)" }}
+        >
           Cancelar
-        </Button>
+        </button>
       </div>
 
-      {(create.error ?? update.error) && (
-        <p className="text-sm text-red-500">
-          {create.error?.message ?? update.error?.message}
+      {error && (
+        <p className="text-xs rounded-md px-3 py-2" style={{ color: "var(--color-error)", background: "var(--color-error-bg)" }}>
+          {error}
         </p>
       )}
     </form>
   );
 }
 
-// Fallback hex para el <input type="color"> cuando se usa oklch
-function oklchToHex(color: string): string {
-  if (color.startsWith("#")) return color;
-  // oklch no es parseado por el native color picker — devolvemos un gris
-  return "#888888";
+function Divider() {
+  return <div style={{ height: "1px", background: "var(--color-border)" }} />;
+}
+
+function toHex(color: string): string {
+  return color.startsWith("#") ? color : "#888888";
 }
