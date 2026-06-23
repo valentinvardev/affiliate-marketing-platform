@@ -32,13 +32,9 @@ export function Sidebar() {
         className="flex h-14 shrink-0 items-center gap-2 px-4"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <Image
-          src="/logo.png"
-          alt="TapSur"
-          width={28}
-          height={28}
-          className="shrink-0 rounded-md"
-        />
+        <div className="shrink-0 overflow-hidden rounded-md" style={{ background: "#fff", width: 28, height: 28 }}>
+          <Image src="/logo.png" alt="TapSur" width={28} height={28} />
+        </div>
         <span className="text-sm font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
           TapSur
         </span>

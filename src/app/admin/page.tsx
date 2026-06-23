@@ -43,7 +43,9 @@ export default async function AdminPage({
       >
         <div className="flex items-center gap-3">
           <Link href="/campaigns" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="TapSur" width={24} height={24} className="shrink-0 rounded-md" />
+            <div className="shrink-0 overflow-hidden rounded-md" style={{ background: "#fff", width: 24, height: 24 }}>
+              <Image src="/logo.png" alt="TapSur" width={24} height={24} />
+            </div>
             <span className="text-sm font-bold" style={{ color: "var(--color-foreground)" }}>TapSur</span>
           </Link>
           <span style={{ color: "var(--color-border)" }}>/</span>

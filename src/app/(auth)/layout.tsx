@@ -9,7 +9,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 flex items-center gap-2">
-          <Image src="/logo.png" alt="TapSur" width={32} height={32} className="shrink-0 rounded-md" />
+          <div className="shrink-0 overflow-hidden rounded-md" style={{ background: "#fff", width: 32, height: 32 }}>
+            <Image src="/logo.png" alt="TapSur" width={32} height={32} />
+          </div>
           <span className="text-lg font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
             TapSur
           </span>
