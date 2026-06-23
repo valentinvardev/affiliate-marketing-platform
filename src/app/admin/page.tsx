@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import LogoImg from "/public/logo.png";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/server/auth";
@@ -43,9 +44,8 @@ export default async function AdminPage({
       >
         <div className="flex items-center gap-3">
           <Link href="/campaigns" className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded text-xs font-black"
-              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>A</div>
-            <span className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Aff CMS</span>
+            <Image src={LogoImg} alt="TapSur" width={24} height={24} className="shrink-0 rounded-md" />
+            <span className="text-sm font-bold" style={{ color: "var(--color-foreground)" }}>TapSur</span>
           </Link>
           <span style={{ color: "var(--color-border)" }}>/</span>
           <span className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>Admin</span>

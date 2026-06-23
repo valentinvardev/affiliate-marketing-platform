@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -6,18 +8,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     >
       <div className="w-full max-w-sm">
         {/* Brand */}
-        <div className="mb-8 flex items-center gap-2.5">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded text-xs font-black"
-            style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-          >
-            A
-          </div>
-          <span
-            className="text-base font-semibold tracking-tight"
-            style={{ color: "var(--color-foreground)" }}
-          >
-            Aff CMS
+        <div className="mb-8 flex items-center gap-2">
+          <Image src="/logo.png" alt="TapSur" width={32} height={32} className="shrink-0 rounded-md" />
+          <span className="text-lg font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
+            TapSur
           </span>
         </div>
         {children}

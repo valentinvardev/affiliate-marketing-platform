@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LayoutGrid, BookOpen, ShieldCheck, LogOut } from "lucide-react";
@@ -28,17 +29,18 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div
-        className="flex h-14 shrink-0 items-center gap-2.5 px-5"
+        className="flex h-14 shrink-0 items-center gap-2 px-4"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <div
-          className="flex h-6 w-6 items-center justify-center rounded text-xs font-black"
-          style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-        >
-          A
-        </div>
-        <span className="text-sm font-semibold tracking-tight" style={{ color: "var(--color-foreground)" }}>
-          Aff CMS
+        <Image
+          src="/logo.png"
+          alt="TapSur"
+          width={28}
+          height={28}
+          className="shrink-0 rounded-md"
+        />
+        <span className="text-sm font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
+          TapSur
         </span>
       </div>
 
