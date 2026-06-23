@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LayoutGrid, BookOpen, ShieldCheck, LogOut } from "lucide-react";
@@ -32,9 +31,8 @@ export function Sidebar() {
         className="flex h-14 shrink-0 items-center gap-2 px-4"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <div className="shrink-0 overflow-hidden rounded-md" style={{ background: "#fff", width: 28, height: 28 }}>
-          <Image src="/logo.png" alt="TapSur" width={28} height={28} />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="TapSur" width={40} height={40} className="shrink-0 rounded-md" />
         <span className="text-sm font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
           TapSur
         </span>
