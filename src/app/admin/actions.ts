@@ -58,3 +58,31 @@ export async function deleteLogoPreset(formData: FormData) {
   await db.logoPreset.delete({ where: { id: formData.get("id") as string } });
   revalidatePath("/admin");
 }
+
+export async function toggleOfferWhitelist(formData: FormData) {
+  await requireAdmin();
+  const offerId   = formData.get("offerId") as string;
+  const offerName = formData.get("offerName") as string;
+  const current   = formData.get("current") === "true";
+  await db.offerConfig.upsert({
+    where:  { offerId },
+    create: { offerId, offerName, whitelisted: !current },
+    update: { whitelisted: !current },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/offers");
+}
+
+export async function updateOfferImage(formData: FormData) {
+  await requireAdmin();
+  const offerId   = formData.get("offerId") as string;
+  const offerName = formData.get("offerName") as string;
+  const imageUrl  = formData.get("imageUrl") as string;
+  await db.offerConfig.upsert({
+    where:  { offerId },
+    create: { offerId, offerName, imageUrl },
+    update: { imageUrl },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/offers");
+}

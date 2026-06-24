@@ -7,7 +7,9 @@ import { db } from "@/server/db";
 import { approveUser, rejectUser, createColorPreset, deleteColorPreset, deleteLogoPreset } from "./actions";
 import { SignOutButton } from "./sign-out-button";
 import { LogoPresetUploader } from "./logo-preset-uploader";
-import { Check, X, Trash2, UserCheck, Palette, Image as ImageIcon, Users } from "lucide-react";
+import { OfferConfigRow } from "./offer-config-row";
+import { fetchOffers } from "@/lib/taprain";
+import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +30,30 @@ export default async function AdminPage({
     db.logoPreset.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
+  // Only fetch TapRain offers when on the offers tab
+  let tapRainOffers: Awaited<ReturnType<typeof fetchOffers>>["offers"] = [];
+  let offerConfigs: { offerId: string; whitelisted: boolean; imageUrl: string | null }[] = [];
+  if (tab === "offers") {
+    const [offersResult, configsResult] = await Promise.allSettled([
+      fetchOffers({ limit: 200 }),
+      db.offerConfig.findMany({ select: { offerId: true, whitelisted: true, imageUrl: true } }),
+    ]);
+    if (offersResult.status === "fulfilled") tapRainOffers = offersResult.value.offers;
+    if (configsResult.status === "fulfilled") offerConfigs = configsResult.value;
+    // Sort: whitelisted first
+    tapRainOffers.sort((a, b) => {
+      const aW = offerConfigs.find(c => c.offerId === a.id)?.whitelisted ? 1 : 0;
+      const bW = offerConfigs.find(c => c.offerId === b.id)?.whitelisted ? 1 : 0;
+      return bW - aW;
+    });
+  }
+  const whitelistedCount = offerConfigs.filter(c => c.whitelisted).length;
+
   const TABS = [
-    { key: "users",  label: "Usuarios", icon: Users,   badge: pendingUsers.length || undefined },
-    { key: "colors", label: "Colores",  icon: Palette, badge: undefined },
+    { key: "users",  label: "Usuarios", icon: Users,    badge: pendingUsers.length || undefined },
+    { key: "colors", label: "Colores",  icon: Palette,  badge: undefined },
     { key: "logos",  label: "Logos",    icon: ImageIcon, badge: undefined },
+    { key: "offers", label: "Offers",   icon: Package,  badge: undefined },
   ];
 
   return (
@@ -243,6 +265,40 @@ export default async function AdminPage({
                 </div>
               )}
             </AdminCard>
+          </div>
+        )}
+
+        {/* ── OFFERS TAB ── */}
+        {tab === "offers" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <p className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+                Activá las offers que quieras mostrar a los usuarios. Hover sobre el ícono para cambiar la imagen.
+              </p>
+              <span
+                className="ml-auto shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                style={{ background: "rgba(167,139,250,0.15)", color: "#a78bfa", border: "1px solid rgba(167,139,250,0.25)" }}
+              >
+                {whitelistedCount} activa{whitelistedCount !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {tapRainOffers.length === 0 ? (
+              <AdminCard title="Offers de TapRain">
+                <Empty>No se pudieron cargar las offers. Verificá la API key.</Empty>
+              </AdminCard>
+            ) : (
+              <AdminCard title="Offers de TapRain" count={tapRainOffers.length}>
+                <div className="space-y-2">
+                  {tapRainOffers.map((offer) => {
+                    const config = offerConfigs.find(c => c.offerId === offer.id) ?? null;
+                    return (
+                      <OfferConfigRow key={offer.id} offer={offer} config={config} />
+                    );
+                  })}
+                </div>
+              </AdminCard>
+            )}
           </div>
         )}
       </div>

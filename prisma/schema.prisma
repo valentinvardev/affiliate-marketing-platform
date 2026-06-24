@@ -76,6 +76,19 @@ model LogoPreset {
     createdAt DateTime @default(now())
 }
 
+model OfferConfig {
+    id          String   @id @default(cuid())
+    offerId     String   @unique
+    offerName   String
+    whitelisted Boolean  @default(false)
+    imageUrl    String?
+    notes       String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([whitelisted])
+}
+
 model Conversion {
     id           String   @id @default(cuid())
     price        Float    @default(0)
