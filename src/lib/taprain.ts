@@ -1,6 +1,6 @@
 // TapRain API client
-// Default credentials (Valentin). Multi-tenant: pass apiKey per call.
-const DEFAULT_API_KEY = "21f1b1200d6ebc03ac422018d31d2881";
+// Default credentials read from env. Multi-tenant: pass apiKey per call.
+const DEFAULT_API_KEY = process.env.TAPRAIN_API_KEY ?? "";
 const BASE = "https://taprain.com/api";
 
 export type StatsRange = "hour" | "today" | "yesterday" | "7days" | "30days";

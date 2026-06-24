@@ -47,3 +47,5 @@ yarn-error.log*
 
 # idea files
 .idea
+# Internal API reference docs (contain credentials)
+TAPRAIN_API.md
