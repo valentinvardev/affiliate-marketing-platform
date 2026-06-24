@@ -193,8 +193,8 @@ export default function CardsPage() {
               </div>
               <h2 className="mt-6 text-lg font-bold" style={{ color: "var(--color-foreground)" }}>Conectá tu suite de TapRain</h2>
               <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
-                Las tarjetas virtuales viven en la Ads Suite de TapRain, que usa sesión (no API key).
-                Configurá <code className="font-mono">TAPRAIN_SUITE_COOKIE</code> en el servidor para activarlas.
+                Las tarjetas virtuales viven en la Ads Suite de TapRain.
+                Configurá <code className="font-mono">TAPRAIN_API_KEY</code> en el servidor para activarlas.
               </p>
             </div>
           )}
