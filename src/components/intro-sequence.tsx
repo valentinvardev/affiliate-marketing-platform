@@ -37,13 +37,13 @@ const TIPS = [
 /* ═══════════════════════════════════════════════
    GTA V loading wheel (sweep ring)
 ═══════════════════════════════════════════════ */
-function LoadingWheel({ label = "Cargando" }: { label?: string }) {
+function LoadingWheel({ label = "Cargando", size = 42 }: { label?: string; size?: number }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span
         style={{
           fontFamily: GANGSTER,
-          fontSize: 20,
+          fontSize: size < 40 ? 16 : 20,
           letterSpacing: 1,
           color: "rgba(255,255,255,0.95)",
           textShadow: "0 1px 6px rgba(0,0,0,0.85)",
@@ -53,8 +53,8 @@ function LoadingWheel({ label = "Cargando" }: { label?: string }) {
       </span>
       <div
         style={{
-          width: 42,
-          height: 42,
+          width: size,
+          height: size,
           borderRadius: "50%",
           background:
             "conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 200deg, rgba(255,255,255,0.95) 350deg, rgba(255,255,255,0) 360deg)",
@@ -76,7 +76,16 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
   const [idx, setIdx]       = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
   const [phase, setPhase]   = useState<"preloading" | "loading" | "welcome">("preloading");
+  const [isMobile, setIsMobile] = useState(false);
   const audioRef            = useRef<HTMLAudioElement>(null);
+
+  /* ── Detección de viewport móvil ── */
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   /* ── Preload everything (images + audio), then start ── */
   useEffect(() => {
@@ -221,9 +230,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
                 inset: 0,
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: isMobile ? "contain" : "cover",
                 opacity: i === idx ? 1 : 0,
-                transform: i === idx ? "scale(1.14)" : "scale(1)",
+                transform: i === idx ? (isMobile ? "scale(1.06)" : "scale(1.14)") : "scale(1)",
                 transition: "opacity 2.2s ease, transform 9s ease-out",
                 willChange: "transform, opacity",
               }}
@@ -242,7 +251,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
           />
 
           {/* Barra cinematográfica superior */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: BAR, background: "#000", zIndex: 5 }} />
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: isMobile ? "6vh" : BAR, background: "#000", zIndex: 5 }} />
 
           {/* Degradé negro inferior */}
           <div
@@ -259,32 +268,43 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             }}
           />
 
-          {/* Logo bottom-left */}
-          <div style={{ position: "absolute", left: 40, bottom: 34, zIndex: 6 }}>
+          {/* Logo — bottom-left (desktop) / top-left bajo la barra (móvil) */}
+          <div
+            style={
+              isMobile
+                ? { position: "absolute", left: 16, top: "calc(6vh + 12px)", zIndex: 6 }
+                : { position: "absolute", left: 40, bottom: 34, zIndex: 6 }
+            }
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
               alt="TapSur"
-              style={{ width: 52, height: 52, borderRadius: 8, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))" }}
+              style={{
+                width: isMobile ? 38 : 52,
+                height: isMobile ? 38 : 52,
+                borderRadius: 8,
+                filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))",
+              }}
             />
           </div>
 
-          {/* Rueda + tips bottom-right */}
+          {/* Rueda + tips — bottom-right (desktop) / centrado abajo (móvil) */}
           <div
             style={{
               position: "absolute",
-              right: 40,
-              bottom: 34,
+              bottom: isMobile ? 24 : 34,
               zIndex: 6,
               display: "flex",
               flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 14,
-              maxWidth: 420,
+              gap: isMobile ? 10 : 14,
+              ...(isMobile
+                ? { left: 16, right: 16, alignItems: "center" }
+                : { right: 40, alignItems: "flex-end", maxWidth: 420 }),
             }}
           >
-            <LoadingWheel />
-            <div style={{ textAlign: "right" }}>
+            <LoadingWheel size={isMobile ? 32 : 42} />
+            <div style={{ textAlign: isMobile ? "center" : "right", width: isMobile ? "100%" : undefined }}>
               <p
                 style={{
                   fontSize: 9,
@@ -299,11 +319,12 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
               <p
                 key={tipIdx}
                 style={{
-                  fontSize: 12.5,
+                  fontSize: isMobile ? 11.5 : 12.5,
                   lineHeight: 1.5,
                   color: "rgba(255,255,255,0.92)",
                   textShadow: "0 1px 6px rgba(0,0,0,0.95)",
                   animation: "tipFade 1.1s ease",
+                  ...(isMobile ? { maxWidth: "92vw", margin: "0 auto" } : {}),
                 }}
               >
                 {TIPS[tipIdx]}
@@ -324,6 +345,8 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             alignItems: "center",
             justifyContent: "center",
             gap: 20,
+            padding: "0 24px",
+            textAlign: "center",
             background: "var(--color-background, #000)",
             animation: "introFadeIn 0.8s ease",
           }}
@@ -333,8 +356,8 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             src="/logo.png"
             alt="TapSur"
             style={{
-              width: 72,
-              height: 72,
+              width: isMobile ? 56 : 72,
+              height: isMobile ? 56 : 72,
               borderRadius: 14,
               animation: "introRise 0.9s cubic-bezier(0.16,1,0.3,1)",
             }}
@@ -342,7 +365,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
           <h1
             style={{
               fontFamily: GANGSTER,
-              fontSize: 52,
+              fontSize: isMobile ? 32 : 52,
               letterSpacing: 1,
               color: "var(--color-foreground, #fff)",
               animation: "introRise 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both",
