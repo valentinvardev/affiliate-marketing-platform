@@ -845,11 +845,11 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
               <button
                 type="button"
                 onClick={() => setOfferModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium"
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
                 style={{
-                  background: "rgba(167,139,250,0.12)",
-                  border: "1px solid rgba(167,139,250,0.3)",
-                  color: "#a78bfa",
+                  background: "var(--color-foreground)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-background)",
                 }}
               >
                 <Search className="h-3.5 w-3.5" />
