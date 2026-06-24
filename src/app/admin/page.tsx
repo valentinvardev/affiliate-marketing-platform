@@ -9,7 +9,8 @@ import { SignOutButton } from "./sign-out-button";
 import { LogoPresetUploader } from "./logo-preset-uploader";
 import { fetchOffers } from "@/lib/taprain";
 import { AdminOffersTab } from "./admin-offers-tab";
-import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package } from "lucide-react";
+import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package, Layers } from "lucide-react";
+import { AdminStacksTab } from "./admin-stacks-tab";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +33,11 @@ export default async function AdminPage({
 
   // Only fetch TapRain offers when on the offers tab
   let tapRainOffers: Awaited<ReturnType<typeof fetchOffers>>["offers"] = [];
-  let offerConfigs: { offerId: string; whitelisted: boolean; imageUrl: string | null }[] = [];
+  let offerConfigs: { offerId: string; whitelisted: boolean; imageUrl: string | null; appStackId: string | null }[] = [];
   if (tab === "offers") {
     const [offersResult, configsResult] = await Promise.allSettled([
       fetchOffers({ limit: 200 }),
-      db.offerConfig.findMany({ select: { offerId: true, whitelisted: true, imageUrl: true } }),
+      db.offerConfig.findMany({ select: { offerId: true, whitelisted: true, imageUrl: true, appStackId: true } }),
     ]);
     if (offersResult.status === "fulfilled") tapRainOffers = offersResult.value.offers;
     if (configsResult.status === "fulfilled") offerConfigs = configsResult.value;
@@ -51,6 +52,7 @@ export default async function AdminPage({
 
   const TABS = [
     { key: "users",  label: "Usuarios", icon: Users,    badge: pendingUsers.length || undefined },
+    { key: "stacks", label: "Stacks",   icon: Layers,   badge: undefined },
     { key: "colors", label: "Colores",  icon: Palette,  badge: undefined },
     { key: "logos",  label: "Logos",    icon: ImageIcon, badge: undefined },
     { key: "offers", label: "Offers",   icon: Package,  badge: undefined },
@@ -161,6 +163,9 @@ export default async function AdminPage({
             </AdminCard>
           </div>
         )}
+
+        {/* ── STACKS TAB ── */}
+        {tab === "stacks" && <AdminStacksTab />}
 
         {/* ── COLORS TAB ── */}
         {tab === "colors" && (

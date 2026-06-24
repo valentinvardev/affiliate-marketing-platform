@@ -2,18 +2,25 @@
 
 import { useTransition, useRef, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
-import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle } from "lucide-react";
+import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers } from "lucide-react";
 import { toggleOfferWhitelist, updateOfferImage } from "./actions";
+import { api } from "@/trpc/react";
 import type { Offer } from "@/lib/taprain";
 
-type Config = { whitelisted: boolean; imageUrl: string | null } | null;
+type Config = { whitelisted: boolean; imageUrl: string | null; appStackId: string | null } | null;
 
 export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config }) {
-  const [pending, start]          = useTransition();
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(false);
+  const [pending, start]               = useTransition();
+  const [uploading, setUploading]      = useState(false);
+  const [uploadError, setUploadError]  = useState(false);
   const [localImageUrl, setLocalImageUrl] = useState<string | null>(config?.imageUrl ?? null);
+  const [stackId, setStackId]          = useState<string | null>(config?.appStackId ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const { data: stacks = [] } = api.stack.list.useQuery();
+  const linkStack = api.stack.linkToOffer.useMutation({
+    onSuccess: (data) => setStackId(data.appStackId),
+  });
 
   const whitelisted = config?.whitelisted ?? false;
   const imageUrl    = localImageUrl ?? offer.image_url;
@@ -137,6 +144,33 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           </div>
         </div>
       </div>
+
+      {/* Stack selector */}
+      {stacks.length > 0 && (
+        <div className="flex items-center gap-1 shrink-0">
+          <Layers className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />
+          <select
+            value={stackId ?? ""}
+            onChange={(e) => {
+              const val = e.target.value || null;
+              setStackId(val);
+              linkStack.mutate({ offerId: offer.id, offerName: offer.name, appStackId: val });
+            }}
+            className="rounded-md px-2 py-1 text-xs outline-none"
+            style={{
+              background: "var(--color-surface-raised)",
+              border:     "1px solid var(--color-border)",
+              color:      stackId ? "var(--color-foreground)" : "var(--color-subtle)",
+              maxWidth:   120,
+            }}
+          >
+            <option value="">Sin stack</option>
+            {stacks.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Whitelist toggle */}
       <button

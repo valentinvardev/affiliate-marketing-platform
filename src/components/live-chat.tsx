@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Headphones } from "lucide-react";
+import { X, Send, MessageCircle } from "lucide-react";
 
-type Msg = { from: "support" | "user"; text: string; ts: string };
+type Msg = { from: "team" | "user"; text: string; ts: string };
 
 const INITIAL: Msg[] = [
   {
-    from: "support",
-    text: "¡Hola! 👋 Soy del equipo de TapSur. ¿En qué te puedo ayudar hoy?",
+    from: "team",
+    text: "¡Bienvenido al canal de TapSur! Escribinos cualquier cosa.",
     ts: now(),
   },
 ];
@@ -48,8 +48,8 @@ export function LiveChatProvider() {
       setMsgs((m) => [
         ...m,
         {
-          from: "support",
-          text: "Gracias por tu mensaje. Un agente de soporte lo revisará pronto. Mientras tanto, podés revisar la documentación en el panel.",
+          from: "team",
+          text: "Gracias por tu mensaje. El equipo de TapSur lo va a ver pronto.",
           ts: now(),
         },
       ]);
@@ -100,27 +100,14 @@ export function LiveChatProvider() {
               position:       "relative",
             }}
           >
-            <Headphones style={{ width: 16, height: 16, color: "var(--color-muted-foreground)" }} />
-            {/* Online dot */}
-            <span
-              style={{
-                position:  "absolute",
-                bottom:    1,
-                right:     1,
-                width:     8,
-                height:    8,
-                borderRadius: "50%",
-                background: "var(--color-success)",
-                border:    "1.5px solid var(--color-surface-raised)",
-              }}
-            />
+            <MessageCircle style={{ width: 16, height: 16, color: "var(--color-muted-foreground)" }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-foreground)" }}>
-              Soporte TapSur
+              TapSur
             </p>
-            <p style={{ fontSize: 11, color: "var(--color-success)" }}>
-              En línea
+            <p style={{ fontSize: 11, color: "var(--color-subtle)" }}>
+              Canal general
             </p>
           </div>
           <button

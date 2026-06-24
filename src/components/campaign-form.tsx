@@ -570,10 +570,12 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
   const { data: colorPresets = [] } = api.preset.colorList.useQuery();
   const { data: logoPresets = [] }  = api.preset.logoList.useQuery();
+  const { data: stacks = [] }       = api.stack.list.useQuery();
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
-  const [savingUrl, setSavingUrl] = useState(false);
-  const [saveName, setSaveName] = useState("");
+  const [savingUrl, setSavingUrl]   = useState(false);
+  const [saveName, setSaveName]     = useState("");
   const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [pendingStackId, setPendingStackId] = useState<string | null>(null);
 
   const [values, setValues] = useState<FormValues>({
     name:          campaign?.name          ?? "",
@@ -591,13 +593,26 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
 
+  const applyStack = api.stack.applyToCampaign.useMutation();
+
   const create = api.campaign.create.useMutation({
-    onSuccess: (c) => {
+    onSuccess: async (c) => {
+      if (pendingStackId) {
+        await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id });
+      }
       setCreated(true);
       setTimeout(() => router.push(`/campaigns/${c.id}`), 1600);
     },
   });
-  const update = api.campaign.update.useMutation({ onSuccess: () => router.refresh() });
+  const update = api.campaign.update.useMutation({
+    onSuccess: async (c) => {
+      if (pendingStackId) {
+        await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id });
+        setPendingStackId(null);
+      }
+      router.refresh();
+    },
+  });
 
   function set<K extends keyof FormValues>(key: K, val: FormValues[K]) {
     setValues((p) => ({ ...p, [key]: val }));
@@ -661,7 +676,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     });
   }
 
-  const isSaving = pending || create.isPending || update.isPending;
+  const isSaving = pending || create.isPending || update.isPending || applyStack.isPending;
   const error = create.error?.message ?? update.error?.message;
 
   return (
@@ -1085,6 +1100,52 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
             </p>
           </div>
         </Section>
+
+        <Divider />
+
+        {/* ── Aplicaciones (Stack) ── */}
+        {stacks.length > 0 && (
+          <Section title="Aplicaciones">
+            <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
+              Elegí un stack de aplicaciones para mostrar en la landing. Se aplicará al guardar.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {stacks.map((s) => {
+                const active = pendingStackId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setPendingStackId(active ? null : s.id)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
+                    style={{
+                      border:     `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
+                      background: active ? "var(--color-surface-overlay)" : "transparent",
+                      color:      active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                    }}
+                  >
+                    <span className="font-medium">{s.name}</span>
+                    <span style={{ color: "var(--color-subtle)" }}>{s.items.length} apps</span>
+                    {active && <Check className="h-3 w-3 shrink-0" style={{ color: "var(--color-foreground)" }} />}
+                  </button>
+                );
+              })}
+            </div>
+            {pendingStackId && (
+              <div className="flex flex-wrap gap-1.5">
+                {stacks.find(s => s.id === pendingStackId)?.items.map((item) => (
+                  <span
+                    key={item.id}
+                    className="rounded-md px-2 py-1 text-[11px]"
+                    style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+                  >
+                    {item.name} · ${item.amount}
+                  </span>
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
 
         <Divider />
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 
@@ -13,6 +13,7 @@ const NAV_BASE = [
   { href: "/offers",        icon: Package,    label: "Offers" },
   { href: "/stats",         icon: BarChart2,  label: "Stats" },
   { href: "/leaderboard",  icon: Trophy,     label: "Leaderboard" },
+  { href: "/wallet",       icon: Wallet,     label: "Wallet" },
 ];
 
 export function Sidebar() {

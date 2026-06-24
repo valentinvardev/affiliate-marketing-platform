@@ -5,7 +5,7 @@ import { Search, X } from "lucide-react";
 import { OfferConfigRow } from "./offer-config-row";
 import type { Offer } from "@/lib/taprain";
 
-type Config = { offerId: string; whitelisted: boolean; imageUrl: string | null };
+type Config = { offerId: string; whitelisted: boolean; imageUrl: string | null; appStackId: string | null };
 
 export function AdminOffersTab({
   offers,
