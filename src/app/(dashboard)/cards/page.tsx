@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   CreditCard, Plus, Loader2, RefreshCw, Eye, EyeOff, ArrowUpCircle,
-  AlertTriangle, Link as LinkIcon, X, Check, Copy,
+  AlertTriangle, Link as LinkIcon, X, Check, Copy, Plug,
 } from "lucide-react";
+import { api } from "@/trpc/react";
 
 /* Shape defensivo — la respuesta real de /api/suite/vcc puede variar */
 type VCC = {
@@ -89,11 +90,16 @@ export default function CardsPage() {
   const [form, setForm] = useState({ name: "", limit: "", bin: "", campaign: "" });
   const [submitting, setSubmitting] = useState(false);
 
+  // Conexión de sesión (cookie guardada en DB)
+  const [cookieInput, setCookieInput] = useState("");
+  const utils = api.useUtils();
+  const setCookie = api.config.setSuiteCookie.useMutation();
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     const { ok, status, data } = await suite("vcc");
-    if (status === 503) { setConnected(false); setLoading(false); return; }
+    if (status === 503 || status === 401 || status === 403) { setConnected(false); setLoading(false); return; }
     setConnected(true);
     if (!ok) { setError((data.message as string) ?? `Error ${status}`); setLoading(false); return; }
     const list = Array.isArray(data) ? data : (data.cards as VCC[]) ?? (data.vccs as VCC[]) ?? [];
@@ -142,6 +148,15 @@ export default function CardsPage() {
     void load();
   }
 
+  async function connect(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cookieInput.trim()) return;
+    await setCookie.mutateAsync({ value: cookieInput.trim() });
+    await utils.config.suiteStatus.invalidate();
+    setCookieInput("");
+    void load();
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <header
@@ -154,6 +169,15 @@ export default function CardsPage() {
         </div>
         {connected && (
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setConnected(false)}
+              className="hidden text-[11px] transition-opacity hover:opacity-70 sm:inline"
+              style={{ color: "var(--color-subtle)" }}
+              title="Actualizar cookie de sesión"
+            >
+              Reconectar
+            </button>
             <button
               type="button"
               onClick={load}
@@ -185,17 +209,44 @@ export default function CardsPage() {
             </div>
           )}
 
-          {/* Not connected */}
+          {/* Not connected → pegar cookie de sesión */}
           {!loading && !connected && (
-            <div className="mx-auto max-w-md text-center">
+            <div className="mx-auto max-w-md">
               <div className="mx-auto max-w-xs">
                 <CardVisual />
               </div>
-              <h2 className="mt-6 text-lg font-bold" style={{ color: "var(--color-foreground)" }}>Conectá tu suite de TapRain</h2>
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
-                Las tarjetas virtuales viven en la Ads Suite de TapRain.
-                Configurá <code className="font-mono">TAPRAIN_API_KEY</code> en el servidor para activarlas.
+              <h2 className="mt-6 text-center text-lg font-bold" style={{ color: "var(--color-foreground)" }}>Conectá tu sesión de TapRain</h2>
+              <p className="mt-2 text-center text-sm leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
+                La Ads Suite usa sesión (no API key). Pegá la cookie de sesión de tu cuenta de TapRain.
               </p>
+              <form onSubmit={connect} className="mt-5">
+                <textarea
+                  value={cookieInput}
+                  onChange={(e) => setCookieInput(e.target.value)}
+                  rows={3}
+                  placeholder="cookie de sesión (DevTools → Application → Cookies)…"
+                  className="w-full resize-none rounded-md px-3 py-2 text-xs outline-none"
+                  style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }}
+                />
+                <button
+                  type="submit"
+                  disabled={!cookieInput.trim() || setCookie.isPending}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md py-2.5 text-sm font-semibold disabled:opacity-40"
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+                >
+                  {setCookie.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plug className="h-3.5 w-3.5" />}
+                  Conectar
+                </button>
+              </form>
+              <details className="mt-4 text-xs" style={{ color: "var(--color-subtle)" }}>
+                <summary className="cursor-pointer select-none">¿Cómo obtengo la cookie?</summary>
+                <ol className="mt-2 list-decimal space-y-1 pl-4 leading-relaxed">
+                  <li>Logueate en taprain.com en el navegador.</li>
+                  <li>DevTools (F12) → pestaña <span className="font-mono">Application</span> → <span className="font-mono">Cookies</span> → taprain.com.</li>
+                  <li>Copiá el/los valores de sesión como <span className="font-mono">nombre=valor; nombre2=valor2</span>.</li>
+                  <li>Pegalos arriba y Conectar. Si expira, repetí el paso.</li>
+                </ol>
+              </details>
             </div>
           )}
 
