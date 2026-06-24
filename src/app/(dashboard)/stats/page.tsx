@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { fetchStats, type StatsRange } from "@/lib/taprain";
+import { fetchStats, type StatsRange, type StatsRow } from "@/lib/taprain";
 import { DollarSign, Repeat2, MousePointerClick, Zap, AlertTriangle } from "lucide-react";
+import { StatsChart, type ChartPoint } from "./_components/stats-chart";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Stats" };
@@ -12,6 +13,31 @@ const RANGES: { key: StatsRange; label: string }[] = [
   { key: "7days",     label: "7 días" },
   { key: "30days",    label: "30 días" },
 ];
+
+/* Try to extract a time-series from rows regardless of exact key names */
+function extractChartData(rows: StatsRow[]): ChartPoint[] {
+  if (!rows.length) return [];
+  const first = rows[0]!;
+  const keys = Object.keys(first);
+
+  const labelKey = keys.find((k) =>
+    /date|time|hour|day|period|label/i.test(k),
+  );
+  const revenueKey = keys.find((k) =>
+    /revenue|payout|earning|amount/i.test(k),
+  );
+  const convKey = keys.find((k) =>
+    /conversion|conv|count/i.test(k),
+  );
+
+  if (!revenueKey) return [];
+
+  return rows.map((row) => ({
+    label: labelKey ? String(row[labelKey] ?? "") : "",
+    revenue: Number(row[revenueKey] ?? 0),
+    conversions: convKey && row[convKey] != null ? Number(row[convKey]) : undefined,
+  }));
+}
 
 export default async function StatsPage({
   searchParams,
@@ -32,8 +58,9 @@ export default async function StatsPage({
 
   const summary = data?.summary;
   const rows = data?.rows ?? [];
+  const chartData = extractChartData(rows);
 
-  // Detect which breakdown columns exist in rows
+  // Detect extra table columns
   const rowKeys = rows.length > 0 ? Object.keys(rows[0]!) : [];
 
   return (
@@ -53,7 +80,10 @@ export default async function StatsPage({
 
       <main className="flex-1 px-8 py-6 space-y-6">
         {/* Range tabs */}
-        <nav className="flex gap-1 rounded-xl p-1 w-fit" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
+        <nav
+          className="flex gap-1 rounded-xl p-1 w-fit"
+          style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
+        >
           {RANGES.map(({ key, label }) => (
             <Link
               key={key}
@@ -69,7 +99,7 @@ export default async function StatsPage({
           ))}
         </nav>
 
-        {/* Error state */}
+        {/* Error */}
         {apiError && (
           <div
             className="flex items-start gap-3 rounded-xl p-4"
@@ -80,7 +110,7 @@ export default async function StatsPage({
               <p className="text-sm font-medium" style={{ color: "var(--color-warning)" }}>
                 No se pudo cargar los stats
               </p>
-              <p className="mt-0.5 text-xs font-mono" style={{ color: "var(--color-muted-foreground)" }}>
+              <p className="mt-0.5 font-mono text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                 {apiError}
               </p>
             </div>
@@ -89,24 +119,9 @@ export default async function StatsPage({
 
         {/* Metric cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <MetricCard
-            icon={DollarSign}
-            label="Revenue"
-            value={summary ? fmt.usd(summary.revenue) : "—"}
-            loaded={!!data}
-          />
-          <MetricCard
-            icon={Repeat2}
-            label="Conversiones"
-            value={summary?.conversions != null ? fmt.int(summary.conversions) : "—"}
-            loaded={!!data}
-          />
-          <MetricCard
-            icon={MousePointerClick}
-            label="Clicks"
-            value={summary?.clicks != null ? fmt.int(summary.clicks) : "—"}
-            loaded={!!data}
-          />
+          <MetricCard icon={DollarSign}        label="Revenue"       value={summary ? fmt.usd(summary.revenue) : "—"} loaded={!!data} />
+          <MetricCard icon={Repeat2}           label="Conversiones"  value={summary?.conversions != null ? fmt.int(summary.conversions) : "—"} loaded={!!data} />
+          <MetricCard icon={MousePointerClick} label="Clicks"        value={summary?.clicks != null ? fmt.int(summary.clicks) : "—"} loaded={!!data} />
           <MetricCard
             icon={Zap}
             label="EPC"
@@ -120,6 +135,11 @@ export default async function StatsPage({
             loaded={!!data}
           />
         </div>
+
+        {/* Chart */}
+        {!apiError && (
+          <StatsChart data={chartData} label={`Revenue — ${RANGES.find((r) => r.key === range)?.label}`} />
+        )}
 
         {/* Breakdown table */}
         {rows.length > 0 && rowKeys.length > 0 && (
@@ -136,7 +156,6 @@ export default async function StatsPage({
               </p>
             </div>
             <div style={{ background: "var(--color-surface)" }}>
-              {/* Head */}
               <div
                 className="grid px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider"
                 style={{
@@ -145,11 +164,8 @@ export default async function StatsPage({
                   gridTemplateColumns: `repeat(${rowKeys.length}, 1fr)`,
                 }}
               >
-                {rowKeys.map((k) => (
-                  <span key={k}>{k}</span>
-                ))}
+                {rowKeys.map((k) => <span key={k}>{k}</span>)}
               </div>
-              {/* Rows */}
               {rows.map((row, i) => (
                 <div
                   key={i}
@@ -162,11 +178,10 @@ export default async function StatsPage({
                 >
                   {rowKeys.map((k) => {
                     const val = row[k];
-                    const isNum = typeof val === "number";
-                    const isRev = k.toLowerCase().includes("revenue") || k.toLowerCase().includes("payout");
+                    const isRev = /revenue|payout|earning/i.test(k);
                     return (
-                      <span key={k} style={{ color: isNum && isRev ? "var(--color-foreground)" : undefined }}>
-                        {val == null ? "—" : isNum && isRev ? fmt.usd(val) : String(val)}
+                      <span key={k} style={{ color: isRev ? "var(--color-foreground)" : undefined }}>
+                        {val == null ? "—" : isRev && typeof val === "number" ? fmt.usd(val) : String(val)}
                       </span>
                     );
                   })}
@@ -176,7 +191,7 @@ export default async function StatsPage({
           </div>
         )}
 
-        {/* Raw data inspector (dev helper — only shown when rows are empty but we have summary) */}
+        {/* Raw response (dev helper when no breakdown rows) */}
         {data && rows.length === 0 && (
           <details className="text-xs" style={{ color: "var(--color-subtle)" }}>
             <summary className="cursor-pointer select-none">Raw API response</summary>
@@ -226,13 +241,8 @@ function MetricCard({
   );
 }
 
-/* ── Formatters ── */
 const fmt = {
   usd: (n: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-    }).format(n),
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n),
   int: (n: number) => new Intl.NumberFormat("en-US").format(n),
 };
