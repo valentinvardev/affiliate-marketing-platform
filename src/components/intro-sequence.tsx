@@ -9,10 +9,11 @@ const SLIDES = [
   "/intro/intro3.png",
   "/intro/intro4.jpg",
 ];
-const SLIDE_MS    = 4200;   // duración de cada diapositiva
-const CYCLES      = 2;      // todas las diapositivas + 1 repetición
+const SLIDE_MS    = 3600;   // duración de cada diapositiva
 const TIP_MS      = 7000;   // rotación de tips
-const MUSIC_SRC   = "/intro/gta-loading.mp3";
+const TOTAL_MS    = 23000;  // duración total de la intro (load → interfaz)
+const FADE_MS     = 5000;   // fade-out de música en los últimos 5s
+const MUSIC_SRC   = "/intro/intro-music.mp3";
 const PRELOAD_MAX = 12000;  // tope de espera de buffering (ms)
 const BAR         = "9vh";  // alto de barras cinematográficas
 
@@ -144,20 +145,12 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
     return () => clearTimeout(safety);
   }, []);
 
-  /* ── Slideshow driver — corre todas las slides × CYCLES, luego → welcome ── */
+  /* ── Slideshow loop + paso a welcome a los (TOTAL − FADE) ── */
   useEffect(() => {
     if (phase !== "loading") return;
-    const total = SLIDES.length * CYCLES;
-    let count = 1;
-    const t = setInterval(() => {
-      count += 1;
-      setIdx((i) => (i + 1) % SLIDES.length);
-      if (count >= total) {
-        clearInterval(t);
-        setTimeout(() => setPhase("welcome"), SLIDE_MS);
-      }
-    }, SLIDE_MS);
-    return () => clearInterval(t);
+    const slide = setInterval(() => setIdx((i) => (i + 1) % SLIDES.length), SLIDE_MS);
+    const toWelcome = setTimeout(() => setPhase("welcome"), TOTAL_MS - FADE_MS);
+    return () => { clearInterval(slide); clearTimeout(toWelcome); };
   }, [phase]);
 
   /* ── Rotación de tips ── */
@@ -167,19 +160,22 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
     return () => clearInterval(t);
   }, [phase]);
 
-  /* ── Welcome → fade out música, luego completar ── */
+  /* ── Welcome → fade out música durante FADE_MS, luego completar ── */
   useEffect(() => {
     if (phase !== "welcome") return;
     const a = audioRef.current;
-    let v = a?.volume ?? 0;
-    const fade = setInterval(() => {
-      if (!a) return clearInterval(fade);
-      v = Math.max(0, v - 0.05);
-      a.volume = v;
-      if (v <= 0) { a.pause(); clearInterval(fade); }
-    }, 90);
-    const done = setTimeout(onComplete, 2800);
-    return () => { clearInterval(fade); clearTimeout(done); };
+    const startVol = a?.volume ?? 0;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / FADE_MS);
+      if (a) a.volume = startVol * (1 - p);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else if (a) a.pause();
+    };
+    raf = requestAnimationFrame(tick);
+    const done = setTimeout(onComplete, FADE_MS);
+    return () => { cancelAnimationFrame(raf); clearTimeout(done); };
   }, [phase, onComplete]);
 
   return (
