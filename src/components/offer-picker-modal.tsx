@@ -114,8 +114,8 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
 
   if (!open) return null;
 
-  const hasTracking = !!selected?.tracking_url;
-  const finalUrl = selected && hasTracking ? buildUrl(selected.tracking_url, domain, s1, s2) : "";
+  const finalUrl = selected ? buildUrl(selected.tracking_url ?? "", domain, s1, s2) : "";
+  const hasTracking = !!finalUrl;
 
   return (
     <div
