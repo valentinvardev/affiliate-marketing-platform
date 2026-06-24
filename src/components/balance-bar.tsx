@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Bell, Eye, EyeOff, MessageCircle, DollarSign } from "lucide-react";
 
 type BalanceData = {
   today:     { revenue: number; conversions: number };
@@ -12,9 +12,14 @@ const fmt = new Intl.NumberFormat("en-US", {
   style: "currency", currency: "USD", minimumFractionDigits: 2,
 });
 
+const HIDE_KEY = "aff_hide_balance";
+
 export function BalanceBar() {
   const [data, setData]       = useState<BalanceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hidden, setHidden]   = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   async function load() {
     try {
@@ -31,104 +36,132 @@ export function BalanceBar() {
     return () => clearInterval(t);
   }, []);
 
-  const diff    = data ? data.today.revenue - data.yesterday.revenue : 0;
-  const ahead   = diff >= 0;
-  const noData  = !data || (data.today.revenue === 0 && data.yesterday.revenue === 0);
+  useEffect(() => {
+    try { setHidden(localStorage.getItem(HIDE_KEY) === "1"); } catch {}
+  }, []);
+
+  useEffect(() => {
+    function onMouse(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    }
+    if (notifOpen) document.addEventListener("mousedown", onMouse);
+    return () => document.removeEventListener("mousedown", onMouse);
+  }, [notifOpen]);
+
+  function toggleHidden() {
+    setHidden((h) => {
+      const next = !h;
+      try { localStorage.setItem(HIDE_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }
+
+  const balance = data?.today.revenue ?? 0;
 
   return (
     <div
-      className="flex shrink-0 items-center gap-6 px-8"
+      className="flex shrink-0 items-center gap-2.5 px-6"
       style={{
-        height:       42,
+        height:       56,
         borderBottom: "1px solid var(--color-border)",
         background:   "var(--color-surface)",
       }}
     >
       <div className="flex-1" />
-      {loading ? (
-        <span className="text-xs" style={{ color: "var(--color-subtle)" }}>
-          Cargando balance…
-        </span>
-      ) : (
-        <>
-          {/* Yesterday */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>
-              Ayer
-            </span>
-            <span
-              className="text-xs font-medium tabular-nums"
-              style={{ color: "var(--color-muted-foreground)" }}
-            >
-              {fmt.format(data?.yesterday.revenue ?? 0)}
-            </span>
-            <span
-              className="text-[10px]"
-              style={{ color: "var(--color-subtle)" }}
-            >
-              · {data?.yesterday.conversions ?? 0} conv
-            </span>
-          </div>
 
-          <div style={{ width: 1, height: 16, background: "var(--color-border)" }} />
+      {/* Notifications */}
+      <div ref={notifRef} className="relative">
+        <button
+          type="button"
+          title="Notificaciones"
+          onClick={() => setNotifOpen((o) => !o)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+          style={{
+            background: notifOpen ? "var(--color-surface-overlay)" : "var(--color-surface-raised)",
+            border:     "1px solid var(--color-border)",
+            color:      "var(--color-muted-foreground)",
+          }}
+        >
+          <Bell className="h-4 w-4" />
+        </button>
 
-          {/* Today */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>
-              Hoy
-            </span>
-            <span
-              className="text-xs font-semibold tabular-nums"
-              style={{ color: "var(--color-foreground)" }}
-            >
-              {fmt.format(data?.today.revenue ?? 0)}
-            </span>
-            <span
-              className="text-[10px]"
-              style={{ color: "var(--color-subtle)" }}
-            >
-              · {data?.today.conversions ?? 0} conv
-            </span>
-          </div>
-
-          {/* Diff badge */}
-          {!noData && (
+        {/* Popover */}
+        {notifOpen && (
+          <div
+            className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl"
+            style={{
+              background: "var(--color-surface-raised)",
+              border:     "1px solid var(--color-border)",
+              boxShadow:  "0 12px 40px rgba(0,0,0,0.6)",
+            }}
+          >
             <div
-              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums"
-              style={{
-                background: ahead
-                  ? "var(--color-success-bg)"
-                  : "var(--color-error-bg)",
-                color: ahead ? "var(--color-success)" : "var(--color-error)",
-              }}
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: "1px solid var(--color-border)" }}
             >
-              {diff === 0
-                ? <Minus className="h-3 w-3" />
-                : ahead
-                  ? <TrendingUp className="h-3 w-3" />
-                  : <TrendingDown className="h-3 w-3" />
-              }
-              {diff >= 0 ? "+" : ""}{fmt.format(diff)} vs ayer
+              <span className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+                Notificaciones
+              </span>
             </div>
-          )}
-        </>
-      )}
+            <div className="px-4 py-8 text-center">
+              <Bell className="mx-auto mb-2 h-5 w-5" style={{ color: "var(--color-subtle)" }} />
+              <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
+                Sin notificaciones nuevas.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
-      {/* Chat button */}
-      <div style={{ width: 1, height: 16, background: "var(--color-border)", flexShrink: 0 }} />
+      {/* Wallet */}
+      <div
+        className="flex items-center gap-2 rounded-xl px-3"
+        style={{
+          height:     36,
+          background: "var(--color-surface-raised)",
+          border:     "1px solid rgba(74,222,128,0.35)",
+          boxShadow:  "0 0 0 1px rgba(74,222,128,0.06), 0 0 16px rgba(74,222,128,0.12)",
+        }}
+      >
+        <span
+          className="flex h-5 w-5 items-center justify-center rounded-full"
+          style={{ background: "rgba(74,222,128,0.15)" }}
+        >
+          <DollarSign className="h-3 w-3" style={{ color: "#4ade80" }} />
+        </span>
+        <span className="text-sm font-bold tabular-nums" style={{ color: "#4ade80" }}>
+          {loading ? "—" : hidden ? "••••••" : fmt.format(balance)}
+        </span>
+        <button
+          type="button"
+          title={hidden ? "Mostrar balance" : "Ocultar balance"}
+          onClick={toggleHidden}
+          className="flex items-center transition-opacity hover:opacity-70"
+          style={{ color: "var(--color-subtle)" }}
+        >
+          {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+
+      {/* Live Chat */}
       <button
         type="button"
         title="Chat en vivo"
         onClick={() => window.dispatchEvent(new CustomEvent("chat:open"))}
-        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-opacity hover:opacity-70"
+        className="flex items-center gap-2 rounded-xl px-3 transition-colors"
         style={{
-          background: "var(--color-surface-overlay)",
+          height:     36,
+          background: "var(--color-surface-raised)",
           border:     "1px solid var(--color-border)",
-          color:      "var(--color-muted-foreground)",
+          color:      "var(--color-foreground)",
         }}
       >
-        <MessageCircle className="h-3.5 w-3.5" />
-        Chat
+        <MessageCircle className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
+        <span className="text-sm font-medium">Live Chat</span>
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: "#4ade80", boxShadow: "0 0 6px rgba(74,222,128,0.8)" }}
+        />
       </button>
     </div>
   );
