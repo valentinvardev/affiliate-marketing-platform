@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, X, ExternalLink, Check, Loader2, ChevronDown, Monitor, Smartphone, Tablet } from "lucide-react";
+import { Search, X, ExternalLink, Check, Loader2, ChevronDown, Monitor, Smartphone, Tablet, AlertTriangle } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 import type { Offer, OffersResponse } from "@/lib/taprain";
 
@@ -114,7 +114,8 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
 
   if (!open) return null;
 
-  const finalUrl = selected ? buildUrl(selected.tracking_url, domain, s1, s2) : "";
+  const hasTracking = !!selected?.tracking_url;
+  const finalUrl = selected && hasTracking ? buildUrl(selected.tracking_url, domain, s1, s2) : "";
 
   return (
     <div
@@ -296,83 +297,106 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
                 )}
               </div>
 
-              {/* SubID config */}
-              <div className="space-y-3">
-                <ConfigField label="s1 — Campaña" hint="Identifica desde qué campaña viene el tráfico">
-                  <input
-                    value={s1}
-                    onChange={(e) => setS1(e.target.value)}
-                    placeholder="ej: my-campaign-slug"
-                    className="w-full rounded-md px-3 py-1.5 text-xs outline-none"
-                    style={{
-                      background: "var(--color-surface-overlay)",
-                      border: "1px solid var(--color-border)",
-                      color: "var(--color-foreground)",
-                    }}
-                  />
-                </ConfigField>
-
-                <ConfigField label="s2 — Opcional">
-                  <input
-                    value={s2}
-                    onChange={(e) => setS2(e.target.value)}
-                    placeholder="placement, variante…"
-                    className="w-full rounded-md px-3 py-1.5 text-xs outline-none"
-                    style={{
-                      background: "var(--color-surface-overlay)",
-                      border: "1px solid var(--color-border)",
-                      color: "var(--color-foreground)",
-                    }}
-                  />
-                </ConfigField>
-
-                <ConfigField label="Dominio de tracking">
-                  <div className="flex gap-1.5">
-                    {DOMAINS.map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => setDomain(d)}
-                        className="flex-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors"
-                        style={{
-                          background: domain === d ? "var(--color-foreground)" : "var(--color-surface-overlay)",
-                          color:      domain === d ? "var(--color-background)" : "var(--color-muted-foreground)",
-                          border:     domain === d ? "none" : "1px solid var(--color-border)",
-                        }}
-                      >
-                        {d.split(".")[0]}
-                      </button>
-                    ))}
-                  </div>
-                </ConfigField>
-              </div>
-
-              {/* URL preview */}
-              <div>
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
-                  URL generada
-                </p>
+              {!hasTracking ? (
+                /* ── No tracking URL — show alert only ── */
                 <div
-                  className="break-all rounded-md p-3 font-mono text-[10px]"
+                  className="flex flex-col items-center gap-3 rounded-xl px-4 py-6 text-center"
                   style={{
-                    background: "var(--color-surface-overlay)",
-                    border: "1px solid var(--color-border)",
-                    color: "var(--color-muted-foreground)",
+                    background: "rgba(239,68,68,0.06)",
+                    border: "1px solid rgba(239,68,68,0.2)",
                   }}
                 >
-                  {finalUrl}
+                  <AlertTriangle className="h-8 w-8" style={{ color: "var(--color-error)" }} />
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+                      Oferta no habilitada
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
+                      Esta oferta no tiene URL de tracking disponible en tu cuenta. Contactá a TapRain para activarla.
+                    </p>
+                  </div>
                 </div>
-                <a
-                  href={finalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1.5 flex items-center gap-1 text-[11px]"
-                  style={{ color: "var(--color-subtle)" }}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Probar link
-                </a>
-              </div>
+              ) : (
+                <>
+                  {/* SubID config */}
+                  <div className="space-y-3">
+                    <ConfigField label="s1 — Campaña" hint="Identifica desde qué campaña viene el tráfico">
+                      <input
+                        value={s1}
+                        onChange={(e) => setS1(e.target.value)}
+                        placeholder="ej: my-campaign-slug"
+                        className="w-full rounded-md px-3 py-1.5 text-xs outline-none"
+                        style={{
+                          background: "var(--color-surface-overlay)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-foreground)",
+                        }}
+                      />
+                    </ConfigField>
+
+                    <ConfigField label="s2 — Opcional">
+                      <input
+                        value={s2}
+                        onChange={(e) => setS2(e.target.value)}
+                        placeholder="placement, variante…"
+                        className="w-full rounded-md px-3 py-1.5 text-xs outline-none"
+                        style={{
+                          background: "var(--color-surface-overlay)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-foreground)",
+                        }}
+                      />
+                    </ConfigField>
+
+                    <ConfigField label="Dominio de tracking">
+                      <div className="flex gap-1.5">
+                        {DOMAINS.map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setDomain(d)}
+                            className="flex-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors"
+                            style={{
+                              background: domain === d ? "var(--color-foreground)" : "var(--color-surface-overlay)",
+                              color:      domain === d ? "var(--color-background)" : "var(--color-muted-foreground)",
+                              border:     domain === d ? "none" : "1px solid var(--color-border)",
+                            }}
+                          >
+                            {d.split(".")[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </ConfigField>
+                  </div>
+
+                  {/* URL preview */}
+                  <div>
+                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
+                      URL generada
+                    </p>
+                    <div
+                      className="break-all rounded-md p-3 font-mono text-[10px]"
+                      style={{
+                        background: "var(--color-surface-overlay)",
+                        border: "1px solid var(--color-border)",
+                        color: "var(--color-muted-foreground)",
+                      }}
+                    >
+                      {finalUrl}
+                    </div>
+                    <a
+                      href={finalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1.5 flex items-center gap-1 text-[11px]"
+                      style={{ color: "var(--color-subtle)" }}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Probar link
+                    </a>
+                  </div>
+                </>
+              )}
 
               {/* Actions */}
               <div className="mt-auto flex gap-2 pt-2">
@@ -387,8 +411,14 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
                 <button
                   type="button"
                   onClick={() => onSelect(finalUrl)}
+                  disabled={!hasTracking}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold"
-                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+                  style={{
+                    background: hasTracking ? "var(--color-foreground)" : "var(--color-surface-overlay)",
+                    color: hasTracking ? "var(--color-background)" : "var(--color-subtle)",
+                    cursor: hasTracking ? "pointer" : "not-allowed",
+                    border: hasTracking ? "none" : "1px solid var(--color-border)",
+                  }}
                 >
                   <Check className="h-3.5 w-3.5" />
                   Usar este link
