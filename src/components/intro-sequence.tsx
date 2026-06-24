@@ -20,8 +20,8 @@ const BAR         = "9vh";  // alto de barras cinematográficas
 
 /* Fuente gangster estilo GTA (pantalla de carga) */
 const GANGSTER = "'Pricedown', 'Arial Black', Impact, sans-serif";
-/* Fuente de títulos (pantalla de bienvenida) */
-const TITLE = "'Space Grotesk', system-ui, sans-serif";
+/* Fuente de títulos (pantalla de bienvenida) — Satoshi, fallback Poppins */
+const TITLE = "'Satoshi', 'Poppins', system-ui, sans-serif";
 
 /* ─── Tips de TikTok Ads ─── */
 const TIPS = [
@@ -204,9 +204,10 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
       <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/pricedown" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" />
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
       />
 
       {/* ─── PRELOAD PHASE ─── */}
