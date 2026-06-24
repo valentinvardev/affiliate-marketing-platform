@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Loader2, Monitor, Smartphone, Copy, Check, ExternalLink, ChevronDown } from "lucide-react";
+import { Search, Loader2, Monitor, Smartphone, Copy, Check, ExternalLink, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 import type { Offer, OffersResponse } from "@/lib/taprain";
 
@@ -51,11 +51,12 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function SimpleSelect({
-  value, onChange, options,
+  value, onChange, options, fullWidth,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
+  fullWidth?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -70,7 +71,7 @@ function SimpleSelect({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={fullWidth ? "relative w-full" : "relative"}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -79,7 +80,8 @@ function SimpleSelect({
           background: value ? "rgba(167,139,250,0.1)" : "var(--color-surface-overlay)",
           border: `1px solid ${value ? "rgba(167,139,250,0.25)" : "var(--color-border)"}`,
           color: value ? "#a78bfa" : "var(--color-muted-foreground)",
-          minWidth: 140,
+          minWidth: fullWidth ? undefined : 140,
+          width: fullWidth ? "100%" : undefined,
         }}
       >
         <span className="flex-1 text-left">{current.label}</span>
@@ -124,7 +126,10 @@ export default function OffersPage() {
   const [search, setSearch]   = useState("");
   const [type, setType]       = useState("");
   const [device, setDevice]   = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeFilters = (type ? 1 : 0) + (device ? 1 : 0);
 
   const load = useCallback(async (q: string, tp: string, dv: string) => {
     setLoading(true);
@@ -157,7 +162,7 @@ export default function OffersPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <header
-        className="flex h-14 shrink-0 items-center gap-3 px-8"
+        className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Offers</h1>
@@ -172,7 +177,7 @@ export default function OffersPage() {
       </header>
 
       <div
-        className="flex shrink-0 items-center gap-3 px-8 py-3"
+        className="flex shrink-0 items-center gap-2 px-4 py-3 md:gap-3 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface)" }}
       >
         <div
@@ -189,11 +194,92 @@ export default function OffersPage() {
           />
           {loading && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" style={{ color: "var(--color-subtle)" }} />}
         </div>
-        <SimpleSelect value={type}   onChange={setType}   options={TYPE_OPTIONS} />
-        <SimpleSelect value={device} onChange={setDevice} options={DEVICE_OPTIONS} />
+
+        {/* Filtros inline (desktop) */}
+        <div className="hidden items-center gap-3 md:flex">
+          <SimpleSelect value={type}   onChange={setType}   options={TYPE_OPTIONS} />
+          <SimpleSelect value={device} onChange={setDevice} options={DEVICE_OPTIONS} />
+        </div>
+
+        {/* Botón filtros (móvil) */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          className="relative flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs md:hidden"
+          style={{
+            background: activeFilters ? "rgba(167,139,250,0.1)" : "var(--color-surface-overlay)",
+            border: `1px solid ${activeFilters ? "rgba(167,139,250,0.25)" : "var(--color-border)"}`,
+            color: activeFilters ? "#a78bfa" : "var(--color-muted-foreground)",
+          }}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filtros
+          {activeFilters > 0 && (
+            <span
+              className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+              style={{ background: "#a78bfa", color: "#000" }}
+            >
+              {activeFilters}
+            </span>
+          )}
+        </button>
       </div>
 
-      <main className="flex-1 px-8 py-6">
+      {/* Modal de filtros (móvil) */}
+      {filtersOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center md:hidden"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={() => setFiltersOpen(false)}
+        >
+          <div
+            className="w-full rounded-t-2xl p-5"
+            style={{ background: "var(--color-surface-raised)", borderTop: "1px solid var(--color-border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Filtros</p>
+              <button type="button" onClick={() => setFiltersOpen(false)} style={{ color: "var(--color-subtle)" }}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Tipo</label>
+                <SimpleSelect value={type} onChange={setType} options={TYPE_OPTIONS} fullWidth />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Dispositivo</label>
+                <SimpleSelect value={device} onChange={setDevice} options={DEVICE_OPTIONS} fullWidth />
+              </div>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              {activeFilters > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setType(""); setDevice(""); }}
+                  className="flex-1 rounded-lg py-2.5 text-sm font-medium"
+                  style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+                >
+                  Limpiar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                className="flex-1 rounded-lg py-2.5 text-sm font-medium"
+                style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+              >
+                Ver resultados
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="flex-1 px-4 py-6 md:px-8">
         {error && (
           <p className="text-sm" style={{ color: "var(--color-error)" }}>{error}</p>
         )}

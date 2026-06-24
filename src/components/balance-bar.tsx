@@ -78,7 +78,7 @@ export function BalanceBar() {
         <Menu className="h-4 w-4" />
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.png" alt="TapSur" className="h-6 w-6 shrink-0 rounded md:hidden" />
+      <img src="/logo.png" alt="TapSur" className="h-8 w-8 shrink-0 md:hidden" style={{ mixBlendMode: "screen" }} />
 
       <div className="flex-1" />
 
