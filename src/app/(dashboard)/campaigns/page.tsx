@@ -26,38 +26,24 @@ export default async function CampaignsPage() {
     <div className="flex flex-col min-h-screen">
       {/* Page header */}
       <header
-        className="flex h-14 shrink-0 items-center justify-between px-8"
+        className="flex h-14 shrink-0 items-center px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <div className="flex items-center gap-3">
-          <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
-            Campañas
-          </h1>
-          {!dbError && (
-            <span
-              className="rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
-              style={{
-                background: "var(--color-surface-overlay)",
-                color: "var(--color-muted-foreground)",
-                border: "1px solid var(--color-border)",
-              }}
-            >
-              {campaigns.length}
-            </span>
-          )}
-        </div>
-
-        <Link
-          href="/campaigns/new"
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
-          style={{
-            background: "var(--color-foreground)",
-            color: "var(--color-background)",
-          }}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Nueva campaña
-        </Link>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
+          Campañas
+        </h1>
+        {!dbError && (
+          <span
+            className="ml-2.5 rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
+            style={{
+              background: "var(--color-surface-overlay)",
+              color: "var(--color-muted-foreground)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            {campaigns.length}
+          </span>
+        )}
       </header>
 
       {/* DB warning */}
