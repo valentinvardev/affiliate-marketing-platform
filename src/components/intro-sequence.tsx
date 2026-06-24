@@ -281,10 +281,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
               src="/logo.png"
               alt="TapSur"
               style={{
-                width: isMobile ? 38 : 52,
-                height: isMobile ? 38 : 52,
-                borderRadius: 8,
-                filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))",
+                width: isMobile ? 76 : 104,
+                height: isMobile ? 76 : 104,
+                mixBlendMode: "screen",
               }}
             />
           </div>
@@ -356,9 +355,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             src="/logo.png"
             alt="TapSur"
             style={{
-              width: isMobile ? 56 : 72,
-              height: isMobile ? 56 : 72,
-              borderRadius: 14,
+              width: isMobile ? 112 : 144,
+              height: isMobile ? 112 : 144,
+              mixBlendMode: "screen",
               animation: "introRise 0.9s cubic-bezier(0.16,1,0.3,1)",
             }}
           />
