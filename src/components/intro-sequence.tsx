@@ -9,6 +9,7 @@ const SLIDES = [
   "/intro/intro3.png",
   "/intro/intro4.jpg",
   "/intro/intro5.png",
+  "/intro/intro6.jpg",
 ];
 const SLIDE_MS    = 3600;   // duración de cada diapositiva
 const TIP_MS      = 7000;   // rotación de tips
