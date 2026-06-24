@@ -216,11 +216,9 @@ function CampaignRow({ campaign: c, last }: { campaign: Campaign; last: boolean 
           href={`/landing/${c.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70"
           style={{ color: "var(--color-muted-foreground)" }}
           title="Ver landing"
-          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "var(--color-surface-overlay)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--color-foreground)"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--color-muted-foreground)"; }}
         >
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
