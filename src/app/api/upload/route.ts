@@ -10,26 +10,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "no file" }, { status: 400 });
   }
 
-  // Ensure bucket exists and is public — safe to call even if it already exists
-  const { error: bucketError } = await supabaseAdmin.storage.createBucket(LOGOS_BUCKET, {
-    public: true,
-    allowedMimeTypes: ["image/*"],
-  });
-  if (bucketError && !bucketError.message.includes("already exists")) {
-    console.error("[upload] bucket create error:", bucketError.message);
+  try {
+    // Create bucket if it doesn't exist (no-op if it already exists)
+    await supabaseAdmin.storage.createBucket(LOGOS_BUCKET, {
+      public: true,
+      allowedMimeTypes: ["image/*"],
+    });
+  } catch {
+    // Bucket already exists or creation failed — proceed anyway
   }
 
   const ext = file.name.split(".").pop() ?? "png";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await supabaseAdmin.storage
-    .from(LOGOS_BUCKET)
-    .upload(filename, buffer, { contentType: file.type, upsert: false });
+  try {
+    const { error } = await supabaseAdmin.storage
+      .from(LOGOS_BUCKET)
+      .upload(filename, buffer, { contentType: file.type, upsert: false });
 
-  if (error) {
-    console.error("[upload] Supabase upload error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("[upload] Supabase error:", error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "unknown error";
+    console.error("[upload] exception:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
   const publicUrl = `${env.SUPABASE_URL}/storage/v1/object/public/${LOGOS_BUCKET}/${filename}`;

@@ -618,13 +618,23 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = (await res.json()) as { url?: string };
-    if (data.url) set("logoUrl", data.url);
-    setUploading(false);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        console.error("[logo upload] failed:", res.status);
+        return;
+      }
+      const data = (await res.json()) as { url?: string };
+      if (data.url) set("logoUrl", data.url);
+    } catch (err) {
+      console.error("[logo upload] error:", err);
+    } finally {
+      setUploading(false);
+    }
   }
 
   function copySlugUrl() {
