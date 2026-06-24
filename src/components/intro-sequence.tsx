@@ -11,8 +11,27 @@ const SLIDES = [
 ];
 const SLIDE_MS    = 3000;   // duración de cada diapositiva
 const CYCLES      = 2;      // todas las diapositivas + 1 repetición
+const TIP_MS      = 4200;   // rotación de tips
 const MUSIC_SRC   = "/intro/gta-loading.mp3";
 const PRELOAD_MAX = 12000;  // tope de espera de buffering (ms)
+const BAR         = "9vh";  // alto de barras cinematográficas
+
+/* Fuente gangster estilo GTA */
+const GANGSTER = "'Pricedown', 'Arial Black', Impact, sans-serif";
+
+/* ─── Tips de TikTok Ads ─── */
+const TIPS = [
+  "Los primeros 3 segundos definen si el usuario se queda. Enganchá al instante.",
+  "El contenido tipo UGC (usuario real) convierte más que lo demasiado producido.",
+  "Probá 3 a 5 creativos por campaña y dejá que el algoritmo elija el ganador.",
+  "Usá audios trending de TikTok: el sonido sube el alcance orgánico.",
+  "Mostrá la recompensa ya: «¿Querés ganar dinero jugando?» en el primer frame.",
+  "Verticales 9:16 a pantalla completa. Nada de bordes negros ni reciclar de otras redes.",
+  "Renová el creativo cada 5 a 7 días para evitar la fatiga de anuncio.",
+  "Spark Ads: amplificá publicaciones orgánicas que ya están funcionando.",
+  "CTA claro y directo: «descargá», «probá gratis», «mirá esto».",
+  "Hablá nativo de la plataforma: que el ad no parezca un ad.",
+];
 
 /* ═══════════════════════════════════════════════
    GTA V loading wheel (sweep ring)
@@ -22,11 +41,11 @@ function LoadingWheel({ label = "Cargando" }: { label?: string }) {
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <span
         style={{
-          fontSize: 15,
-          fontWeight: 600,
-          letterSpacing: 0.3,
-          color: "rgba(255,255,255,0.92)",
-          textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+          fontFamily: GANGSTER,
+          fontSize: 20,
+          letterSpacing: 1,
+          color: "rgba(255,255,255,0.95)",
+          textShadow: "0 1px 6px rgba(0,0,0,0.85)",
         }}
       >
         {label}
@@ -53,9 +72,10 @@ function LoadingWheel({ label = "Cargando" }: { label?: string }) {
    Intro sequence: preload → loading slideshow → welcome
 ═══════════════════════════════════════════════ */
 export function IntroSequence({ onComplete }: { onComplete: () => void }) {
-  const [idx, setIdx]     = useState(0);
-  const [phase, setPhase] = useState<"preloading" | "loading" | "welcome">("preloading");
-  const audioRef          = useRef<HTMLAudioElement>(null);
+  const [idx, setIdx]       = useState(0);
+  const [tipIdx, setTipIdx] = useState(0);
+  const [phase, setPhase]   = useState<"preloading" | "loading" | "welcome">("preloading");
+  const audioRef            = useRef<HTMLAudioElement>(null);
 
   /* ── Preload everything (images + audio), then start ── */
   useEffect(() => {
@@ -140,6 +160,13 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
     return () => clearInterval(t);
   }, [phase]);
 
+  /* ── Rotación de tips ── */
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const t = setInterval(() => setTipIdx((i) => (i + 1) % TIPS.length), TIP_MS);
+    return () => clearInterval(t);
+  }, [phase]);
+
   /* ── Welcome → fade out música, luego completar ── */
   useEffect(() => {
     if (phase !== "welcome") return;
@@ -165,6 +192,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
         overflow: "hidden",
       }}
     >
+      {/* Fuente gangster estilo GTA */}
+      <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/pricedown" />
+
       {/* ─── PRELOAD PHASE ─── */}
       {phase === "preloading" && (
         <div
@@ -197,8 +227,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
                 height: "100%",
                 objectFit: "cover",
                 opacity: i === idx ? 1 : 0,
-                transform: i === idx ? "scale(1.06)" : "scale(1)",
-                transition: "opacity 1s ease, transform 4s ease",
+                transform: i === idx ? "scale(1.13)" : "scale(1)",
+                transition: "opacity 1.2s ease, transform 7s ease-out",
+                willChange: "transform, opacity",
               }}
             />
           ))}
@@ -209,36 +240,78 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
               position: "absolute",
               inset: 0,
               background:
-                "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%)",
+                "radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,0.5) 100%)",
               pointerEvents: "none",
             }}
           />
 
-          {/* GTA-style logo bottom-left */}
+          {/* Barras cinematográficas */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: BAR, background: "#000", zIndex: 5 }} />
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: BAR, background: "#000", zIndex: 5 }} />
+
+          {/* Tip TikTok Ads — bajo la barra superior */}
+          <div
+            style={{
+              position: "absolute",
+              top: `calc(${BAR} + 26px)`,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "min(640px, 82%)",
+              textAlign: "center",
+              zIndex: 6,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: GANGSTER,
+                fontSize: 22,
+                letterSpacing: 1.5,
+                color: "#ffd23f",
+                textShadow: "0 2px 10px rgba(0,0,0,0.9)",
+                marginBottom: 8,
+              }}
+            >
+              TIP · TIKTOK ADS
+            </p>
+            <p
+              key={tipIdx}
+              style={{
+                fontSize: 15,
+                lineHeight: 1.55,
+                color: "rgba(255,255,255,0.94)",
+                textShadow: "0 1px 8px rgba(0,0,0,0.95)",
+                animation: "tipFade 0.6s ease",
+              }}
+            >
+              {TIPS[tipIdx]}
+            </p>
+          </div>
+
+          {/* Logo gangster bottom-left */}
           <div
             style={{
               position: "absolute",
               left: 40,
-              bottom: 36,
+              bottom: `calc(${BAR} + 16px)`,
               display: "flex",
               alignItems: "center",
               gap: 12,
+              zIndex: 6,
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
               alt="TapSur"
-              style={{ width: 52, height: 52, borderRadius: 8, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))" }}
+              style={{ width: 50, height: 50, borderRadius: 8, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))" }}
             />
             <span
               style={{
-                fontSize: 34,
-                fontWeight: 900,
-                letterSpacing: -1,
+                fontFamily: GANGSTER,
+                fontSize: 42,
+                letterSpacing: 1,
                 color: "#fff",
-                textShadow: "0 2px 12px rgba(0,0,0,0.8)",
-                fontStyle: "italic",
+                textShadow: "0 2px 14px rgba(0,0,0,0.85)",
               }}
             >
               TapSur
@@ -246,7 +319,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
           </div>
 
           {/* Loading wheel bottom-right */}
-          <div style={{ position: "absolute", right: 40, bottom: 40 }}>
+          <div style={{ position: "absolute", right: 40, bottom: `calc(${BAR} + 18px)`, zIndex: 6 }}>
             <LoadingWheel />
           </div>
         </>
@@ -280,9 +353,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
           />
           <h1
             style={{
-              fontSize: 40,
-              fontWeight: 800,
-              letterSpacing: -1.5,
+              fontFamily: GANGSTER,
+              fontSize: 52,
+              letterSpacing: 1,
               color: "var(--color-foreground, #fff)",
               animation: "introRise 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both",
             }}
@@ -310,6 +383,10 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
         @keyframes introFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes introRise {
           from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes tipFade {
+          from { opacity: 0; transform: translateY(6px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
