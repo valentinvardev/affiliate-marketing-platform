@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2 } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_BASE = [
   { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
   { href: "/campaigns/new", icon: BookOpen,   label: "Nueva campaña" },
+  { href: "/offers",        icon: Package,    label: "Offers" },
   { href: "/stats",         icon: BarChart2,  label: "Stats" },
 ];
 

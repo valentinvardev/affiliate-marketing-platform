@@ -10,8 +10,9 @@ import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import {
   Loader2, Upload, Copy, Check, X,
-  ExternalLink, Smartphone, ChevronLeft, ChevronDown, ImageIcon, Bookmark, Link as LinkIcon,
+  ExternalLink, Smartphone, ChevronLeft, ChevronDown, ImageIcon, Bookmark, Link as LinkIcon, Search,
 } from "lucide-react";
+import { OfferPickerModal } from "@/components/offer-picker-modal";
 
 /* ─── Types ─── */
 type UrlStatus = "idle" | "checking" | "valid" | "invalid";
@@ -570,6 +571,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
   const [savingUrl, setSavingUrl] = useState(false);
   const [saveName, setSaveName] = useState("");
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
 
   const [values, setValues] = useState<FormValues>({
     name:          campaign?.name          ?? "",
@@ -647,6 +649,13 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
   return (
     <>
+      <OfferPickerModal
+        open={offerModalOpen}
+        onClose={() => setOfferModalOpen(false)}
+        onSelect={(url) => { set("ctaUrl", url); setOfferModalOpen(false); }}
+        defaultS1={values.slug}
+      />
+
       <PreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -753,6 +762,20 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
               >
                 <Bookmark className="h-3.5 w-3.5" />
                 Guardar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOfferModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium"
+                style={{
+                  background: "rgba(167,139,250,0.12)",
+                  border: "1px solid rgba(167,139,250,0.3)",
+                  color: "#a78bfa",
+                }}
+              >
+                <Search className="h-3.5 w-3.5" />
+                Buscar oferta
               </button>
             </div>
 
