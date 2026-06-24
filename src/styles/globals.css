@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap");
 
 @theme {
   --font-sans:  var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

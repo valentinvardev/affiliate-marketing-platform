@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, X } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 
@@ -16,6 +16,7 @@ const NAV_BASE = [
   { href: "/stats",         icon: BarChart2,  label: "Stats" },
   { href: "/leaderboard",  icon: Trophy,     label: "Leaderboard" },
   { href: "/interactions", icon: Heart,      label: "Interacciones" },
+  { href: "/cards",        icon: CreditCard, label: "Tarjetas" },
   { href: "/wallet",       icon: Wallet,     label: "Wallet" },
 ];
 
