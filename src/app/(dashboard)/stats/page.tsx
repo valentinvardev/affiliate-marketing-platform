@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { db } from "@/server/db";
 import { fetchStats, type StatsRange } from "@/lib/taprain";
 import { DollarSign, Repeat2, MousePointerClick, Zap, AlertTriangle } from "lucide-react";
@@ -96,6 +97,11 @@ export default async function StatsPage({
   const { range: rawRange = "today" } = await searchParams;
   const range = (RANGES.some((r) => r.key === rawRange) ? rawRange : "today") as StatsRange;
   const window = getWindow(range);
+
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.includes("localhost") ? "http" : "https";
+  const baseUrl = `${proto}://${host}`;
 
   // Fetch TapRain summary stats + local conversions in parallel
   const [statsResult, conversions] = await Promise.allSettled([
@@ -242,7 +248,7 @@ export default async function StatsPage({
                 className="block overflow-x-auto rounded-md p-3 font-mono"
                 style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)" }}
               >
-                {`https://TU_DOMINIO.vercel.app/api/postback?price={price}&offer_name={offer_name}&country={country}&s1={s1}&s2={s2}&click_id={click_id}&conversion_id={conversion_id}&ip={ip}`}
+                {`${baseUrl}/api/postback?price={price}&offer_name={offer_name}&country={country}&s1={s1}&s2={s2}&click_id={click_id}&conversion_id={conversion_id}&ip={ip}`}
               </code>
             </div>
           </details>
