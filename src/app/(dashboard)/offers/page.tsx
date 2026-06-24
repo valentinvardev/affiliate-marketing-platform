@@ -51,12 +51,13 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function SimpleSelect({
-  value, onChange, options, fullWidth,
+  value, onChange, options, fullWidth, dropUp,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   fullWidth?: boolean;
+  dropUp?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -89,7 +90,7 @@ function SimpleSelect({
       </button>
       {open && (
         <div
-          className="absolute left-0 top-full z-20 mt-1 overflow-hidden rounded-lg py-1"
+          className={`absolute left-0 z-30 overflow-hidden rounded-lg py-1 ${dropUp ? "bottom-full mb-1" : "top-full mt-1"}`}
           style={{
             background: "var(--color-surface-raised)",
             border: "1px solid var(--color-border)",
@@ -247,11 +248,11 @@ export default function OffersPage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Tipo</label>
-                <SimpleSelect value={type} onChange={setType} options={TYPE_OPTIONS} fullWidth />
+                <SimpleSelect value={type} onChange={setType} options={TYPE_OPTIONS} fullWidth dropUp />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Dispositivo</label>
-                <SimpleSelect value={device} onChange={setDevice} options={DEVICE_OPTIONS} fullWidth />
+                <SimpleSelect value={device} onChange={setDevice} options={DEVICE_OPTIONS} fullWidth dropUp />
               </div>
             </div>
 

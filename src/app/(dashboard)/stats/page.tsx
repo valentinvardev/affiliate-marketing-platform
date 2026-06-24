@@ -130,24 +130,24 @@ export default async function StatsPage({
   return (
     <div className="flex flex-col min-h-screen">
       <header
-        className="flex h-14 shrink-0 items-center px-8"
+        className="flex h-14 shrink-0 items-center px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Stats</h1>
         <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>TapRain</span>
       </header>
 
-      <main className="flex-1 px-8 py-6 space-y-6">
+      <main className="flex-1 px-4 py-6 space-y-6 md:px-8">
         {/* Range tabs */}
         <nav
-          className="flex gap-1 rounded-xl p-1 w-fit"
+          className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl p-1"
           style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
         >
           {RANGES.map(({ key, label }) => (
             <Link
               key={key}
               href={`/stats?range=${key}`}
-              className="rounded-lg px-4 py-1.5 text-xs font-medium transition-colors"
+              className="shrink-0 rounded-lg px-4 py-1.5 text-xs font-medium transition-colors"
               style={{
                 background: range === key ? "var(--color-surface-overlay)" : "transparent",
                 color:      range === key ? "var(--color-foreground)" : "var(--color-muted-foreground)",

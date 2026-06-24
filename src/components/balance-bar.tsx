@@ -79,6 +79,9 @@ export function BalanceBar() {
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="TapSur" className="h-8 w-8 shrink-0 md:hidden" style={{ mixBlendMode: "screen" }} />
+      <span className="text-base font-bold tracking-tight md:hidden" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>
+        TapSur
+      </span>
 
       <div className="flex-1" />
 
@@ -101,7 +104,7 @@ export function BalanceBar() {
         {/* Popover */}
         {notifOpen && (
           <div
-            className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-lg"
+            className="fixed left-3 right-3 top-12 z-50 overflow-hidden rounded-lg md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-64"
             style={{
               background: "var(--color-surface-raised)",
               border:     "1px solid var(--color-border)",

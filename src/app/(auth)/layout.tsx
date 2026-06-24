@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="mb-8 flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="TapSur" width={52} height={52} className="shrink-0 rounded-md" />
-          <span className="text-lg font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
+          <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>
             TapSur
           </span>
         </div>

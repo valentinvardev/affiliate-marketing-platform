@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 
-import { type Metadata } from "next";
+import { type Metadata, type Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { SessionProvider } from "@/components/session-provider";
@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: { default: "Aff CMS", template: "%s — Aff CMS" },
   description: "Gestor de plantillas de afiliados",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });

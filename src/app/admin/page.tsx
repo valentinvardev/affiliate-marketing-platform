@@ -69,7 +69,7 @@ export default async function AdminPage({
           <Link href="/campaigns" className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="TapSur" width={44} height={44} className="shrink-0 rounded-md" />
-            <span className="text-sm font-bold" style={{ color: "var(--color-foreground)" }}>TapSur</span>
+            <span className="text-base font-bold" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>TapSur</span>
           </Link>
           <span style={{ color: "var(--color-border)" }}>/</span>
           <span className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>Admin</span>

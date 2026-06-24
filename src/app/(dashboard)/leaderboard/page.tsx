@@ -116,19 +116,21 @@ export default async function LeaderboardPage() {
           <div
             className="rounded-xl p-6"
             style={{
-              border:     ahead ? "1px solid rgba(255,255,255,0.15)" : "1px solid var(--color-border)",
-              background: ahead ? "var(--color-surface-overlay)"      : "var(--color-surface-raised)",
+              border:     ahead
+                ? "1px solid color-mix(in oklch, var(--color-success) 35%, transparent)"
+                : "1px solid var(--color-border)",
+              background: ahead ? "var(--color-success-bg)" : "var(--color-surface-raised)",
             }}
           >
             <p
               className="text-[10px] font-semibold uppercase tracking-widest"
-              style={{ color: "var(--color-subtle)" }}
+              style={{ color: ahead ? "var(--color-success)" : "var(--color-subtle)" }}
             >
               Hoy
             </p>
             <p
               className="mt-4 text-3xl font-bold tabular-nums tracking-tight"
-              style={{ color: "var(--color-foreground)" }}
+              style={{ color: ahead ? "var(--color-success)" : "var(--color-foreground)" }}
             >
               {fmt(todayRevenue)}
             </p>
@@ -146,18 +148,18 @@ export default async function LeaderboardPage() {
             </span>
           ) : (
             <div
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium tabular-nums"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tabular-nums"
               style={{
-                background: "var(--color-surface-overlay)",
-                border:     "1px solid var(--color-border)",
-                color:      "var(--color-foreground)",
+                background: ahead ? "var(--color-success-bg)" : behind ? "var(--color-error-bg)" : "var(--color-surface-overlay)",
+                border:     `1px solid ${ahead ? "color-mix(in oklch, var(--color-success) 30%, transparent)" : behind ? "color-mix(in oklch, var(--color-error) 30%, transparent)" : "var(--color-border)"}`,
+                color:      ahead ? "var(--color-success)" : behind ? "var(--color-error)" : "var(--color-foreground)",
               }}
             >
-              {ahead  && <TrendingUp   className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />}
-              {behind && <TrendingDown className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />}
-              {!ahead && !behind && <Minus className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />}
+              {ahead  && <TrendingUp   className="h-3.5 w-3.5" />}
+              {behind && <TrendingDown className="h-3.5 w-3.5" />}
+              {!ahead && !behind && <Minus className="h-3.5 w-3.5" />}
               {diff >= 0 ? "+" : ""}{fmt(diff)}
-              <span style={{ color: "var(--color-subtle)" }}>
+              <span style={{ opacity: 0.75 }}>
                 ({diff >= 0 ? "+" : ""}{diffPct.toFixed(1)}% vs ayer)
               </span>
             </div>

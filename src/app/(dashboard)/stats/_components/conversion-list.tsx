@@ -30,9 +30,9 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
 
   return (
     <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
-      {/* Head */}
+      {/* Head (solo desktop) */}
       <div
-        className="grid px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider"
+        className="hidden px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider md:grid"
         style={{
           color: "var(--color-muted-foreground)",
           borderBottom: "1px solid var(--color-border)",
@@ -49,36 +49,55 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
 
       {/* Rows */}
       <div style={{ background: "var(--color-surface)" }}>
-        {conversions.map((c, i) => (
-          <div
-            key={c.id}
-            className="grid items-center px-4 py-3 text-sm"
-            style={{
-              gridTemplateColumns: "1fr 80px 60px 100px 120px",
-              borderBottom: i < conversions.length - 1 ? "1px solid var(--color-border)" : "none",
-            }}
-          >
-            <span className="truncate font-medium pr-4" style={{ color: "var(--color-foreground)" }}>
-              {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>—</span>}
-            </span>
+        {conversions.map((c, i) => {
+          const border = i < conversions.length - 1 ? "1px solid var(--color-border)" : "none";
+          return (
+            <div key={c.id}>
+              {/* Desktop: fila de tabla */}
+              <div
+                className="hidden items-center px-4 py-3 text-sm md:grid"
+                style={{ gridTemplateColumns: "1fr 80px 60px 100px 120px", borderBottom: border }}
+              >
+                <span className="truncate font-medium pr-4" style={{ color: "var(--color-foreground)" }}>
+                  {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>—</span>}
+                </span>
+                <span className="tabular-nums font-semibold" style={{ color: "#a78bfa" }}>
+                  ${c.price.toFixed(2)}
+                </span>
+                <span className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+                  {c.country ?? "—"}
+                </span>
+                <span className="truncate text-xs font-mono" style={{ color: "var(--color-muted-foreground)" }}>
+                  {c.s1 ?? <span style={{ color: "var(--color-subtle)" }}>—</span>}
+                </span>
+                <span className="text-right text-xs" style={{ color: "var(--color-subtle)" }}>
+                  {relativeTime(c.receivedAt)}
+                </span>
+              </div>
 
-            <span className="tabular-nums font-semibold" style={{ color: "#a78bfa" }}>
-              ${c.price.toFixed(2)}
-            </span>
-
-            <span className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-              {c.country ?? "—"}
-            </span>
-
-            <span className="truncate text-xs font-mono" style={{ color: "var(--color-muted-foreground)" }}>
-              {c.s1 ?? <span style={{ color: "var(--color-subtle)" }}>—</span>}
-            </span>
-
-            <span className="text-right text-xs" style={{ color: "var(--color-subtle)" }}>
-              {relativeTime(c.receivedAt)}
-            </span>
-          </div>
-        ))}
+              {/* Móvil: card */}
+              <div className="flex flex-col gap-1.5 px-4 py-3 md:hidden" style={{ borderBottom: border }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
+                    {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>Sin oferta</span>}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-sm font-semibold" style={{ color: "#a78bfa" }}>
+                    ${c.price.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs" style={{ color: "var(--color-subtle)" }}>
+                  <span>{c.country ?? "—"}</span>
+                  <span>·</span>
+                  <span className="truncate font-mono" style={{ color: "var(--color-muted-foreground)", maxWidth: "55%" }}>
+                    {c.s1 ?? "—"}
+                  </span>
+                  <span>·</span>
+                  <span>{relativeTime(c.receivedAt)}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
