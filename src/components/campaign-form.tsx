@@ -10,7 +10,7 @@ import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import {
   Loader2, Upload, Copy, Check, X,
-  ExternalLink, Smartphone, ChevronLeft, ChevronDown, ImageIcon,
+  ExternalLink, Smartphone, ChevronLeft, ChevronDown, ImageIcon, Bookmark, Link as LinkIcon,
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -436,6 +436,126 @@ function PreviewModal({
   );
 }
 
+/* ─── Saved CTA URLs (localStorage) ─── */
+const SAVED_URLS_KEY = "aff_saved_cta_urls";
+type SavedUrl = { id: string; name: string; url: string };
+
+function useSavedUrls() {
+  const [items, setItems] = useState<SavedUrl[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_URLS_KEY);
+      if (raw) setItems(JSON.parse(raw) as SavedUrl[]);
+    } catch {}
+  }, []);
+
+  function saveUrl(name: string, url: string) {
+    const next = [...items, { id: `${Date.now()}`, name, url }];
+    setItems(next);
+    localStorage.setItem(SAVED_URLS_KEY, JSON.stringify(next));
+  }
+
+  function deleteUrl(id: string) {
+    const next = items.filter((i) => i.id !== id);
+    setItems(next);
+    localStorage.setItem(SAVED_URLS_KEY, JSON.stringify(next));
+  }
+
+  return { items, saveUrl, deleteUrl };
+}
+
+/* ─── Saved URL dropdown ─── */
+function SavedUrlDropdown({
+  items,
+  onSelect,
+  onDelete,
+}: {
+  items: SavedUrl[];
+  onSelect: (url: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onMouse(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onMouse);
+    return () => document.removeEventListener("mousedown", onMouse);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm"
+        style={{
+          background: "var(--color-surface-overlay)",
+          border: `1px solid ${open ? "var(--color-border-focus)" : "var(--color-border)"}`,
+          color: "var(--color-muted-foreground)",
+        }}
+      >
+        <span className="flex items-center gap-2">
+          <Bookmark className="h-3.5 w-3.5 shrink-0" />
+          <span>URLs guardadas ({items.length})</span>
+        </span>
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 transition-transform duration-150"
+          style={{ transform: open ? "rotate(180deg)" : "none", color: "var(--color-subtle)" }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-lg"
+          style={{
+            background: "var(--color-surface-raised)",
+            border: "1px solid var(--color-border)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+          }}
+        >
+          <div className="max-h-48 overflow-y-auto py-1">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-2 px-3 py-2 transition-colors"
+                style={{ color: "var(--color-muted-foreground)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <button
+                  type="button"
+                  className="flex flex-1 items-center gap-2 text-left text-sm"
+                  style={{ color: "var(--color-foreground)" }}
+                  onClick={() => { onSelect(item.url); setOpen(false); }}
+                >
+                  <LinkIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
+                  <span className="flex-1 truncate font-medium">{item.name}</span>
+                  <span className="max-w-[140px] truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>
+                    {item.url}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(item.id)}
+                  className="shrink-0 transition-opacity hover:opacity-70"
+                  title="Eliminar"
+                  style={{ color: "var(--color-subtle)" }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════
    MAIN FORM
 ═══════════════════════════════════════════════ */
@@ -447,6 +567,9 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const { data: colorPresets = [] } = api.preset.colorList.useQuery();
+  const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [saveName, setSaveName] = useState("");
 
   const [values, setValues] = useState<FormValues>({
     name:          campaign?.name          ?? "",
@@ -589,37 +712,99 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         <Divider />
 
         {/* ── CTA ── */}
-        <Section title="CTA">
+        <div>
           <Field label="URL de afiliado">
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  type="url"
-                  placeholder="https://taprkr.com/r/..."
-                  value={values.ctaUrl}
-                  onChange={(e) => set("ctaUrl", e.target.value)}
-                  required
-                  suffix={<UrlIndicator status={ctaStatus} />}
-                />
-              </div>
-              {ctaStatus === "valid" && (
-                <a
-                  href={values.ctaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
-                  style={{
-                    background: "var(--color-surface-overlay)",
-                    border: "1px solid var(--color-border)",
-                    color: "var(--color-muted-foreground)",
-                  }}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              )}
+            <Input
+              type="url"
+              placeholder="https://taprkr.com/r/..."
+              value={values.ctaUrl}
+              onChange={(e) => set("ctaUrl", e.target.value)}
+              required
+              suffix={<UrlIndicator status={ctaStatus} />}
+            />
+
+            {/* Action buttons */}
+            <div className="mt-2 flex gap-2">
+              <a
+                href={ctaStatus === "valid" ? values.ctaUrl : undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled={ctaStatus !== "valid"}
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity"
+                style={{
+                  background: "var(--color-surface-overlay)",
+                  border: "1px solid var(--color-border)",
+                  color: ctaStatus === "valid" ? "var(--color-foreground)" : "var(--color-subtle)",
+                  opacity: ctaStatus === "valid" ? 1 : 0.45,
+                  pointerEvents: ctaStatus === "valid" ? "auto" : "none",
+                }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Abrir
+              </a>
+
+              <button
+                type="button"
+                disabled={ctaStatus !== "valid"}
+                onClick={() => { setSavingUrl(true); setSaveName(""); }}
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-45"
+                style={{
+                  background: "var(--color-surface-overlay)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-foreground)",
+                }}
+              >
+                <Bookmark className="h-3.5 w-3.5" />
+                Guardar
+              </button>
             </div>
+
+            {/* Save name input */}
+            {savingUrl && (
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  autoFocus
+                  placeholder="Nombre para esta URL…"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && saveName.trim()) {
+                      saveUrl(saveName.trim(), values.ctaUrl);
+                      setSavingUrl(false);
+                    }
+                    if (e.key === "Escape") setSavingUrl(false);
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!saveName.trim()}
+                  onClick={() => { saveUrl(saveName.trim(), values.ctaUrl); setSavingUrl(false); }}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md disabled:opacity-40"
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSavingUrl(false)}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
+                  style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Saved URLs dropdown */}
+            {savedUrls.length > 0 && !savingUrl && (
+              <SavedUrlDropdown
+                items={savedUrls}
+                onSelect={(url) => set("ctaUrl", url)}
+                onDelete={deleteUrl}
+              />
+            )}
           </Field>
-        </Section>
+        </div>
 
         <Divider />
 

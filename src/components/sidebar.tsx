@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_BASE = [
@@ -92,12 +92,10 @@ export function Sidebar() {
         style={{ borderTop: "1px solid var(--color-border)" }}
       >
         <div className="flex items-center gap-2.5 rounded-md px-2.5 py-2">
-          <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-            style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)" }}
-          >
-            {username[0]?.toUpperCase()}
-          </div>
+          <CircleUserRound
+            className="h-7 w-7 shrink-0"
+            style={{ color: "var(--color-muted-foreground)" }}
+          />
           <div className="flex-1 min-w-0">
             <p className="truncate text-xs font-medium" style={{ color: "var(--color-foreground)" }}>{username}</p>
             {isAdmin && (
