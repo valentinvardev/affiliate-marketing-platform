@@ -42,6 +42,8 @@ function landerStyles(primary: string, bg: string) {
 .lp {
   --lp: ${primary};
   --lb: ${bg};
+  --lp-light: color-mix(in oklch, ${primary} 80%, white 20%);
+  --lp-dark:  color-mix(in oklch, ${primary} 55%, black 45%);
   --lfg: oklch(0.98 0.003 0);
   --lmuted: oklch(0.70 0.04 260);
   background: var(--lb);
@@ -92,8 +94,8 @@ function landerStyles(primary: string, bg: string) {
 
 /* Sticky CTA pulse */
 @keyframes lCtaPulse {
-  0%, 100% { box-shadow: 0 10px 40px -10px oklch(0.5 0.18 150 / 0.7); }
-  50%       { box-shadow: 0 10px 50px -5px oklch(0.5 0.18 150 / 0.9); }
+  0%, 100% { box-shadow: 0 10px 40px -10px color-mix(in oklch, ${primary} 70%, transparent); }
+  50%       { box-shadow: 0 10px 50px -5px  color-mix(in oklch, ${primary} 90%, transparent); }
 }
 .lp .l-cta-pulse { animation: lCtaPulse 2s ease-in-out infinite; }
 
@@ -335,7 +337,7 @@ export default async function LandingPage({
                   position: "absolute",
                   inset: 0,
                   borderRadius: 9999,
-                  background: "#166534",
+                  background: "var(--lp-dark)",
                   transform: "translateY(4px)",
                   pointerEvents: "none",
                 }}
@@ -350,7 +352,7 @@ export default async function LandingPage({
                   gap: 16,
                   borderRadius: 9999,
                   borderTop: "1px solid rgba(255,255,255,0.3)",
-                  background: "linear-gradient(180deg, #4ade80, #22c55e)",
+                  background: "linear-gradient(180deg, var(--lp-light), var(--lp))",
                   padding: "16px 32px",
                   overflow: "hidden",
                 }}
@@ -548,7 +550,7 @@ export default async function LandingPage({
                             position: "absolute",
                             inset: 0,
                             borderRadius: 9999,
-                            background: "#166534",
+                            background: "var(--lp-dark)",
                             transform: "translateY(2px)",
                             pointerEvents: "none",
                           }}
@@ -563,7 +565,7 @@ export default async function LandingPage({
                             gap: 6,
                             borderRadius: 9999,
                             borderTop: "1px solid rgba(255,255,255,0.3)",
-                            background: "linear-gradient(180deg, #4ade80, #22c55e)",
+                            background: "linear-gradient(180deg, var(--lp-light), var(--lp))",
                             padding: "8px 12px",
                             fontSize: 12,
                             fontWeight: 800,
@@ -870,7 +872,7 @@ export default async function LandingPage({
                 position: "absolute",
                 inset: 0,
                 borderRadius: 9999,
-                background: "#166534",
+                background: "var(--lp-dark)",
                 transform: "translateY(4px)",
                 pointerEvents: "none",
               }}
@@ -885,7 +887,7 @@ export default async function LandingPage({
                 gap: 12,
                 borderRadius: 9999,
                 borderTop: "1px solid rgba(255,255,255,0.3)",
-                background: "linear-gradient(180deg, #4ade80, #22c55e)",
+                background: "linear-gradient(180deg, var(--lp-light), var(--lp))",
                 padding: "12px 12px 12px 16px",
                 overflow: "hidden",
               }}
