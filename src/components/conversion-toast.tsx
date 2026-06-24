@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { CircleDollarSign } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 
 /* ─── Types ─── */
@@ -46,25 +47,9 @@ function playChime() {
   } catch { /* blocked */ }
 }
 
-/* ─── Coin icon ─── */
-function CoinIcon() {
-  return (
-    <div
-      style={{
-        width:          36,
-        height:         36,
-        borderRadius:   "50%",
-        background:     "#f5f0e8",
-        display:        "flex",
-        alignItems:     "center",
-        justifyContent: "center",
-        flexShrink:     0,
-        fontSize:       18,
-      }}
-    >
-      🪙
-    </div>
-  );
+/* ─── Icon ─── */
+function ConversionIcon() {
+  return <CircleDollarSign style={{ width: 22, height: 22, color: "#111", flexShrink: 0 }} />;
 }
 
 /* ─── Single toast card ─── */
@@ -100,13 +85,13 @@ function ConversionCard({
           alignItems:   "center",
           gap:          12,
           background:   "#ffffff",
-          borderRadius: 14,
+          borderRadius: 0,
           padding:      "10px 16px 10px 12px",
           boxShadow:    "0 8px 30px rgba(0,0,0,0.14)",
           minWidth:     230,
         }}
       >
-        <CoinIcon />
+        <ConversionIcon />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 12, fontWeight: 600, color: "#111", lineHeight: 1.3 }}>
