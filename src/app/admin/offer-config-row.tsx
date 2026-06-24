@@ -71,12 +71,14 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
 
   return (
     <div
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
+      className="flex flex-col gap-3 rounded-lg px-3 py-2.5 transition-colors sm:flex-row sm:items-center"
       style={{
         border:     `1px solid ${whitelisted ? "rgba(167,139,250,0.25)" : "var(--color-border)"}`,
         background: whitelisted ? "rgba(167,139,250,0.06)" : "var(--color-surface-overlay)",
       }}
     >
+      {/* Image + info */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
       {/* Image with upload hover */}
       <div className="group relative shrink-0">
         <div
@@ -144,11 +146,15 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           </div>
         </div>
       </div>
+      </div>{/* /Image + info */}
 
-      {/* Stack selector */}
-      {stacks.length > 0 && (
-        <div className="flex items-center gap-1 shrink-0">
-          <Layers className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />
+      {/* Controles */}
+      <div className="flex w-full items-center gap-2 sm:w-auto">
+
+        {/* Stack selector */}
+        {stacks.length > 0 && (
+          <div className="flex flex-1 items-center gap-1 sm:flex-none">
+            <Layers className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
           <select
             value={stackId ?? ""}
             onChange={(e) => {
@@ -156,12 +162,11 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
               setStackId(val);
               linkStack.mutate({ offerId: offer.id, offerName: offer.name, appStackId: val });
             }}
-            className="rounded-md px-2 py-1 text-xs outline-none"
+            className="w-full rounded-md px-2 py-1 text-xs outline-none sm:w-auto sm:max-w-[120px]"
             style={{
               background: "var(--color-surface-raised)",
               border:     "1px solid var(--color-border)",
               color:      stackId ? "var(--color-foreground)" : "var(--color-subtle)",
-              maxWidth:   120,
             }}
           >
             <option value="">Sin stack</option>
@@ -190,6 +195,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           ? <><Check className="h-3.5 w-3.5" /> Activa</>
           : "Activar"}
       </button>
+      </div>{/* /Controles */}
     </div>
   );
 }

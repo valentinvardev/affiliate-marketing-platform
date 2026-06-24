@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/trpc/react";
-import { Plus, Trash2, ChevronDown, ChevronRight, Check, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Check, X, Loader2, Upload, Image as ImageIcon } from "lucide-react";
 
 type Stack = {
   id: string;
@@ -71,6 +71,25 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
   });
 
   const [f, setF] = useState({ name: "", imageUrl: "", tag: "1 hr", badge: "TOP", amount: "" });
+  const [uploading, setUploading] = useState(false);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = (await res.json()) as { url?: string };
+        if (data.url) setF((p) => ({ ...p, imageUrl: data.url! }));
+      }
+    } catch { /* silent */ } finally {
+      setUploading(false);
+    }
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,8 +113,38 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
       <Input placeholder="Monto (ej: 12)" type="number" step="0.01" value={f.amount} onChange={(e) => setF(p => ({ ...p, amount: e.target.value }))} required />
       <Input placeholder="Tag (ej: 1 hr)" value={f.tag} onChange={(e) => setF(p => ({ ...p, tag: e.target.value }))} />
       <Input placeholder="Badge (ej: TOP, HOT)" value={f.badge} onChange={(e) => setF(p => ({ ...p, badge: e.target.value }))} />
-      <div className="col-span-2">
-        <Input placeholder="URL imagen (opcional)" value={f.imageUrl} onChange={(e) => setF(p => ({ ...p, imageUrl: e.target.value }))} />
+      <div className="col-span-2 flex items-center gap-3">
+        <div
+          className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg"
+          style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
+        >
+          {uploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-muted-foreground)" }} />
+          ) : f.imageUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={f.imageUrl} alt="App" className="h-full w-full object-contain p-1.5" />
+              <button
+                type="button"
+                onClick={() => setF((p) => ({ ...p, imageUrl: "" }))}
+                className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full"
+                style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </>
+          ) : (
+            <ImageIcon className="h-5 w-5" style={{ color: "var(--color-subtle)" }} />
+          )}
+        </div>
+        <label
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-opacity hover:opacity-80"
+          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+        >
+          <input type="file" accept="image/*" className="sr-only" onChange={handleUpload} />
+          <Upload className="h-3.5 w-3.5" />
+          {f.imageUrl ? "Cambiar imagen" : "Subir imagen"}
+        </label>
       </div>
       <div className="col-span-2 flex gap-2">
         <Btn variant="primary" type="submit" disabled={add.isPending}>
