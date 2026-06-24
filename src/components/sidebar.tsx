@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConversionTestButton } from "@/components/conversion-toast";
 
 const NAV_BASE = [
   { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
@@ -35,9 +36,10 @@ export function Sidebar() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="TapSur" width={52} height={52} className="shrink-0 rounded-md" />
-        <span className="text-sm font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
+        <span className="flex-1 text-sm font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
           TapSur
         </span>
+        <ConversionTestButton />
       </div>
 
       {/* Nav */}
