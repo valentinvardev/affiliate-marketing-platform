@@ -9,9 +9,9 @@ const SLIDES = [
   "/intro/intro3.png",
   "/intro/intro4.jpg",
 ];
-const SLIDE_MS    = 3000;   // duración de cada diapositiva
+const SLIDE_MS    = 4200;   // duración de cada diapositiva
 const CYCLES      = 2;      // todas las diapositivas + 1 repetición
-const TIP_MS      = 4200;   // rotación de tips
+const TIP_MS      = 7000;   // rotación de tips
 const MUSIC_SRC   = "/intro/gta-loading.mp3";
 const PRELOAD_MAX = 12000;  // tope de espera de buffering (ms)
 const BAR         = "9vh";  // alto de barras cinematográficas
@@ -227,8 +227,8 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
                 height: "100%",
                 objectFit: "cover",
                 opacity: i === idx ? 1 : 0,
-                transform: i === idx ? "scale(1.13)" : "scale(1)",
-                transition: "opacity 1.2s ease, transform 7s ease-out",
+                transform: i === idx ? "scale(1.14)" : "scale(1)",
+                transition: "opacity 2.2s ease, transform 9s ease-out",
                 willChange: "transform, opacity",
               }}
             />
@@ -245,82 +245,74 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             }}
           />
 
-          {/* Barras cinematográficas */}
+          {/* Barra cinematográfica superior */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: BAR, background: "#000", zIndex: 5 }} />
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: BAR, background: "#000", zIndex: 5 }} />
 
-          {/* Tip TikTok Ads — bajo la barra superior */}
+          {/* Degradé negro inferior */}
           <div
             style={{
               position: "absolute",
-              top: `calc(${BAR} + 26px)`,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "min(640px, 82%)",
-              textAlign: "center",
-              zIndex: 6,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "36vh",
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.6) 45%, transparent 100%)",
+              zIndex: 4,
+              pointerEvents: "none",
             }}
-          >
-            <p
-              style={{
-                fontFamily: GANGSTER,
-                fontSize: 22,
-                letterSpacing: 1.5,
-                color: "#ffd23f",
-                textShadow: "0 2px 10px rgba(0,0,0,0.9)",
-                marginBottom: 8,
-              }}
-            >
-              TIP · TIKTOK ADS
-            </p>
-            <p
-              key={tipIdx}
-              style={{
-                fontSize: 15,
-                lineHeight: 1.55,
-                color: "rgba(255,255,255,0.94)",
-                textShadow: "0 1px 8px rgba(0,0,0,0.95)",
-                animation: "tipFade 0.6s ease",
-              }}
-            >
-              {TIPS[tipIdx]}
-            </p>
-          </div>
+          />
 
-          {/* Logo gangster bottom-left */}
-          <div
-            style={{
-              position: "absolute",
-              left: 40,
-              bottom: `calc(${BAR} + 16px)`,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              zIndex: 6,
-            }}
-          >
+          {/* Logo bottom-left */}
+          <div style={{ position: "absolute", left: 40, bottom: 34, zIndex: 6 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
               alt="TapSur"
-              style={{ width: 50, height: 50, borderRadius: 8, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))" }}
+              style={{ width: 52, height: 52, borderRadius: 8, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))" }}
             />
-            <span
-              style={{
-                fontFamily: GANGSTER,
-                fontSize: 42,
-                letterSpacing: 1,
-                color: "#fff",
-                textShadow: "0 2px 14px rgba(0,0,0,0.85)",
-              }}
-            >
-              TapSur
-            </span>
           </div>
 
-          {/* Loading wheel bottom-right */}
-          <div style={{ position: "absolute", right: 40, bottom: `calc(${BAR} + 18px)`, zIndex: 6 }}>
+          {/* Rueda + tips bottom-right */}
+          <div
+            style={{
+              position: "absolute",
+              right: 40,
+              bottom: 34,
+              zIndex: 6,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: 14,
+              maxWidth: 420,
+            }}
+          >
             <LoadingWheel />
+            <div style={{ textAlign: "right" }}>
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: 1.5,
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.45)",
+                  marginBottom: 4,
+                }}
+              >
+                Tip · TikTok Ads
+              </p>
+              <p
+                key={tipIdx}
+                style={{
+                  fontSize: 12.5,
+                  lineHeight: 1.5,
+                  color: "rgba(255,255,255,0.92)",
+                  textShadow: "0 1px 6px rgba(0,0,0,0.95)",
+                  animation: "tipFade 1.1s ease",
+                }}
+              >
+                {TIPS[tipIdx]}
+              </p>
+            </div>
           </div>
         </>
       )}
