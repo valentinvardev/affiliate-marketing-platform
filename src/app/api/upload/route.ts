@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     .upload(filename, buffer, { contentType: file.type, upsert: false });
 
   if (error) {
+    console.error("[upload] Supabase error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
