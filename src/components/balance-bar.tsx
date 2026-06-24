@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, Eye, EyeOff, MessageCircle, DollarSign } from "lucide-react";
+import { Bell, Eye, EyeOff, MessageCircle, DollarSign, Menu } from "lucide-react";
 
 type BalanceData = {
   today:     { revenue: number; conversions: number };
@@ -60,13 +60,26 @@ export function BalanceBar() {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-2 px-6"
+      className="flex shrink-0 items-center gap-2 px-4 md:px-6"
       style={{
         height:       48,
         borderBottom: "1px solid var(--color-border)",
         background:   "var(--color-surface)",
       }}
     >
+      {/* Hamburguesa + logo (solo móvil) */}
+      <button
+        type="button"
+        aria-label="Abrir menú"
+        onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
+        className="flex h-7 w-7 items-center justify-center rounded-md transition-colors md:hidden"
+        style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+      >
+        <Menu className="h-4 w-4" />
+      </button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="TapSur" className="h-6 w-6 shrink-0 rounded md:hidden" />
+
       <div className="flex-1" />
 
       {/* Notifications */}

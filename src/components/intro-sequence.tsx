@@ -314,17 +314,6 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             <LoadingWheel size={isMobile ? 32 : 42} />
             <div style={{ textAlign: isMobile ? "center" : "right", width: isMobile ? "100%" : undefined }}>
               <p
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 1.5,
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.45)",
-                  marginBottom: 4,
-                }}
-              >
-                Tip · TikTok Ads
-              </p>
-              <p
                 key={tipIdx}
                 style={{
                   fontSize: isMobile ? 11.5 : 12.5,

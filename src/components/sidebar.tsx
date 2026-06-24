@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 
@@ -22,15 +23,46 @@ export function Sidebar() {
   const isAdmin = session?.user?.role === "admin";
   const username = session?.user?.name ?? "…";
 
+  const [open, setOpen] = useState(false);
+
+  // Abrir/cerrar desde el botón hamburguesa del header
+  useEffect(() => {
+    const toggle = () => setOpen((o) => !o);
+    window.addEventListener("sidebar:toggle", toggle);
+    return () => window.removeEventListener("sidebar:toggle", toggle);
+  }, []);
+
+  // Cerrar al navegar
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    if (open) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const nav = isAdmin
     ? [...NAV_BASE, { href: "/admin", icon: ShieldCheck, label: "Admin" }]
     : NAV_BASE;
 
   return (
-    <aside
-      className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col"
-      style={{ borderRight: "1px solid var(--color-border)" }}
-    >
+    <>
+      {/* Backdrop (solo móvil, cuando está abierto) */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/55 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col transition-transform duration-300 md:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full",
+        )}
+        style={{ borderRight: "1px solid var(--color-border)", background: "var(--color-background)" }}
+      >
       {/* Logo */}
       <div
         className="flex h-14 shrink-0 items-center gap-2 px-4"
@@ -42,6 +74,15 @@ export function Sidebar() {
           TapSur
         </span>
         <ConversionTestButton />
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="shrink-0 rounded-md p-1 transition-opacity hover:opacity-70 md:hidden"
+          style={{ color: "var(--color-muted-foreground)" }}
+          aria-label="Cerrar menú"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -120,5 +161,6 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }
