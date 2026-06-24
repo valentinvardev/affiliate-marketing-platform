@@ -7,4 +7,4 @@ export const supabaseAdmin = createClient(
   env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
-export const LOGOS_BUCKET = "logos";
+export const LOGOS_BUCKET = "bucket";
