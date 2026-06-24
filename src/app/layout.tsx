@@ -20,8 +20,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <SessionProvider>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-          <LiveChatProvider />
+          <TRPCReactProvider>
+            {children}
+            <LiveChatProvider />
+          </TRPCReactProvider>
         </SessionProvider>
       </body>
     </html>
