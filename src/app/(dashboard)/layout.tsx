@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/sidebar";
 import { ConversionToastProvider } from "@/components/conversion-toast";
+import { LiveChatProvider } from "@/components/live-chat";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </div>
       <ConversionToastProvider />
+      <LiveChatProvider />
     </div>
   );
 }
