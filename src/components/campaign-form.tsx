@@ -725,29 +725,26 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
             {/* Action buttons */}
             <div className="mt-2 flex gap-2">
-              <a
-                href={ctaStatus === "valid" ? values.ctaUrl : undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-disabled={ctaStatus !== "valid"}
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity"
+              <button
+                type="button"
+                disabled={ctaStatus !== "valid"}
+                onClick={() => window.open(values.ctaUrl, "_blank", "noopener,noreferrer")}
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
                 style={{
                   background: "var(--color-surface-overlay)",
                   border: "1px solid var(--color-border)",
-                  color: ctaStatus === "valid" ? "var(--color-foreground)" : "var(--color-subtle)",
-                  opacity: ctaStatus === "valid" ? 1 : 0.45,
-                  pointerEvents: ctaStatus === "valid" ? "auto" : "none",
+                  color: "var(--color-foreground)",
                 }}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Abrir
-              </a>
+              </button>
 
               <button
                 type="button"
                 disabled={ctaStatus !== "valid"}
                 onClick={() => { setSavingUrl(true); setSaveName(""); }}
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-45"
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
                 style={{
                   background: "var(--color-surface-overlay)",
                   border: "1px solid var(--color-border)",
