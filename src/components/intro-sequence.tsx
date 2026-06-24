@@ -8,6 +8,7 @@ const SLIDES = [
   "/intro/intro2.png",
   "/intro/intro3.png",
   "/intro/intro4.jpg",
+  "/intro/intro5.png",
 ];
 const SLIDE_MS    = 3600;   // duración de cada diapositiva
 const TIP_MS      = 7000;   // rotación de tips
@@ -17,8 +18,10 @@ const MUSIC_SRC   = "/intro/intro-music.mp3";
 const PRELOAD_MAX = 12000;  // tope de espera de buffering (ms)
 const BAR         = "9vh";  // alto de barras cinematográficas
 
-/* Fuente gangster estilo GTA */
+/* Fuente gangster estilo GTA (pantalla de carga) */
 const GANGSTER = "'Pricedown', 'Arial Black', Impact, sans-serif";
+/* Fuente de títulos (pantalla de bienvenida) */
+const TITLE = "'Space Grotesk', system-ui, sans-serif";
 
 /* ─── Tips de TikTok Ads ─── */
 const TIPS = [
@@ -197,8 +200,14 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
         overflow: "hidden",
       }}
     >
-      {/* Fuente gangster estilo GTA */}
+      {/* Fuentes: gangster (carga) + títulos (bienvenida) */}
       <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/pricedown" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      />
 
       {/* ─── PRELOAD PHASE ─── */}
       {phase === "preloading" && (
@@ -363,9 +372,11 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
           />
           <h1
             style={{
-              fontFamily: GANGSTER,
-              fontSize: isMobile ? 32 : 52,
-              letterSpacing: 1,
+              fontFamily: TITLE,
+              fontWeight: 700,
+              fontSize: isMobile ? 34 : 56,
+              letterSpacing: isMobile ? -1 : -1.8,
+              lineHeight: 1.05,
               color: "var(--color-foreground, #fff)",
               animation: "introRise 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both",
             }}
@@ -374,7 +385,10 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
           </h1>
           <p
             style={{
-              fontSize: 14,
+              fontFamily: TITLE,
+              fontWeight: 400,
+              fontSize: 15,
+              letterSpacing: 0.2,
               color: "var(--color-muted-foreground, #888)",
               animation: "introRise 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both",
             }}
