@@ -566,8 +566,10 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [slugCopied, setSlugCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [created, setCreated]         = useState(false);
 
   const { data: colorPresets = [] } = api.preset.colorList.useQuery();
+  const { data: logoPresets = [] }  = api.preset.logoList.useQuery();
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
   const [savingUrl, setSavingUrl] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -589,7 +591,12 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
 
-  const create = api.campaign.create.useMutation({ onSuccess: (c) => router.push(`/campaigns/${c.id}`) });
+  const create = api.campaign.create.useMutation({
+    onSuccess: (c) => {
+      setCreated(true);
+      setTimeout(() => router.push(`/campaigns/${c.id}`), 1600);
+    },
+  });
   const update = api.campaign.update.useMutation({ onSuccess: () => router.refresh() });
 
   function set<K extends keyof FormValues>(key: K, val: FormValues[K]) {
@@ -675,6 +682,52 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         currencySymbol={values.currencySymbol}
         locale={values.locale}
       />
+
+      {/* Campaign created animation */}
+      {created && (
+        <div
+          className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            style={{
+              width: 72, height: 72,
+              borderRadius: "50%",
+              background: "var(--color-foreground)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              animation: "successPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards",
+            }}
+          >
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <polyline
+                points="7,18 15,26 29,10"
+                stroke="var(--color-background)"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  strokeDasharray: 50,
+                  strokeDashoffset: 50,
+                  animation: "checkDraw 0.4s ease 0.35s forwards",
+                }}
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+            ¡Campaña creada!
+          </p>
+          <style>{`
+            @keyframes successPop {
+              0%   { transform: scale(0); opacity: 0; }
+              70%  { transform: scale(1.12); opacity: 1; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes checkDraw {
+              to { stroke-dashoffset: 0; }
+            }
+          `}</style>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
 
@@ -840,43 +893,80 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
         {/* ── Logo ── */}
         <Section title="Logo">
-          <div className="flex items-center gap-4">
-            {/* Box: always visible, shows icon / spinner / image */}
-            <div
-              className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl"
-              style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
-            >
-              {uploading ? (
-                <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--color-muted-foreground)" }} />
-              ) : values.logoUrl ? (
-                <>
-                  <Image src={values.logoUrl} alt="Logo" fill className="object-contain p-2" />
-                  <button
-                    type="button"
-                    onClick={() => set("logoUrl", "")}
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
-                    style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </>
-              ) : (
-                <ImageIcon className="h-7 w-7" style={{ color: "var(--color-subtle)" }} />
-              )}
+          <div className="flex items-start gap-4">
+            {/* Left: preview box + upload */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div
+                className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl"
+                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
+              >
+                {uploading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--color-muted-foreground)" }} />
+                ) : values.logoUrl ? (
+                  <>
+                    <Image src={values.logoUrl} alt="Logo" fill className="object-contain p-2" />
+                    <button
+                      type="button"
+                      onClick={() => set("logoUrl", "")}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
+                      style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </>
+                ) : (
+                  <ImageIcon className="h-7 w-7" style={{ color: "var(--color-subtle)" }} />
+                )}
+              </div>
+
+              <label
+                className="inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+                style={{
+                  background: "var(--color-surface-overlay)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-foreground)",
+                }}
+              >
+                <input type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
+                <Upload className="h-4 w-4" />
+                Subir logo
+              </label>
             </div>
 
-            <label
-              className="inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-              style={{
-                background: "var(--color-surface-overlay)",
-                border: "1px solid var(--color-border)",
-                color: "var(--color-foreground)",
-              }}
-            >
-              <input type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
-              <Upload className="h-4 w-4" />
-              Subir logo
-            </label>
+            {/* Right: logo presets from admin */}
+            {logoPresets.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {logoPresets.map((p) => {
+                  const active = values.logoUrl === p.imageUrl;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      title={p.name}
+                      onClick={() => set("logoUrl", p.imageUrl)}
+                      className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl transition-opacity hover:opacity-80"
+                      style={{
+                        border: `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
+                        background: "var(--color-surface-overlay)",
+                        outline: active ? "2px solid var(--color-foreground)" : "none",
+                        outlineOffset: 2,
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.imageUrl} alt={p.name} className="h-12 w-12 object-contain p-1" />
+                      {active && (
+                        <span
+                          className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full"
+                          style={{ background: "var(--color-foreground)" }}
+                        >
+                          <Check className="h-2.5 w-2.5" style={{ color: "var(--color-background)" }} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Section>
 
@@ -959,20 +1049,6 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
             </Field>
           </div>
 
-          {/* Preview button */}
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{
-              background: "var(--color-surface-overlay)",
-              border: "1px solid var(--color-border)",
-              color: "var(--color-foreground)",
-            }}
-          >
-            <Smartphone className="h-4 w-4" />
-            Ver preview en mobile
-          </button>
         </Section>
 
         <Divider />
@@ -1013,23 +1089,39 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         <Divider />
 
         {/* ── Submit ── */}
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={isSaving || ctaStatus === "invalid"}
-            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
-            style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-          >
-            {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {campaign ? "Guardar cambios" : "Crear campaña"}
-          </button>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={isSaving || ctaStatus === "invalid"}
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+            >
+              {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {campaign ? "Guardar cambios" : "Crear campaña"}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="rounded-md px-4 py-2 text-sm transition-opacity hover:opacity-70"
+              style={{ color: "var(--color-muted-foreground)" }}
+            >
+              Cancelar
+            </button>
+          </div>
+
           <button
             type="button"
-            onClick={() => router.back()}
-            className="rounded-md px-4 py-2 text-sm transition-opacity hover:opacity-70"
-            style={{ color: "var(--color-muted-foreground)" }}
+            onClick={() => setPreviewOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+            style={{
+              background: "var(--color-surface-overlay)",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-foreground)",
+            }}
           >
-            Cancelar
+            <Smartphone className="h-4 w-4" />
+            Ver preview en mobile
           </button>
         </div>
 

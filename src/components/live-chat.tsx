@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Headphones } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { X, Send, Headphones } from "lucide-react";
 
 type Msg = { from: "support" | "user"; text: string; ts: string };
 
@@ -23,6 +23,13 @@ export function LiveChatProvider() {
   const [input, setInput]     = useState("");
   const [typing, setTyping]   = useState(false);
   const bottomRef             = useRef<HTMLDivElement>(null);
+
+  const openChat = useCallback(() => setOpen(true), []);
+
+  useEffect(() => {
+    window.addEventListener("chat:open", openChat);
+    return () => window.removeEventListener("chat:open", openChat);
+  }, [openChat]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,37 +58,6 @@ export function LiveChatProvider() {
 
   return (
     <>
-      {/* Toggle button — fixed top-right */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        title="Chat en vivo"
-        style={{
-          position:   "fixed",
-          top:        12,
-          right:      20,
-          zIndex:     60,
-          display:    "flex",
-          alignItems: "center",
-          gap:        6,
-          borderRadius: 9999,
-          padding:    "6px 12px 6px 10px",
-          fontSize:   12,
-          fontWeight: 600,
-          cursor:     "pointer",
-          background: open ? "var(--color-surface-overlay)" : "var(--color-foreground)",
-          color:      open ? "var(--color-muted-foreground)" : "var(--color-background)",
-          border:     "1px solid var(--color-border)",
-          transition: "background 0.15s ease, color 0.15s ease",
-        }}
-      >
-        {open
-          ? <X style={{ width: 14, height: 14 }} />
-          : <MessageCircle style={{ width: 14, height: 14 }} />
-        }
-        {!open && "Chat"}
-      </button>
-
       {/* Sidebar */}
       <div
         style={{

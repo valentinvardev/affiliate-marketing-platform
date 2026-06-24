@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { Trophy, TrendingUp, TrendingDown, Minus, Zap } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Leaderboard" };
@@ -19,30 +19,30 @@ export default async function LeaderboardPage() {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfYesterday = new Date(startOfToday.getTime() - 86_400_000);
 
-  const [todayConvs, yesterdayConvs] = await Promise.all([
-    db.conversion.findMany({
-      where: { receivedAt: { gte: startOfToday, lte: now } },
-      select: { price: true },
+  const [todayAgg, yesterdayAgg] = await Promise.all([
+    db.conversion.aggregate({
+      where: { receivedAt: { gte: startOfToday } },
+      _sum: { price: true }, _count: { id: true },
     }),
-    db.conversion.findMany({
+    db.conversion.aggregate({
       where: { receivedAt: { gte: startOfYesterday, lt: startOfToday } },
-      select: { price: true },
+      _sum: { price: true }, _count: { id: true },
     }),
   ]);
 
-  const todayRevenue    = todayConvs.reduce((s, c) => s + c.price, 0);
-  const yesterdayRevenue = yesterdayConvs.reduce((s, c) => s + c.price, 0);
-  const todayCount       = todayConvs.length;
-  const yesterdayCount   = yesterdayConvs.length;
+  const todayRevenue     = todayAgg._sum.price     ?? 0;
+  const yesterdayRevenue = yesterdayAgg._sum.price ?? 0;
+  const todayCount       = todayAgg._count.id;
+  const yesterdayCount   = yesterdayAgg._count.id;
 
-  const diff        = todayRevenue - yesterdayRevenue;
-  const diffPct     = yesterdayRevenue > 0
+  const diff    = todayRevenue - yesterdayRevenue;
+  const diffPct = yesterdayRevenue > 0
     ? (diff / yesterdayRevenue) * 100
     : todayRevenue > 0 ? 100 : 0;
-  const winning     = todayRevenue >= yesterdayRevenue;
-  const identical   = diff === 0 && yesterdayRevenue === 0;
+  const ahead   = diff > 0;
+  const behind  = diff < 0;
+  const noData  = diff === 0 && yesterdayRevenue === 0;
 
-  // Deterministic motivational pick (changes each hour)
   const motivation = MOTIVATIONAL[now.getHours() % MOTIVATIONAL.length]!;
 
   function fmt(n: number) {
@@ -63,123 +63,126 @@ export default async function LeaderboardPage() {
         </h1>
       </header>
 
-      <main className="flex-1 px-8 py-10 flex flex-col items-center">
-        {/* Hero motivational */}
-        <div className="text-center max-w-md">
-          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
-            Leaderboard
+      <main className="flex-1 px-8 py-16 flex flex-col items-center">
+
+        {/* Headline */}
+        <div className="text-center max-w-sm">
+          <p
+            className="text-[11px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--color-subtle)" }}
+          >
+            Tu progreso
           </p>
           <h2
-            className="mt-3 text-2xl font-bold leading-snug"
+            className="mt-4 text-3xl font-bold tracking-tight"
             style={{ color: "var(--color-foreground)" }}
           >
-            ¿Por qué querés compararte
+            ¿Por qué compararte
             <br />con otras personas?
           </h2>
-          <p
-            className="mt-2 text-base font-semibold"
-            style={{ color: "var(--color-accent)" }}
-          >
-            ¡Sé mejor que ayer!
+          <p className="mt-3 text-base" style={{ color: "var(--color-muted-foreground)" }}>
+            Sé mejor que ayer.
           </p>
         </div>
 
-        {/* Comparison cards */}
-        <div className="mt-10 grid w-full max-w-lg grid-cols-2 gap-4">
+        {/* Cards */}
+        <div className="mt-12 grid w-full max-w-lg grid-cols-2 gap-3">
           {/* Yesterday */}
           <div
-            className="rounded-2xl p-6"
+            className="rounded-xl p-6"
             style={{
-              border: "1px solid var(--color-border)",
+              border:     "1px solid var(--color-border)",
               background: "var(--color-surface-raised)",
             }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest"
+              style={{ color: "var(--color-subtle)" }}
+            >
               Ayer
             </p>
             <p
-              className="mt-3 text-3xl font-bold tabular-nums tracking-tight"
+              className="mt-4 text-3xl font-bold tabular-nums tracking-tight"
               style={{ color: "var(--color-muted-foreground)" }}
             >
               {fmt(yesterdayRevenue)}
             </p>
-            <p className="mt-1.5 text-xs" style={{ color: "var(--color-subtle)" }}>
+            <p className="mt-2 text-xs" style={{ color: "var(--color-subtle)" }}>
               {yesterdayCount} conversión{yesterdayCount !== 1 ? "es" : ""}
             </p>
           </div>
 
           {/* Today */}
           <div
-            className="rounded-2xl p-6"
+            className="rounded-xl p-6"
             style={{
-              border: `1px solid ${winning && !identical ? "rgba(80,227,194,0.3)" : "var(--color-border)"}`,
-              background: winning && !identical ? "var(--color-success-bg)" : "var(--color-surface-raised)",
+              border:     ahead ? "1px solid rgba(255,255,255,0.15)" : "1px solid var(--color-border)",
+              background: ahead ? "var(--color-surface-overlay)"      : "var(--color-surface-raised)",
             }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest"
+              style={{ color: "var(--color-subtle)" }}
+            >
               Hoy
             </p>
             <p
-              className="mt-3 text-3xl font-bold tabular-nums tracking-tight"
-              style={{ color: winning && !identical ? "var(--color-success)" : "var(--color-foreground)" }}
+              className="mt-4 text-3xl font-bold tabular-nums tracking-tight"
+              style={{ color: "var(--color-foreground)" }}
             >
               {fmt(todayRevenue)}
             </p>
-            <p className="mt-1.5 text-xs" style={{ color: "var(--color-subtle)" }}>
+            <p className="mt-2 text-xs" style={{ color: "var(--color-subtle)" }}>
               {todayCount} conversión{todayCount !== 1 ? "es" : ""}
             </p>
           </div>
         </div>
 
         {/* Diff badge */}
-        <div className="mt-4 flex items-center gap-2">
-          {identical ? (
-            <>
-              <Minus className="h-4 w-4" style={{ color: "var(--color-subtle)" }} />
-              <span className="text-sm" style={{ color: "var(--color-subtle)" }}>
-                Sin datos aún — ¡el día acaba de empezar!
-              </span>
-            </>
-          ) : winning ? (
-            <>
-              <TrendingUp className="h-4 w-4" style={{ color: "var(--color-success)" }} />
-              <span className="text-sm font-semibold" style={{ color: "var(--color-success)" }}>
-                +{fmt(diff)} · +{diffPct.toFixed(1)}% vs ayer
-              </span>
-            </>
+        <div className="mt-5">
+          {noData ? (
+            <span className="text-sm" style={{ color: "var(--color-subtle)" }}>
+              Sin datos aún — el día acaba de empezar.
+            </span>
           ) : (
-            <>
-              <TrendingDown className="h-4 w-4" style={{ color: "var(--color-error)" }} />
-              <span className="text-sm font-semibold" style={{ color: "var(--color-error)" }}>
-                {fmt(diff)} · {diffPct.toFixed(1)}% vs ayer
+            <div
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium tabular-nums"
+              style={{
+                background: "var(--color-surface-overlay)",
+                border:     "1px solid var(--color-border)",
+                color:      "var(--color-foreground)",
+              }}
+            >
+              {ahead  && <TrendingUp   className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />}
+              {behind && <TrendingDown className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />}
+              {!ahead && !behind && <Minus className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />}
+              {diff >= 0 ? "+" : ""}{fmt(diff)}
+              <span style={{ color: "var(--color-subtle)" }}>
+                ({diff >= 0 ? "+" : ""}{diffPct.toFixed(1)}% vs ayer)
               </span>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Motivational footer card */}
+        {/* Motivational quote */}
         <div
-          className="mt-12 flex w-full max-w-lg items-start gap-3 rounded-2xl p-5"
-          style={{
-            border: "1px solid var(--color-border)",
-            background: "var(--color-surface-raised)",
-          }}
+          className="mt-16 w-full max-w-lg"
+          style={{ borderLeft: "2px solid var(--color-border)", paddingLeft: 20 }}
         >
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-            style={{ background: "var(--color-surface-overlay)" }}
+          <p
+            className="text-sm leading-relaxed italic"
+            style={{ color: "var(--color-muted-foreground)" }}
           >
-            <Zap className="h-4 w-4" style={{ color: "var(--color-warning)" }} />
-          </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
-              Recordatorio
-            </p>
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--color-foreground)" }}>
-              {motivation}
-            </p>
-          </div>
+            &ldquo;{motivation}&rdquo;
+          </p>
+          <p
+            className="mt-2 text-[11px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--color-subtle)" }}
+          >
+            Recordatorio diario
+          </p>
         </div>
+
       </main>
     </div>
   );

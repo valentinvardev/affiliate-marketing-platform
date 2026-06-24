@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, MessageCircle } from "lucide-react";
 
 type BalanceData = {
   today:     { revenue: number; conversions: number };
@@ -37,13 +37,14 @@ export function BalanceBar() {
 
   return (
     <div
-      className="flex shrink-0 items-center justify-end gap-6 px-8"
+      className="flex shrink-0 items-center gap-6 px-8"
       style={{
         height:       42,
         borderBottom: "1px solid var(--color-border)",
         background:   "var(--color-surface)",
       }}
     >
+      <div className="flex-1" />
       {loading ? (
         <span className="text-xs" style={{ color: "var(--color-subtle)" }}>
           Cargando balance…
@@ -112,6 +113,23 @@ export function BalanceBar() {
           )}
         </>
       )}
+
+      {/* Chat button */}
+      <div style={{ width: 1, height: 16, background: "var(--color-border)", flexShrink: 0 }} />
+      <button
+        type="button"
+        title="Chat en vivo"
+        onClick={() => window.dispatchEvent(new CustomEvent("chat:open"))}
+        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-opacity hover:opacity-70"
+        style={{
+          background: "var(--color-surface-overlay)",
+          border:     "1px solid var(--color-border)",
+          color:      "var(--color-muted-foreground)",
+        }}
+      >
+        <MessageCircle className="h-3.5 w-3.5" />
+        Chat
+      </button>
     </div>
   );
 }
