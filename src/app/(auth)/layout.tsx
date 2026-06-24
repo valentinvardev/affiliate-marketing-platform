@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -7,8 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="TapSur" width={59} height={59} className="shrink-0 rounded-md" />
+          <Image src="/logo.png" alt="TapSur" width={52} height={52} className="shrink-0 rounded-md" />
           <span className="text-lg font-bold tracking-tight" style={{ color: "var(--color-foreground)" }}>
             TapSur
           </span>
