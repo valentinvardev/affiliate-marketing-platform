@@ -9,14 +9,15 @@ const SLIDES = [
   "/intro/intro3.png",
   "/intro/intro4.jpg",
 ];
-const SLIDE_MS = 3000;   // duración de cada diapositiva
-const CYCLES   = 2;      // todas las diapositivas + 1 repetición
-const MUSIC_SRC = "/intro/gta-loading.mp3";
+const SLIDE_MS    = 3000;   // duración de cada diapositiva
+const CYCLES      = 2;      // todas las diapositivas + 1 repetición
+const MUSIC_SRC   = "/intro/gta-loading.mp3";
+const PRELOAD_MAX = 12000;  // tope de espera de buffering (ms)
 
 /* ═══════════════════════════════════════════════
    GTA V loading wheel (sweep ring)
 ═══════════════════════════════════════════════ */
-function LoadingWheel() {
+function LoadingWheel({ label = "Cargando" }: { label?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <span
@@ -28,7 +29,7 @@ function LoadingWheel() {
           textShadow: "0 1px 4px rgba(0,0,0,0.8)",
         }}
       >
-        Cargando
+        {label}
       </span>
       <div
         style={{
@@ -49,35 +50,81 @@ function LoadingWheel() {
 }
 
 /* ═══════════════════════════════════════════════
-   Intro sequence: loading slideshow → welcome
+   Intro sequence: preload → loading slideshow → welcome
 ═══════════════════════════════════════════════ */
 export function IntroSequence({ onComplete }: { onComplete: () => void }) {
   const [idx, setIdx]     = useState(0);
-  const [phase, setPhase] = useState<"loading" | "welcome">("loading");
+  const [phase, setPhase] = useState<"preloading" | "loading" | "welcome">("preloading");
   const audioRef          = useRef<HTMLAudioElement>(null);
 
-  /* Preload images */
+  /* ── Preload everything (images + audio), then start ── */
   useEffect(() => {
-    SLIDES.forEach((src) => { const img = new Image(); img.src = src; });
-  }, []);
+    let started = false;
+    const imagesReady = { v: false };
+    const audioReady  = { v: false };
 
-  /* Music — autoplay with fallback on first interaction */
-  useEffect(() => {
+    function tryStart() {
+      if (started) return;
+      if (!(imagesReady.v && audioReady.v)) return;
+      begin();
+    }
+
+    function begin() {
+      if (started) return;
+      started = true;
+      clearTimeout(safety);
+      const a = audioRef.current;
+      if (a) {
+        a.volume = 0.55;
+        a.currentTime = 0;
+        void a.play().catch(() => {
+          // Autoplay bloqueado → arrancar en la primera interacción
+          const start = () => { void a.play().catch(() => {}); cleanup(); };
+          const cleanup = () => {
+            window.removeEventListener("pointerdown", start);
+            window.removeEventListener("keydown", start);
+          };
+          window.addEventListener("pointerdown", start);
+          window.addEventListener("keydown", start);
+        });
+      }
+      setPhase("loading");
+    }
+
+    // Preload images
+    void Promise.all(
+      SLIDES.map(
+        (src) =>
+          new Promise<void>((res) => {
+            const img = new Image();
+            img.onload = () => res();
+            img.onerror = () => res();
+            img.src = src;
+          }),
+      ),
+    ).then(() => { imagesReady.v = true; tryStart(); });
+
+    // Preload audio (wait until fully buffered)
     const a = audioRef.current;
-    if (!a) return;
-    a.volume = 0.55;
-    void a.play().catch(() => {
-      const start = () => { void a.play().catch(() => {}); cleanup(); };
-      const cleanup = () => {
-        window.removeEventListener("pointerdown", start);
-        window.removeEventListener("keydown", start);
-      };
-      window.addEventListener("pointerdown", start);
-      window.addEventListener("keydown", start);
-    });
+    if (a) {
+      const onReady = () => { audioReady.v = true; tryStart(); };
+      if (a.readyState >= 4) {
+        onReady();
+      } else {
+        a.addEventListener("canplaythrough", onReady, { once: true });
+        a.addEventListener("error", onReady, { once: true }); // si falta el archivo, seguir igual
+        a.load();
+      }
+    } else {
+      audioReady.v = true;
+    }
+
+    // Safety: nunca bloquear más que PRELOAD_MAX
+    const safety = setTimeout(begin, PRELOAD_MAX);
+    return () => clearTimeout(safety);
   }, []);
 
-  /* Slideshow driver — runs all slides × CYCLES, then → welcome */
+  /* ── Slideshow driver — corre todas las slides × CYCLES, luego → welcome ── */
   useEffect(() => {
     if (phase !== "loading") return;
     const total = SLIDES.length * CYCLES;
@@ -93,7 +140,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
     return () => clearInterval(t);
   }, [phase]);
 
-  /* Welcome → fade out music, then complete */
+  /* ── Welcome → fade out música, luego completar ── */
   useEffect(() => {
     if (phase !== "welcome") return;
     const a = audioRef.current;
@@ -118,6 +165,21 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
         overflow: "hidden",
       }}
     >
+      {/* ─── PRELOAD PHASE ─── */}
+      {phase === "preloading" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <LoadingWheel />
+        </div>
+      )}
+
       {/* ─── LOADING PHASE ─── */}
       {phase === "loading" && (
         <>
@@ -239,7 +301,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
         </div>
       )}
 
-      {/* Music */}
+      {/* Música */}
       <audio ref={audioRef} src={MUSIC_SRC} loop preload="auto" />
 
       {/* Keyframes */}
