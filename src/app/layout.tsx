@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { SessionProvider } from "@/components/session-provider";
+import { LiveChatProvider } from "@/components/live-chat";
 
 export const metadata: Metadata = {
   title: { default: "Aff CMS", template: "%s — Aff CMS" },
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SessionProvider>
           <TRPCReactProvider>{children}</TRPCReactProvider>
+          <LiveChatProvider />
         </SessionProvider>
       </body>
     </html>
