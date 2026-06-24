@@ -1,44 +1,101 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { X, Send, MessageCircle } from "lucide-react";
+import { api } from "@/trpc/react";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 
-type Msg = { from: "team" | "user"; text: string; ts: string };
+type Msg = {
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  createdAt: string;
+};
 
-const INITIAL: Msg[] = [
-  {
-    from: "team",
-    text: "¡Bienvenido al canal de TapSur! Escribinos cualquier cosa.",
-    ts: now(),
-  },
-];
+function toMsg(row: {
+  id: string; userId: string; username: string; text: string; createdAt: string | Date;
+}): Msg {
+  return {
+    id:        row.id,
+    userId:    row.userId,
+    username:  row.username,
+    text:      row.text,
+    createdAt: typeof row.createdAt === "string" ? row.createdAt : row.createdAt.toISOString(),
+  };
+}
 
-function now() {
-  return new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function LiveChatProvider() {
-  const [open, setOpen]       = useState(false);
-  const [msgs, setMsgs]       = useState<Msg[]>(INITIAL);
-  const [input, setInput]     = useState("");
-  const bottomRef             = useRef<HTMLDivElement>(null);
+  const { data: session } = useSession();
+  const me       = session?.user?.id ?? "";
+  const myName   = session?.user?.name ?? "Yo";
 
+  const [open, setOpen]   = useState(false);
+  const [msgs, setMsgs]   = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const bottomRef         = useRef<HTMLDivElement>(null);
+
+  const utils = api.useUtils();
+  const listQuery = api.chat.list.useQuery(undefined, { refetchInterval: 6000 });
+  const sendMut   = api.chat.send.useMutation();
+
+  /* Merge incoming rows, dedupe by id, sort by time */
+  const merge = useCallback((incoming: Msg[]) => {
+    setMsgs((prev) => {
+      const map = new Map(prev.map((m) => [m.id, m]));
+      for (const m of incoming) map.set(m.id, m);
+      return [...map.values()].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+    });
+  }, []);
+
+  /* Seed + poll merge */
+  useEffect(() => {
+    if (listQuery.data) merge(listQuery.data.map(toMsg));
+  }, [listQuery.data, merge]);
+
+  /* Realtime subscription */
+  useEffect(() => {
+    const channel = supabaseBrowser
+      .channel("chat-room")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ChatMessage" },
+        (payload) => {
+          merge([toMsg(payload.new as Msg)]);
+          void utils.chat.list.invalidate();
+        },
+      )
+      .subscribe();
+    return () => { void supabaseBrowser.removeChannel(channel); };
+  }, [merge, utils]);
+
+  /* Open via header button */
   const openChat = useCallback(() => setOpen(true), []);
-
   useEffect(() => {
     window.addEventListener("chat:open", openChat);
     return () => window.removeEventListener("chat:open", openChat);
   }, [openChat]);
 
+  /* Scroll to bottom */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs]);
+  }, [msgs, open]);
 
   function send() {
     const text = input.trim();
-    if (!text) return;
+    if (!text || !me) return;
     setInput("");
-    setMsgs((m) => [...m, { from: "user", text, ts: now() }]);
+    sendMut.mutate(
+      { userId: me, username: myName, text },
+      { onSuccess: (row) => merge([toMsg(row)]) },
+    );
   }
 
   return (
@@ -82,7 +139,6 @@ export function LiveChatProvider() {
               alignItems:     "center",
               justifyContent: "center",
               flexShrink:     0,
-              position:       "relative",
             }}
           >
             <MessageCircle style={{ width: 16, height: 16, color: "var(--color-muted-foreground)" }} />
@@ -121,43 +177,52 @@ export function LiveChatProvider() {
             gap:        12,
           }}
         >
-          {msgs.map((m, i) => (
-            <div
-              key={i}
-              style={{
-                display:       "flex",
-                flexDirection: "column",
-                alignItems:    m.from === "user" ? "flex-end" : "flex-start",
-              }}
-            >
-              <div
-                style={{
-                  maxWidth:     "80%",
-                  borderRadius: m.from === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  padding:      "9px 13px",
-                  fontSize:     13,
-                  lineHeight:   1.5,
-                  background:   m.from === "user"
-                    ? "var(--color-foreground)"
-                    : "var(--color-surface-overlay)",
-                  color:        m.from === "user"
-                    ? "var(--color-background)"
-                    : "var(--color-foreground)",
-                }}
-              >
-                {m.text}
-              </div>
-              <span
-                style={{
-                  marginTop: 3,
-                  fontSize:  10,
-                  color:     "var(--color-subtle)",
-                }}
-              >
-                {m.ts}
-              </span>
+          {msgs.length === 0 && (
+            <div style={{ margin: "auto", textAlign: "center", padding: "0 20px" }}>
+              <MessageCircle style={{ width: 22, height: 22, color: "var(--color-subtle)", margin: "0 auto 8px" }} />
+              <p style={{ fontSize: 12, color: "var(--color-subtle)" }}>
+                Todavía no hay mensajes. ¡Escribí el primero!
+              </p>
             </div>
-          ))}
+          )}
+
+          {msgs.map((m) => {
+            const mine = m.userId === me;
+            return (
+              <div
+                key={m.id}
+                style={{
+                  display:       "flex",
+                  flexDirection: "column",
+                  alignItems:    mine ? "flex-end" : "flex-start",
+                }}
+              >
+                {!mine && (
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--color-muted-foreground)", marginBottom: 3, paddingLeft: 4 }}>
+                    {m.username}
+                  </span>
+                )}
+                <div
+                  style={{
+                    maxWidth:     "80%",
+                    borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                    padding:      "9px 13px",
+                    fontSize:     13,
+                    lineHeight:   1.5,
+                    whiteSpace:   "pre-wrap",
+                    wordBreak:    "break-word",
+                    background:   mine ? "var(--color-foreground)" : "var(--color-surface-overlay)",
+                    color:        mine ? "var(--color-background)" : "var(--color-foreground)",
+                  }}
+                >
+                  {m.text}
+                </div>
+                <span style={{ marginTop: 3, fontSize: 10, color: "var(--color-subtle)" }}>
+                  {fmtTime(m.createdAt)}
+                </span>
+              </div>
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
@@ -181,7 +246,8 @@ export function LiveChatProvider() {
                 send();
               }
             }}
-            placeholder="Escribí tu mensaje…"
+            placeholder={me ? "Escribí tu mensaje…" : "Iniciá sesión para chatear"}
+            disabled={!me}
             rows={1}
             style={{
               flex:        1,
@@ -200,7 +266,7 @@ export function LiveChatProvider() {
           <button
             type="button"
             onClick={send}
-            disabled={!input.trim()}
+            disabled={!input.trim() || !me}
             style={{
               width:          34,
               height:         34,
@@ -210,9 +276,9 @@ export function LiveChatProvider() {
               justifyContent: "center",
               flexShrink:     0,
               border:         "none",
-              cursor:         input.trim() ? "pointer" : "not-allowed",
-              background:     input.trim() ? "var(--color-foreground)" : "var(--color-surface-overlay)",
-              color:          input.trim() ? "var(--color-background)" : "var(--color-subtle)",
+              cursor:         input.trim() && me ? "pointer" : "not-allowed",
+              background:     input.trim() && me ? "var(--color-foreground)" : "var(--color-surface-overlay)",
+              color:          input.trim() && me ? "var(--color-background)" : "var(--color-subtle)",
               transition:     "background 0.15s ease",
             }}
           >

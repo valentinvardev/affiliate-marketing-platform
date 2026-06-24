@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { CircleDollarSign } from "lucide-react";
+import { CircleDollarSign, Coins } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 
 /* ─── Types ─── */
@@ -191,14 +191,15 @@ export function ConversionTestButton() {
           receivedAt: new Date().toISOString(),
         });
       }}
-      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-opacity active:opacity-60"
+      title="Generar lead de ejemplo"
+      className="inline-flex items-center justify-center rounded-lg p-1.5 transition-opacity active:opacity-60"
       style={{
         background: "rgba(255,255,255,0.07)",
         border:     "1px solid rgba(255,255,255,0.1)",
         color:      "var(--color-muted-foreground)",
       }}
     >
-      🪙
+      <Coins className="h-3.5 w-3.5" />
     </button>
   );
 }

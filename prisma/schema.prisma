@@ -116,6 +116,16 @@ model AppStackItem {
     @@index([stackId, position])
 }
 
+model ChatMessage {
+    id        String   @id @default(cuid())
+    userId    String
+    username  String
+    text      String
+    createdAt DateTime @default(now())
+
+    @@index([createdAt])
+}
+
 model Conversion {
     id           String   @id @default(cuid())
     price        Float    @default(0)
