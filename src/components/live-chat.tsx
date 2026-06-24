@@ -21,7 +21,6 @@ export function LiveChatProvider() {
   const [open, setOpen]       = useState(false);
   const [msgs, setMsgs]       = useState<Msg[]>(INITIAL);
   const [input, setInput]     = useState("");
-  const [typing, setTyping]   = useState(false);
   const bottomRef             = useRef<HTMLDivElement>(null);
 
   const openChat = useCallback(() => setOpen(true), []);
@@ -33,27 +32,13 @@ export function LiveChatProvider() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, typing]);
+  }, [msgs]);
 
   function send() {
     const text = input.trim();
     if (!text) return;
     setInput("");
     setMsgs((m) => [...m, { from: "user", text, ts: now() }]);
-    setTyping(true);
-
-    // Auto-reply after delay
-    setTimeout(() => {
-      setTyping(false);
-      setMsgs((m) => [
-        ...m,
-        {
-          from: "team",
-          text: "Gracias por tu mensaje. El equipo de TapSur lo va a ver pronto.",
-          ts: now(),
-        },
-      ]);
-    }, 1800);
   }
 
   return (
@@ -173,37 +158,6 @@ export function LiveChatProvider() {
               </span>
             </div>
           ))}
-
-          {/* Typing indicator */}
-          {typing && (
-            <div style={{ display: "flex", alignItems: "flex-start" }}>
-              <div
-                style={{
-                  borderRadius: "16px 16px 16px 4px",
-                  padding:      "10px 14px",
-                  background:   "var(--color-surface-overlay)",
-                  display:      "flex",
-                  gap:          4,
-                  alignItems:   "center",
-                }}
-              >
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    style={{
-                      width:     6,
-                      height:    6,
-                      borderRadius: "50%",
-                      background: "var(--color-subtle)",
-                      animation:  `lTyping 1.2s ease-in-out infinite`,
-                      animationDelay: `${i * 0.2}s`,
-                      display:    "inline-block",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
           <div ref={bottomRef} />
         </div>
 
@@ -266,14 +220,6 @@ export function LiveChatProvider() {
           </button>
         </div>
       </div>
-
-      {/* Typing animation */}
-      <style>{`
-        @keyframes lTyping {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-      `}</style>
     </>
   );
 }
