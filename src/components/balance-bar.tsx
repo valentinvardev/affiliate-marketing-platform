@@ -60,9 +60,9 @@ export function BalanceBar() {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-2.5 px-6"
+      className="flex shrink-0 items-center gap-2 px-6"
       style={{
-        height:       56,
+        height:       48,
         borderBottom: "1px solid var(--color-border)",
         background:   "var(--color-surface)",
       }}
@@ -75,20 +75,20 @@ export function BalanceBar() {
           type="button"
           title="Notificaciones"
           onClick={() => setNotifOpen((o) => !o)}
-          className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
           style={{
-            background: notifOpen ? "var(--color-surface-overlay)" : "var(--color-surface-raised)",
+            background: notifOpen ? "var(--color-surface-overlay)" : "transparent",
             border:     "1px solid var(--color-border)",
             color:      "var(--color-muted-foreground)",
           }}
         >
-          <Bell className="h-4 w-4" />
+          <Bell className="h-3.5 w-3.5" />
         </button>
 
         {/* Popover */}
         {notifOpen && (
           <div
-            className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl"
+            className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-lg"
             style={{
               background: "var(--color-surface-raised)",
               border:     "1px solid var(--color-border)",
@@ -96,15 +96,14 @@ export function BalanceBar() {
             }}
           >
             <div
-              className="flex items-center justify-between px-4 py-3"
+              className="px-3 py-2.5"
               style={{ borderBottom: "1px solid var(--color-border)" }}
             >
-              <span className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+              <span className="text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>
                 Notificaciones
               </span>
             </div>
-            <div className="px-4 py-8 text-center">
-              <Bell className="mx-auto mb-2 h-5 w-5" style={{ color: "var(--color-subtle)" }} />
+            <div className="px-4 py-7 text-center">
               <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
                 Sin notificaciones nuevas.
               </p>
@@ -115,21 +114,15 @@ export function BalanceBar() {
 
       {/* Wallet */}
       <div
-        className="flex items-center gap-2 rounded-xl px-3"
+        className="flex items-center gap-1.5 rounded-md px-2.5"
         style={{
-          height:     36,
-          background: "var(--color-surface-raised)",
-          border:     "1px solid rgba(74,222,128,0.35)",
-          boxShadow:  "0 0 0 1px rgba(74,222,128,0.06), 0 0 16px rgba(74,222,128,0.12)",
+          height:     28,
+          background: "transparent",
+          border:     "1px solid var(--color-border)",
         }}
       >
-        <span
-          className="flex h-5 w-5 items-center justify-center rounded-full"
-          style={{ background: "rgba(74,222,128,0.15)" }}
-        >
-          <DollarSign className="h-3 w-3" style={{ color: "#4ade80" }} />
-        </span>
-        <span className="text-sm font-bold tabular-nums" style={{ color: "#4ade80" }}>
+        <DollarSign className="h-3 w-3" style={{ color: "var(--color-subtle)" }} />
+        <span className="text-xs font-medium tabular-nums" style={{ color: "var(--color-foreground)" }}>
           {loading ? "—" : hidden ? "••••••" : fmt.format(balance)}
         </span>
         <button
@@ -139,7 +132,7 @@ export function BalanceBar() {
           className="flex items-center transition-opacity hover:opacity-70"
           style={{ color: "var(--color-subtle)" }}
         >
-          {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
         </button>
       </div>
 
@@ -148,20 +141,16 @@ export function BalanceBar() {
         type="button"
         title="Chat en vivo"
         onClick={() => window.dispatchEvent(new CustomEvent("chat:open"))}
-        className="flex items-center gap-2 rounded-xl px-3 transition-colors"
+        className="flex items-center gap-1.5 rounded-md px-2.5 transition-colors hover:opacity-80"
         style={{
-          height:     36,
-          background: "var(--color-surface-raised)",
+          height:     28,
+          background: "transparent",
           border:     "1px solid var(--color-border)",
-          color:      "var(--color-foreground)",
+          color:      "var(--color-muted-foreground)",
         }}
       >
-        <MessageCircle className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-        <span className="text-sm font-medium">Live Chat</span>
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ background: "#4ade80", boxShadow: "0 0 6px rgba(74,222,128,0.8)" }}
-        />
+        <MessageCircle className="h-3.5 w-3.5" />
+        <span className="text-xs font-medium">Chat</span>
       </button>
     </div>
   );
