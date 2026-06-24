@@ -43,7 +43,7 @@ function LoginForm() {
     return (
       <IntroSequence
         onComplete={() => {
-          router.push("/campaigns");
+          router.push("/overview");
           router.refresh();
         }}
       />

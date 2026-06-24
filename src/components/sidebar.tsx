@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, X } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 
 const NAV_BASE = [
+  { href: "/overview",      icon: LayoutDashboard, label: "Inicio" },
   { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
   { href: "/campaigns/new", icon: BookOpen,   label: "Nueva campaña" },
   { href: "/offers",        icon: Package,    label: "Offers" },
