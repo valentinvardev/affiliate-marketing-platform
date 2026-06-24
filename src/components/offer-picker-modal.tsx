@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, X, ExternalLink, Check, Loader2, ChevronDown, Monitor, Smartphone, Tablet, AlertTriangle } from "lucide-react";
+import { Search, X, ExternalLink, Check, Loader2, ChevronDown, Monitor, Smartphone, Tablet, AlertTriangle, ArrowLeft } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 import type { Offer, OffersResponse } from "@/lib/taprain";
 
@@ -65,7 +65,22 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
   const [s1, setS1]                 = useState(defaultS1);
   const [s2, setS2]                 = useState("");
   const [domain, setDomain]         = useState<string>(DOMAINS[0]);
+  const [mounted, setMounted]       = useState(false);
+  const [show, setShow]             = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fade in/out (montar → fade in; cerrar → fade out → desmontar)
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const id = requestAnimationFrame(() => setShow(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setShow(false);
+    const t = setTimeout(() => setMounted(false), 220);
+    return () => clearTimeout(t);
+  }, [open]);
 
   const load = useCallback(async (q: string, dev: string, tp: string) => {
     setLoading(true);
@@ -90,6 +105,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
   useEffect(() => {
     if (open) {
       setSelected(null);
+      setShowDetail(false);
       setS1(defaultS1);
       setS2("");
       void load("", "", "");
@@ -112,24 +128,37 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   const finalUrl = selected ? buildUrl(selected.tracking_url ?? "", domain, s1, s2) : "";
   const hasTracking = !!finalUrl;
 
+  function selectOffer(offer: Offer) {
+    setSelected(offer);
+    setShowDetail(true);
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+      style={{
+        background: "rgba(0,0,0,0.75)",
+        backdropFilter: "blur(4px)",
+        opacity: show ? 1 : 0,
+        transition: "opacity 0.2s ease",
+      }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl"
+        className="flex h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl sm:h-auto"
         style={{
           background: "var(--color-surface-raised)",
           border: "1px solid var(--color-border)",
           boxShadow: "0 24px 80px rgba(0,0,0,0.8)",
           maxHeight: "88vh",
+          opacity: show ? 1 : 0,
+          transform: show ? "scale(1)" : "scale(0.97)",
+          transition: "opacity 0.2s ease, transform 0.2s ease",
         }}
       >
         {/* Header */}
@@ -175,10 +204,10 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
           <FilterChips value={type}   onChange={setType}   options={TYPE_FILTERS} />
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
           {/* Offer list */}
           <div
-            className="flex-1 overflow-y-auto"
+            className="h-full w-full overflow-y-auto sm:w-auto sm:flex-1"
             style={{ borderRight: selected ? "1px solid var(--color-border)" : "none" }}
           >
             {error && (
@@ -193,7 +222,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
               <button
                 key={offer.id}
                 type="button"
-                onClick={() => setSelected(offer)}
+                onClick={() => selectOffer(offer)}
                 className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors"
                 style={{
                   borderBottom: "1px solid var(--color-border)",
@@ -276,9 +305,23 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
             ))}
           </div>
 
-          {/* Config panel */}
+          {/* Config panel — overlay deslizante en móvil, split en desktop */}
           {selected && (
-            <div className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto p-5">
+            <div
+              className={`absolute inset-0 z-10 flex flex-col gap-4 overflow-y-auto p-5 transition-transform duration-300 sm:static sm:z-auto sm:w-72 sm:shrink-0 sm:translate-x-0 ${showDetail ? "translate-x-0" : "translate-x-full"}`}
+              style={{ background: "var(--color-surface-raised)" }}
+            >
+              {/* Volver (solo móvil) */}
+              <button
+                type="button"
+                onClick={() => setShowDetail(false)}
+                className="-mx-1 -mt-1 flex items-center gap-1.5 self-start rounded-md px-1 py-1 text-xs font-medium sm:hidden"
+                style={{ color: "var(--color-muted-foreground)" }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver a ofertas
+              </button>
+
               {/* Selected offer summary */}
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
@@ -403,7 +446,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-md py-2 text-xs"
+                  className="hidden flex-1 rounded-md py-2 text-xs sm:block"
                   style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
                 >
                   Cancelar

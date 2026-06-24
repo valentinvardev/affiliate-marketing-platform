@@ -26,7 +26,7 @@ export default async function CampaignsPage() {
     <div className="flex flex-col min-h-screen">
       {/* Page header */}
       <header
-        className="flex h-14 shrink-0 items-center px-8"
+        className="flex h-14 shrink-0 items-center px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
@@ -49,7 +49,7 @@ export default async function CampaignsPage() {
       {/* DB warning */}
       {dbError && (
         <div
-          className="mx-8 mt-6 flex items-start gap-3 rounded-lg p-4"
+          className="mx-4 mt-6 flex items-start gap-3 rounded-lg p-4 md:mx-8"
           style={{
             background: "var(--color-warning-bg)",
             border: "1px solid rgba(245,166,35,0.2)",
@@ -69,7 +69,7 @@ export default async function CampaignsPage() {
       )}
 
       {/* Content */}
-      <main className="flex-1 px-8 py-6">
+      <main className="flex-1 px-4 py-6 md:px-8">
         {campaigns.length === 0 && !dbError ? (
           <EmptyState />
         ) : (
@@ -116,9 +116,9 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
       className="overflow-hidden rounded-xl"
       style={{ border: "1px solid var(--color-border)" }}
     >
-      {/* Table head */}
+      {/* Table head (solo desktop) */}
       <div
-        className="grid items-center px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider"
+        className="hidden items-center px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider md:grid"
         style={{
           color: "var(--color-muted-foreground)",
           borderBottom: "1px solid var(--color-border)",
@@ -149,91 +149,106 @@ function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
 
 function CampaignRow({ campaign: c, last }: { campaign: Campaign; last: boolean }) {
   const loc = getLocaleByCode(c.locale);
+  const border = last ? "none" : "1px solid var(--color-border)";
+
+  const actions = (
+    <>
+      <a
+        href={`/landing/${c.slug}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70"
+        style={{ color: "var(--color-muted-foreground)" }}
+        title="Ver landing"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+      <CampaignCopyUrl slug={c.slug} />
+      <CampaignToggle id={c.id} isActive={c.isActive} />
+      <Link
+        href={`/campaigns/${c.id}`}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors"
+        style={{ color: "var(--color-muted-foreground)" }}
+        title="Editar"
+      >
+        ✎
+      </Link>
+      <CampaignDelete id={c.id} name={c.name} />
+    </>
+  );
 
   return (
-    <div
-      className="table-row-hover grid items-center px-4 py-3.5"
-      style={{
-        gridTemplateColumns: "1fr 120px 120px 90px 130px",
-        borderBottom: last ? "none" : "1px solid var(--color-border)",
-      }}
-    >
-      {/* Name + slug */}
-      <div className="flex items-center gap-3 min-w-0 pr-4">
-        <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ background: c.colorPrimary }}
-        />
-        <div className="min-w-0">
+    <>
+      {/* ── Desktop: fila de tabla ── */}
+      <div
+        className="table-row-hover hidden items-center px-4 py-3.5 md:grid"
+        style={{ gridTemplateColumns: "1fr 120px 120px 90px 130px", borderBottom: border }}
+      >
+        {/* Name + slug */}
+        <div className="flex items-center gap-3 min-w-0 pr-4">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.colorPrimary }} />
+          <div className="min-w-0">
+            <Link
+              href={`/campaigns/${c.id}`}
+              className="block truncate text-sm font-medium transition-colors hover:opacity-70"
+              style={{ color: "var(--color-foreground)" }}
+            >
+              {c.name}
+            </Link>
+            <span className="block truncate font-mono text-[11px] mt-0.5" style={{ color: "var(--color-muted-foreground)" }}>
+              {c.slug}
+            </span>
+          </div>
+        </div>
+
+        {/* Locale */}
+        <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+          <span>{loc?.flag ?? "🌐"}</span>
+          <span className="truncate">{loc?.label?.split(" ")[0] ?? c.locale}</span>
+        </div>
+
+        {/* Currency */}
+        <div className="flex items-center gap-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+          <span className="font-mono font-medium" style={{ color: "var(--color-foreground)" }}>{c.currencySymbol}</span>
+          <span>{c.currencyCode}</span>
+        </div>
+
+        {/* Status */}
+        <div className="flex items-center gap-2">
+          {c.isActive ? (
+            <><span className="status-dot-green" /><span className="text-xs" style={{ color: "var(--color-success)" }}>Activa</span></>
+          ) : (
+            <><span className="status-dot-gray" /><span className="text-xs" style={{ color: "var(--color-subtle)" }}>Pausada</span></>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-1">{actions}</div>
+      </div>
+
+      {/* ── Móvil: una fila compacta ── */}
+      <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ borderBottom: border }}>
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.colorPrimary }} />
+        <div className="min-w-0 flex-1">
           <Link
             href={`/campaigns/${c.id}`}
-            className="block truncate text-sm font-medium transition-colors hover:opacity-70"
+            className="block truncate text-sm font-medium"
             style={{ color: "var(--color-foreground)" }}
           >
             {c.name}
           </Link>
-          <span
-            className="block truncate font-mono text-[11px] mt-0.5"
-            style={{ color: "var(--color-muted-foreground)" }}
-          >
-            {c.slug}
-          </span>
+          <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
+            <span className="truncate font-mono">{c.slug}</span>
+            <span>·</span>
+            <span className="shrink-0">{loc?.flag ?? "🌐"} {c.currencyCode}</span>
+            <span>·</span>
+            <span className="shrink-0" style={{ color: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }}>
+              {c.isActive ? "Activa" : "Pausada"}
+            </span>
+          </div>
         </div>
+        <div className="flex shrink-0 items-center gap-0.5">{actions}</div>
       </div>
-
-      {/* Locale */}
-      <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-        <span>{loc?.flag ?? "🌐"}</span>
-        <span className="truncate">{loc?.label?.split(" ")[0] ?? c.locale}</span>
-      </div>
-
-      {/* Currency */}
-      <div className="flex items-center gap-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-        <span className="font-mono font-medium" style={{ color: "var(--color-foreground)" }}>
-          {c.currencySymbol}
-        </span>
-        <span>{c.currencyCode}</span>
-      </div>
-
-      {/* Status */}
-      <div className="flex items-center gap-2">
-        {c.isActive ? (
-          <>
-            <span className="status-dot-green" />
-            <span className="text-xs" style={{ color: "var(--color-success)" }}>Activa</span>
-          </>
-        ) : (
-          <>
-            <span className="status-dot-gray" />
-            <span className="text-xs" style={{ color: "var(--color-subtle)" }}>Pausada</span>
-          </>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-1">
-        <a
-          href={`/landing/${c.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70"
-          style={{ color: "var(--color-muted-foreground)" }}
-          title="Ver landing"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-        <CampaignCopyUrl slug={c.slug} />
-        <CampaignToggle id={c.id} isActive={c.isActive} />
-        <Link
-          href={`/campaigns/${c.id}`}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors"
-          style={{ color: "var(--color-muted-foreground)" }}
-          title="Editar"
-        >
-          ✎
-        </Link>
-        <CampaignDelete id={c.id} name={c.name} />
-      </div>
-    </div>
+    </>
   );
 }

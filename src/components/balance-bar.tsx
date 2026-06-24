@@ -79,9 +79,6 @@ export function BalanceBar() {
       </button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="TapSur" className="h-8 w-8 shrink-0 md:hidden" style={{ mixBlendMode: "screen" }} />
-      <span className="text-base font-bold tracking-tight md:hidden" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>
-        TapSur
-      </span>
 
       <div className="flex-1" />
 

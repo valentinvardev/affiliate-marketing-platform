@@ -286,18 +286,37 @@ function PreviewModal({
   const loc = LOCALES.find((l) => l.code === locale);
   const flag = loc?.flag ?? "🌐";
 
+  const [mounted, setMounted] = useState(false);
+  const [show, setShow] = useState(false);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     if (open) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const id = requestAnimationFrame(() => setShow(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setShow(false);
+    const t = setTimeout(() => setMounted(false), 220);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  if (!mounted) return null;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
+      style={{
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(6px)",
+        opacity: show ? 1 : 0,
+        transition: "opacity 0.2s ease",
+      }}
       onClick={onClose}
     >
       {/* Phone frame */}
@@ -311,6 +330,9 @@ function PreviewModal({
           border: "10px solid #1a1a1a",
           boxShadow: "0 0 0 2px #333, 0 40px 80px rgba(0,0,0,0.8)",
           background: colorBg,
+          opacity: show ? 1 : 0,
+          transform: show ? "scale(1)" : "scale(0.96)",
+          transition: "opacity 0.2s ease, transform 0.2s ease",
         }}
         onClick={(e) => e.stopPropagation()}
       >
