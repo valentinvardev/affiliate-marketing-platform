@@ -10,9 +10,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "no file" }, { status: 400 });
   }
 
+  // Ensure bucket exists and is public — safe to call even if it already exists
+  const { error: bucketError } = await supabaseAdmin.storage.createBucket(LOGOS_BUCKET, {
+    public: true,
+    allowedMimeTypes: ["image/*"],
+  });
+  if (bucketError && !bucketError.message.includes("already exists")) {
+    console.error("[upload] bucket create error:", bucketError.message);
+  }
+
   const ext = file.name.split(".").pop() ?? "png";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error } = await supabaseAdmin.storage
@@ -20,7 +28,7 @@ export async function POST(req: NextRequest) {
     .upload(filename, buffer, { contentType: file.type, upsert: false });
 
   if (error) {
-    console.error("[upload] Supabase error:", error.message);
+    console.error("[upload] Supabase upload error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
