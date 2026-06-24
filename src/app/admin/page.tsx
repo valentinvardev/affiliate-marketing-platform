@@ -7,8 +7,8 @@ import { db } from "@/server/db";
 import { approveUser, rejectUser, createColorPreset, deleteColorPreset, deleteLogoPreset } from "./actions";
 import { SignOutButton } from "./sign-out-button";
 import { LogoPresetUploader } from "./logo-preset-uploader";
-import { OfferConfigRow } from "./offer-config-row";
 import { fetchOffers } from "@/lib/taprain";
+import { AdminOffersTab } from "./admin-offers-tab";
 import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -271,17 +271,9 @@ export default async function AdminPage({
         {/* ── OFFERS TAB ── */}
         {tab === "offers" && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <p className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-                Activá las offers que quieras mostrar a los usuarios. Hover sobre el ícono para cambiar la imagen.
-              </p>
-              <span
-                className="ml-auto shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                style={{ background: "rgba(167,139,250,0.15)", color: "#a78bfa", border: "1px solid rgba(167,139,250,0.25)" }}
-              >
-                {whitelistedCount} activa{whitelistedCount !== 1 ? "s" : ""}
-              </span>
-            </div>
+            <p className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+              Activá las offers que quieras mostrar a los usuarios. Hover sobre el ícono para cambiar la imagen.
+            </p>
 
             {tapRainOffers.length === 0 ? (
               <AdminCard title="Offers de TapRain">
@@ -289,14 +281,11 @@ export default async function AdminPage({
               </AdminCard>
             ) : (
               <AdminCard title="Offers de TapRain" count={tapRainOffers.length}>
-                <div className="space-y-2">
-                  {tapRainOffers.map((offer) => {
-                    const config = offerConfigs.find(c => c.offerId === offer.id) ?? null;
-                    return (
-                      <OfferConfigRow key={offer.id} offer={offer} config={config} />
-                    );
-                  })}
-                </div>
+                <AdminOffersTab
+                  offers={tapRainOffers}
+                  configs={offerConfigs}
+                  whitelistedCount={whitelistedCount}
+                />
               </AdminCard>
             )}
           </div>

@@ -46,26 +46,23 @@ function playChime() {
   } catch { /* blocked */ }
 }
 
-/* ─── Coin stack animation ─── */
-function CoinStack() {
-  // 3 coins drop in from above and stack up, bottom-to-top with stagger
+/* ─── Coin icon ─── */
+function CoinIcon() {
   return (
-    <div className="relative shrink-0" style={{ width: 22, height: 48 }}>
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          style={{
-            position:  "absolute",
-            left:      0,
-            bottom:    i * 13,
-            fontSize:  18,
-            lineHeight: 1,
-            animation: `coinStack 0.35s cubic-bezier(0.22,1,0.36,1) ${i * 0.09}s both`,
-          }}
-        >
-          🪙
-        </span>
-      ))}
+    <div
+      style={{
+        width:          36,
+        height:         36,
+        borderRadius:   "50%",
+        background:     "#f5f0e8",
+        display:        "flex",
+        alignItems:     "center",
+        justifyContent: "center",
+        flexShrink:     0,
+        fontSize:       18,
+      }}
+    >
+      🪙
     </div>
   );
 }
@@ -105,11 +102,11 @@ function ConversionCard({
           background:   "#ffffff",
           borderRadius: 14,
           padding:      "10px 16px 10px 12px",
-          boxShadow:    "0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07)",
+          boxShadow:    "0 8px 30px rgba(0,0,0,0.14)",
           minWidth:     230,
         }}
       >
-        <CoinStack />
+        <CoinIcon />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 12, fontWeight: 600, color: "#111", lineHeight: 1.3 }}>
@@ -176,31 +173,22 @@ export function ConversionToastProvider() {
   if (toasts.length === 0) return null;
 
   return (
-    <>
-      <style>{`
-        @keyframes coinStack {
-          0%   { transform: translateY(-32px); opacity: 0; }
-          65%  { transform: translateY(3px);   opacity: 1; }
-          100% { transform: translateY(0);     opacity: 1; }
-        }
-      `}</style>
-      <div
-        style={{
-          position:       "fixed",
-          right:          20,
-          top:            20,
-          zIndex:         9999,
-          display:        "flex",
-          flexDirection:  "column",
-          gap:            8,
-          pointerEvents:  "none",
-        }}
-      >
-        {toasts.map((t) => (
-          <ConversionCard key={t.uid} toast={t} onDismiss={dismiss} />
-        ))}
-      </div>
-    </>
+    <div
+      style={{
+        position:       "fixed",
+        right:          20,
+        top:            20,
+        zIndex:         9999,
+        display:        "flex",
+        flexDirection:  "column",
+        gap:            8,
+        pointerEvents:  "none",
+      }}
+    >
+      {toasts.map((t) => (
+        <ConversionCard key={t.uid} toast={t} onDismiss={dismiss} />
+      ))}
+    </div>
   );
 }
 

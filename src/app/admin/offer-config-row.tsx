@@ -2,46 +2,61 @@
 
 import { useTransition, useRef, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
-import { Check, Upload, Loader2, Monitor, Smartphone } from "lucide-react";
+import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle } from "lucide-react";
 import { toggleOfferWhitelist, updateOfferImage } from "./actions";
 import type { Offer } from "@/lib/taprain";
 
 type Config = { whitelisted: boolean; imageUrl: string | null } | null;
 
 export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config }) {
-  const [pending, start] = useTransition();
+  const [pending, start]          = useTransition();
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(false);
   const [localImageUrl, setLocalImageUrl] = useState<string | null>(config?.imageUrl ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const whitelisted = config?.whitelisted ?? false;
-  const imageUrl = localImageUrl ?? offer.image_url;
+  const imageUrl    = localImageUrl ?? offer.image_url;
 
   function handleToggle() {
     const fd = new FormData();
     fd.set("offerId",   offer.id);
     fd.set("offerName", offer.name);
     fd.set("current",   String(whitelisted));
-    start(() => toggleOfferWhitelist(fd));
+    start(async () => { await toggleOfferWhitelist(fd); });
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Reset so the same file can be re-selected later
+    e.target.value = "";
+
     setUploading(true);
+    setUploadError(false);
     try {
       const body = new FormData();
       body.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body });
-      const data = (await res.json()) as { url?: string };
-      if (data.url) {
-        setLocalImageUrl(data.url);
-        const fd = new FormData();
-        fd.set("offerId",   offer.id);
-        fd.set("offerName", offer.name);
-        fd.set("imageUrl",  data.url);
-        start(() => updateOfferImage(fd));
+      const res  = await fetch("/api/upload", { method: "POST", body });
+      const data = (await res.json()) as { url?: string; error?: string };
+
+      if (!res.ok || !data.url) {
+        setUploadError(true);
+        setTimeout(() => setUploadError(false), 3000);
+        return;
       }
+
+      setLocalImageUrl(data.url);
+
+      const fd = new FormData();
+      fd.set("offerId",   offer.id);
+      fd.set("offerName", offer.name);
+      fd.set("imageUrl",  data.url);
+      start(async () => { await updateOfferImage(fd); });
+    } catch {
+      setUploadError(true);
+      setTimeout(() => setUploadError(false), 3000);
     } finally {
       setUploading(false);
     }
@@ -51,7 +66,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
     <div
       className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
       style={{
-        border: `1px solid ${whitelisted ? "rgba(167,139,250,0.25)" : "var(--color-border)"}`,
+        border:     `1px solid ${whitelisted ? "rgba(167,139,250,0.25)" : "var(--color-border)"}`,
         background: whitelisted ? "rgba(167,139,250,0.06)" : "var(--color-surface-overlay)",
       }}
     >
@@ -63,6 +78,8 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
         >
           {uploading ? (
             <Loader2 className="h-4 w-4 animate-spin" style={{ color: "var(--color-subtle)" }} />
+          ) : uploadError ? (
+            <AlertCircle className="h-4 w-4" style={{ color: "var(--color-error, #f87171)" }} />
           ) : imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt={offer.name} className="h-full w-full object-cover" />
@@ -70,16 +87,25 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
             <span className="text-lg">📦</span>
           )}
         </div>
+
+        {/* Upload overlay — always clickable, appears on hover */}
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
+          disabled={uploading}
           className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
           style={{ background: "rgba(0,0,0,0.65)" }}
           title="Cambiar imagen"
         >
           <Upload className="h-3.5 w-3.5 text-white" />
         </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleUpload}
+        />
       </div>
 
       {/* Info */}
@@ -119,9 +145,9 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
         disabled={pending}
         className="shrink-0 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all disabled:opacity-50"
         style={{
-          background:   whitelisted ? "#a78bfa" : "var(--color-surface-raised)",
-          color:        whitelisted ? "#000"     : "var(--color-muted-foreground)",
-          border:       whitelisted ? "none"     : "1px solid var(--color-border)",
+          background: whitelisted ? "#a78bfa"                  : "var(--color-surface-raised)",
+          color:      whitelisted ? "#000"                      : "var(--color-muted-foreground)",
+          border:     whitelisted ? "none"                      : "1px solid var(--color-border)",
         }}
       >
         {pending
