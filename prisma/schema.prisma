@@ -75,3 +75,19 @@ model LogoPreset {
     imageUrl  String
     createdAt DateTime @default(now())
 }
+
+model Conversion {
+    id           String   @id @default(cuid())
+    price        Float    @default(0)
+    offerName    String?
+    country      String?
+    s1           String?
+    s2           String?
+    clickId      String?
+    conversionId String?
+    ip           String?
+    receivedAt   DateTime @default(now())
+
+    @@index([receivedAt])
+    @@index([s1])
+}

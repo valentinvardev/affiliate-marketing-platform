@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { fetchStats, type StatsRange, type StatsRow } from "@/lib/taprain";
+import { db } from "@/server/db";
+import { fetchStats, type StatsRange } from "@/lib/taprain";
 import { DollarSign, Repeat2, MousePointerClick, Zap, AlertTriangle } from "lucide-react";
 import { StatsChart, type ChartPoint } from "./_components/stats-chart";
+import { ConversionList } from "./_components/conversion-list";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Stats" };
@@ -14,29 +16,76 @@ const RANGES: { key: StatsRange; label: string }[] = [
   { key: "30days",    label: "30 días" },
 ];
 
-/* Try to extract a time-series from rows regardless of exact key names */
-function extractChartData(rows: StatsRow[]): ChartPoint[] {
-  if (!rows.length) return [];
-  const first = rows[0]!;
-  const keys = Object.keys(first);
+/* Date window for each range */
+function getWindow(range: StatsRange): { from: Date; to: Date } {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const labelKey = keys.find((k) =>
-    /date|time|hour|day|period|label/i.test(k),
-  );
-  const revenueKey = keys.find((k) =>
-    /revenue|payout|earning|amount/i.test(k),
-  );
-  const convKey = keys.find((k) =>
-    /conversion|conv|count/i.test(k),
-  );
+  switch (range) {
+    case "hour":
+      return { from: new Date(now.getTime() - 60 * 60 * 1000), to: now };
+    case "today":
+      return { from: startOfDay, to: now };
+    case "yesterday": {
+      const yStart = new Date(startOfDay.getTime() - 86_400_000);
+      return { from: yStart, to: startOfDay };
+    }
+    case "7days":
+      return { from: new Date(startOfDay.getTime() - 7 * 86_400_000), to: now };
+    case "30days":
+      return { from: new Date(startOfDay.getTime() - 30 * 86_400_000), to: now };
+  }
+}
 
-  if (!revenueKey) return [];
+/* Group conversions into chart buckets */
+function buildChartData(
+  conversions: { price: number; receivedAt: Date }[],
+  range: StatsRange,
+  window: { from: Date; to: Date },
+): ChartPoint[] {
+  if (range === "hour") {
+    // 12 buckets of 5 minutes
+    const buckets: Record<string, number> = {};
+    for (let i = 11; i >= 0; i--) {
+      const t = new Date(window.to.getTime() - i * 5 * 60 * 1000);
+      const label = `${String(t.getHours()).padStart(2, "0")}:${String(Math.floor(t.getMinutes() / 5) * 5).padStart(2, "0")}`;
+      buckets[label] = 0;
+    }
+    for (const c of conversions) {
+      const t = new Date(c.receivedAt);
+      const label = `${String(t.getHours()).padStart(2, "0")}:${String(Math.floor(t.getMinutes() / 5) * 5).padStart(2, "0")}`;
+      if (label in buckets) buckets[label]! += c.price;
+    }
+    return Object.entries(buckets).map(([label, revenue]) => ({ label, revenue: +revenue.toFixed(2) }));
+  }
 
-  return rows.map((row) => ({
-    label: labelKey ? String(row[labelKey] ?? "") : "",
-    revenue: Number(row[revenueKey] ?? 0),
-    conversions: convKey && row[convKey] != null ? Number(row[convKey]) : undefined,
-  }));
+  if (range === "today" || range === "yesterday") {
+    // 24 hourly buckets
+    const buckets: Record<string, number> = {};
+    for (let h = 0; h < 24; h++) {
+      buckets[`${String(h).padStart(2, "0")}h`] = 0;
+    }
+    for (const c of conversions) {
+      const h = new Date(c.receivedAt).getHours();
+      buckets[`${String(h).padStart(2, "0")}h`]! += c.price;
+    }
+    return Object.entries(buckets).map(([label, revenue]) => ({ label, revenue: +revenue.toFixed(2) }));
+  }
+
+  // 7days / 30days: one bucket per day
+  const days = range === "7days" ? 7 : 30;
+  const buckets: Record<string, number> = {};
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(window.to.getTime() - i * 86_400_000);
+    const label = `${d.getMonth() + 1}/${d.getDate()}`;
+    buckets[label] = 0;
+  }
+  for (const c of conversions) {
+    const d = new Date(c.receivedAt);
+    const label = `${d.getMonth() + 1}/${d.getDate()}`;
+    if (label in buckets) buckets[label]! += c.price;
+  }
+  return Object.entries(buckets).map(([label, revenue]) => ({ label, revenue: +revenue.toFixed(2) }));
 }
 
 export default async function StatsPage({
@@ -46,36 +95,40 @@ export default async function StatsPage({
 }) {
   const { range: rawRange = "today" } = await searchParams;
   const range = (RANGES.some((r) => r.key === rawRange) ? rawRange : "today") as StatsRange;
+  const window = getWindow(range);
 
-  let data: Awaited<ReturnType<typeof fetchStats>> | null = null;
-  let apiError: string | null = null;
+  // Fetch TapRain summary stats + local conversions in parallel
+  const [statsResult, conversions] = await Promise.allSettled([
+    fetchStats(range),
+    db.conversion.findMany({
+      where: { receivedAt: { gte: window.from, lte: window.to } },
+      orderBy: { receivedAt: "desc" },
+    }),
+  ]);
 
-  try {
-    data = await fetchStats(range);
-  } catch (e) {
-    apiError = e instanceof Error ? e.message : "Error desconocido";
-  }
+  const data    = statsResult.status === "fulfilled" ? statsResult.value : null;
+  const apiError = statsResult.status === "rejected"
+    ? (statsResult.reason instanceof Error ? statsResult.reason.message : "Error desconocido")
+    : null;
+
+  const convList = conversions.status === "fulfilled" ? conversions.value : [];
+  const chartData = buildChartData(convList, range, window);
+
+  // Local summary (fallback / supplement when API has no clicks data)
+  const localRevenue = convList.reduce((s, c) => s + c.price, 0);
+  const localCount   = convList.length;
 
   const summary = data?.summary;
-  const rows = data?.rows ?? [];
-  const chartData = extractChartData(rows);
-
-  // Detect extra table columns
-  const rowKeys = rows.length > 0 ? Object.keys(rows[0]!) : [];
+  const rangeLabel = RANGES.find((r) => r.key === range)?.label ?? range;
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
       <header
         className="flex h-14 shrink-0 items-center px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
-          Stats
-        </h1>
-        <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>
-          TapRain
-        </span>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Stats</h1>
+        <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>TapRain</span>
       </header>
 
       <main className="flex-1 px-8 py-6 space-y-6">
@@ -91,7 +144,7 @@ export default async function StatsPage({
               className="rounded-lg px-4 py-1.5 text-xs font-medium transition-colors"
               style={{
                 background: range === key ? "var(--color-surface-overlay)" : "transparent",
-                color: range === key ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                color:      range === key ? "var(--color-foreground)" : "var(--color-muted-foreground)",
               }}
             >
               {label}
@@ -99,16 +152,16 @@ export default async function StatsPage({
           ))}
         </nav>
 
-        {/* Error */}
+        {/* API error */}
         {apiError && (
           <div
             className="flex items-start gap-3 rounded-xl p-4"
             style={{ background: "var(--color-warning-bg)", border: "1px solid rgba(245,166,35,0.2)" }}
           >
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "var(--color-warning)" }} />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--color-warning)" }} />
             <div>
               <p className="text-sm font-medium" style={{ color: "var(--color-warning)" }}>
-                No se pudo cargar los stats
+                Stats API no disponible — mostrando datos locales
               </p>
               <p className="mt-0.5 font-mono text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                 {apiError}
@@ -119,88 +172,79 @@ export default async function StatsPage({
 
         {/* Metric cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <MetricCard icon={DollarSign}        label="Revenue"       value={summary ? fmt.usd(summary.revenue) : "—"} loaded={!!data} />
-          <MetricCard icon={Repeat2}           label="Conversiones"  value={summary?.conversions != null ? fmt.int(summary.conversions) : "—"} loaded={!!data} />
-          <MetricCard icon={MousePointerClick} label="Clicks"        value={summary?.clicks != null ? fmt.int(summary.clicks) : "—"} loaded={!!data} />
+          <MetricCard
+            icon={DollarSign}
+            label="Revenue"
+            value={summary ? fmt.usd(summary.revenue) : fmt.usd(localRevenue)}
+            sub={!summary ? "local" : undefined}
+            loaded
+          />
+          <MetricCard
+            icon={Repeat2}
+            label="Conversiones"
+            value={summary?.conversions != null ? fmt.int(summary.conversions) : fmt.int(localCount)}
+            sub={!summary ? "local" : undefined}
+            loaded
+          />
+          <MetricCard
+            icon={MousePointerClick}
+            label="Clicks"
+            value={summary?.clicks != null ? fmt.int(summary.clicks) : "—"}
+            loaded={!!summary}
+          />
           <MetricCard
             icon={Zap}
             label="EPC"
             value={
               summary?.epc != null
                 ? fmt.usd(summary.epc)
-                : summary?.revenue != null && summary?.clicks
+                : summary?.clicks && summary.revenue
                 ? fmt.usd(summary.revenue / summary.clicks)
                 : "—"
             }
-            loaded={!!data}
+            loaded={!!summary}
           />
         </div>
 
-        {/* Chart */}
-        {!apiError && (
-          <StatsChart data={chartData} label={`Revenue — ${RANGES.find((r) => r.key === range)?.label}`} />
-        )}
+        {/* Chart — always rendered, built from local conversions */}
+        <StatsChart data={chartData} label={`Revenue · ${rangeLabel}`} />
 
-        {/* Breakdown table */}
-        {rows.length > 0 && rowKeys.length > 0 && (
-          <div
-            className="overflow-hidden rounded-xl"
-            style={{ border: "1px solid var(--color-border)" }}
-          >
-            <div
-              className="px-4 py-3"
-              style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
+        {/* Conversions list */}
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
+              Conversiones
+            </p>
+            <span
+              className="rounded-full px-2 py-0.5 text-[11px]"
+              style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}
             >
-              <p className="text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>
-                Desglose
-              </p>
-            </div>
-            <div style={{ background: "var(--color-surface)" }}>
-              <div
-                className="grid px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider"
-                style={{
-                  color: "var(--color-muted-foreground)",
-                  borderBottom: "1px solid var(--color-border)",
-                  gridTemplateColumns: `repeat(${rowKeys.length}, 1fr)`,
-                }}
-              >
-                {rowKeys.map((k) => <span key={k}>{k}</span>)}
-              </div>
-              {rows.map((row, i) => (
-                <div
-                  key={i}
-                  className="grid px-4 py-3 text-sm"
-                  style={{
-                    gridTemplateColumns: `repeat(${rowKeys.length}, 1fr)`,
-                    borderBottom: i < rows.length - 1 ? "1px solid var(--color-border)" : "none",
-                    color: "var(--color-muted-foreground)",
-                  }}
-                >
-                  {rowKeys.map((k) => {
-                    const val = row[k];
-                    const isRev = /revenue|payout|earning/i.test(k);
-                    return (
-                      <span key={k} style={{ color: isRev ? "var(--color-foreground)" : undefined }}>
-                        {val == null ? "—" : isRev && typeof val === "number" ? fmt.usd(val) : String(val)}
-                      </span>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+              {localCount}
+            </span>
           </div>
-        )}
+          <ConversionList conversions={convList} />
+        </div>
 
-        {/* Raw response (dev helper when no breakdown rows) */}
-        {data && rows.length === 0 && (
-          <details className="text-xs" style={{ color: "var(--color-subtle)" }}>
-            <summary className="cursor-pointer select-none">Raw API response</summary>
-            <pre
-              className="mt-2 overflow-x-auto rounded-lg p-4 font-mono text-[11px]"
+        {/* Postback URL helper */}
+        {localCount === 0 && (
+          <details style={{ color: "var(--color-subtle)" }}>
+            <summary className="cursor-pointer select-none text-xs">
+              ¿Cómo configurar el postback?
+            </summary>
+            <div
+              className="mt-3 space-y-2 rounded-xl p-4 text-xs"
               style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
             >
-              {JSON.stringify(data, null, 2)}
-            </pre>
+              <p style={{ color: "var(--color-muted-foreground)" }}>
+                En TapRain → Global Postback, pegá esta URL:
+              </p>
+              <code
+                className="block overflow-x-auto rounded-md p-3 font-mono"
+                style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)" }}
+              >
+                {`https://TU_DOMINIO.vercel.app/api/postback?price={price}&offer_name={offer_name}&country={country}&s1={s1}&s2={s2}&click_id={click_id}&conversion_id={conversion_id}&ip={ip}`}
+              </code>
+            </div>
           </details>
         )}
       </main>
@@ -208,17 +252,10 @@ export default async function StatsPage({
   );
 }
 
-/* ── Metric card ── */
 function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  loaded,
+  icon: Icon, label, value, sub, loaded,
 }: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  loaded: boolean;
+  icon: React.ElementType; label: string; value: string; sub?: string; loaded: boolean;
 }) {
   return (
     <div
@@ -226,9 +263,7 @@ function MetricCard({
       style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
-          {label}
-        </p>
+        <p className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{label}</p>
         <Icon className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />
       </div>
       <p
@@ -237,6 +272,9 @@ function MetricCard({
       >
         {value}
       </p>
+      {sub && (
+        <p className="mt-0.5 text-[10px] uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{sub}</p>
+      )}
     </div>
   );
 }
