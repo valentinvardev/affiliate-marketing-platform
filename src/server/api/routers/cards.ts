@@ -5,6 +5,7 @@ import { suiteFetch } from "@/lib/suite";
 type RawVcc = {
   id: string;
   cardName?: string;
+  last4?: string;
   status?: string;
   [k: string]: unknown;
 };

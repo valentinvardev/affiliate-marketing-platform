@@ -5,6 +5,7 @@ import { stackRouter } from "@/server/api/routers/stack";
 import { chatRouter } from "@/server/api/routers/chat";
 import { configRouter } from "@/server/api/routers/config";
 import { cardsRouter } from "@/server/api/routers/cards";
+import { adminRouter } from "@/server/api/routers/admin";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 export const appRouter = createTRPCRouter({
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
   chat: chatRouter,
   config: configRouter,
   cards: cardsRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;
