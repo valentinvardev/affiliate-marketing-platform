@@ -25,7 +25,7 @@ sudo npm i -g pm2
 ```bash
 cd ~/tapsur
 git clone https://github.com/valentinvardev/landing-page-generator.git
-cd landing-page-generator/aff-cms
+cd landing-page-generator        # el proyecto está en la raíz del repo
 
 # variables de entorno
 cp .env.example .env
@@ -117,7 +117,7 @@ sudo certbot --nginx -d playgames.com -d www.playgames.com
 ## Actualizar el código
 
 ```bash
-cd ~/tapsur/landing-page-generator/aff-cms
+cd ~/tapsur/landing-page-generator
 git pull
 npm ci
 npx prisma generate
