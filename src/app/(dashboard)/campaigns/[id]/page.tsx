@@ -4,7 +4,6 @@ import { ChevronLeft } from "lucide-react";
 import { api } from "@/trpc/server";
 import { HydrateClient } from "@/trpc/server";
 import { CampaignForm } from "@/components/campaign-form";
-import { OfferManager } from "@/components/offer-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -31,10 +30,6 @@ export default async function EditCampaignPage({
     notFound();
   }
 
-  // Prefetch offers for the client
-  void api.offer.listByCampaign.prefetch({ campaignId: id });
-  const initialOffers = await api.offer.listByCampaign({ campaignId: id });
-
   return (
     <HydrateClient>
       <div className="flex flex-col min-h-screen">
@@ -57,56 +52,14 @@ export default async function EditCampaignPage({
           </span>
         </header>
 
-        <main className="flex-1 px-8 py-8">
-          <div className="mx-auto max-w-2xl space-y-6">
-            {/* Campaign settings — studio */}
+        <main className="flex-1 px-4 py-8 md:px-8">
+          <div className="mx-auto max-w-2xl">
             <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
               <CampaignForm campaign={campaign} />
             </div>
-
-            {/* Offers */}
-            <SectionCard
-              title="Ofertas / Aplicaciones"
-              description="Las apps que aparecen en la grilla de la plantilla. Monto en número, el símbolo de moneda lo pone la plantilla."
-            >
-              <OfferManager
-                campaignId={campaign.id}
-                currencySymbol={campaign.currencySymbol}
-                initialOffers={initialOffers}
-              />
-            </SectionCard>
           </div>
         </main>
       </div>
     </HydrateClient>
-  );
-}
-
-function SectionCard({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="rounded-xl p-6"
-      style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
-    >
-      <div className="mb-5">
-        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
-          {title}
-        </h2>
-        {description && (
-          <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-            {description}
-          </p>
-        )}
-      </div>
-      {children}
-    </div>
   );
 }
