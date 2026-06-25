@@ -16,6 +16,7 @@ export type LanderDict = {
   faq: { eyebrow: string; title: string; items: { q: string; a: string }[] };
   footer: { support: string; devices: string; noCard: string; reviews: string; payments: string; legal: string; ssl: string; terms: string };
   sticky: { title: string; sub: string; badge: string };
+  gate: { headlineA: string; headlineHighlight: string; headlineB: string; swipe: string };
 };
 
 const sv: LanderDict = {
@@ -77,6 +78,7 @@ const sv: LanderDict = {
     terms: "Användarvillkor & Integritetspolicy",
   },
   sticky: { title: "Ladda ner appen nu", sub: "Gratis · Direkt utbetalning", badge: "GRATIS" },
+  gate: { headlineA: "Kul att se dig ", headlineHighlight: "igen", headlineB: "!", swipe: "Svep uppåt för att fortsätta" },
 };
 
 const fr: LanderDict = {
@@ -138,6 +140,7 @@ const fr: LanderDict = {
     terms: "Mentions légales & Politique de confidentialité",
   },
   sticky: { title: "Télécharger l'application maintenant", sub: "Gratuit · Retrait instantané", badge: "GRATUIT" },
+  gate: { headlineA: "Ravi de te ", headlineHighlight: "revoir", headlineB: " !", swipe: "Balayez vers le haut pour continuer" },
 };
 
 const en: LanderDict = {
@@ -199,6 +202,7 @@ const en: LanderDict = {
     terms: "Terms & Conditions & Privacy Policy",
   },
   sticky: { title: "Download the app now", sub: "Free · Instant cash out", badge: "FREE" },
+  gate: { headlineA: "Ready to take your ", headlineHighlight: "gaming", headlineB: " to the next level?", swipe: "Swipe up to continue" },
 };
 
 const DICTS: Record<LanderLocale, LanderDict> = { sv, fr, en };

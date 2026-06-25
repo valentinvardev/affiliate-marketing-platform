@@ -2,6 +2,7 @@ import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Lander } from "@/components/landing/lander";
+import { LanderGate } from "@/components/landing/lander-gate";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 
 export async function generateMetadata({
@@ -30,5 +31,18 @@ export default async function LandingPage({
 
   if (!campaign?.isActive) notFound();
 
-  return <Lander campaign={campaign} />;
+  const t = getDict((campaign.locale as LanderLocale) ?? "en");
+
+  return (
+    <LanderGate
+      primary={campaign.colorPrimary}
+      bg={campaign.colorBg}
+      headlineA={t.gate.headlineA}
+      headlineHighlight={t.gate.headlineHighlight}
+      headlineB={t.gate.headlineB}
+      swipe={t.gate.swipe}
+    >
+      <Lander campaign={campaign} />
+    </LanderGate>
+  );
 }

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Lander } from "@/components/landing/lander";
+import { LanderGate } from "@/components/landing/lander-gate";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 
 export const dynamic = "force-dynamic";
@@ -40,5 +41,19 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LandingByHostPage() {
   const campaign = await campaignForHost();
   if (!campaign?.isActive) notFound();
-  return <Lander campaign={campaign} />;
+
+  const t = getDict((campaign.locale as LanderLocale) ?? "en");
+
+  return (
+    <LanderGate
+      primary={campaign.colorPrimary}
+      bg={campaign.colorBg}
+      headlineA={t.gate.headlineA}
+      headlineHighlight={t.gate.headlineHighlight}
+      headlineB={t.gate.headlineB}
+      swipe={t.gate.swipe}
+    >
+      <Lander campaign={campaign} />
+    </LanderGate>
+  );
 }
