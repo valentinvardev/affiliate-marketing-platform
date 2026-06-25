@@ -27,10 +27,23 @@ model Campaign {
     createdAt      DateTime        @default(now())
     updatedAt      DateTime        @updatedAt
     offers         CampaignOffer[]
+    domains        LandingDomain[]
 
     @@index([slug])
     @@index([isActive])
     @@index([ownerId])
+}
+
+// Dominio custom (ej. empfohlen.lat) → campaña cuya landing sirve.
+// Lo resuelve el server component /landing por el header Host (sin tocar el .env).
+model LandingDomain {
+    id         String   @id @default(cuid())
+    domain     String   @unique // apex en minúsculas, sin www (ej. "empfohlen.lat")
+    campaignId String
+    campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+    createdAt  DateTime @default(now())
+
+    @@index([campaignId])
 }
 
 model CampaignOffer {

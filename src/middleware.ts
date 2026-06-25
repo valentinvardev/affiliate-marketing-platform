@@ -1,44 +1,57 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+type HostKind =
+  | { kind: "panel" }
+  | { kind: "slug"; slug: string }
+  | { kind: "domain" };
+
 /**
- * Resuelve el slug de landing según el Host de la request.
- * - APP_HOST (y www.) → null  ⇒ es el panel (auth normal).
- * - LANDING_DOMAINS (JSON dominio→slug) → slug del dominio custom.
- * - <slug>.LANDING_BASE → ese subdominio es el slug.
- * Sin env configurado o en localhost → null (todo es el panel).
+ * Clasifica el Host de la request:
+ * - "panel"  → el panel con login (localhost, APP_HOST/www, apex LANDING_BASE).
+ * - "slug"   → <slug>.LANDING_BASE → landing de ese subdominio (slug = subdominio).
+ * - "domain" → cualquier otro dominio (ej. empfohlen.lat) → landing resuelta por DB
+ *              en la ruta /landing leyendo el Host (sin tocar el .env).
+ *
+ * Si no hay APP_HOST ni LANDING_BASE configurados (local/single-domain), todo es panel.
  */
-function landingSlug(host: string | null): string | null {
-  if (!host) return null;
+function resolveHost(host: string | null): HostKind {
+  if (!host) return { kind: "panel" };
   const h = (host.split(":")[0] ?? "").toLowerCase();
-  if (!h || h === "localhost" || h === "127.0.0.1") return null;
+  if (!h || h === "localhost" || h === "127.0.0.1") return { kind: "panel" };
 
   const APP_HOST = process.env.APP_HOST?.toLowerCase();
-  if (APP_HOST && (h === APP_HOST || h === `www.${APP_HOST}`)) return null;
-
-  let domains: Record<string, string> = {};
-  try { domains = JSON.parse(process.env.LANDING_DOMAINS ?? "{}") as Record<string, string>; } catch { /* ignore */ }
-  if (domains[h]) return domains[h];
+  if (APP_HOST && (h === APP_HOST || h === `www.${APP_HOST}`)) return { kind: "panel" };
 
   const LANDING_BASE = process.env.LANDING_BASE?.toLowerCase();
-  if (LANDING_BASE && h.endsWith(`.${LANDING_BASE}`) && h !== LANDING_BASE) {
-    const sub = h.slice(0, h.length - LANDING_BASE.length - 1);
-    if (sub && sub !== "app" && sub !== "www") return sub;
+  if (LANDING_BASE) {
+    if (h === LANDING_BASE || h === `www.${LANDING_BASE}`) return { kind: "panel" };
+    if (h.endsWith(`.${LANDING_BASE}`)) {
+      const sub = h.slice(0, h.length - LANDING_BASE.length - 1);
+      if (sub && sub !== "app" && sub !== "www") return { kind: "slug", slug: sub };
+      return { kind: "panel" };
+    }
   }
-  return null;
+
+  // Sin multi-dominio configurado → todo es panel (no rompemos local/single-domain).
+  if (!APP_HOST && !LANDING_BASE) return { kind: "panel" };
+
+  // Dominio custom: la landing se resuelve por DB en /landing.
+  return { kind: "domain" };
 }
 
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
-    const slug = landingSlug(req.headers.get("host"));
+    const r = resolveHost(req.headers.get("host"));
 
-    // ── Host de landing: servir la landing, sin auth ──
-    if (slug) {
+    // ── Host de landing (subdominio o dominio custom): servir sin auth ──
+    if (r.kind === "slug" || r.kind === "domain") {
       if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.includes(".")) {
         return NextResponse.next();
       }
-      return NextResponse.rewrite(new URL(`/landing/${slug}`, req.url));
+      const target = r.kind === "slug" ? `/landing/${r.slug}` : "/landing";
+      return NextResponse.rewrite(new URL(target, req.url));
     }
 
     // ── Host del panel: chequeo de admin ──
@@ -51,7 +64,8 @@ export default withAuth(
     callbacks: {
       authorized: ({ req, token }) => {
         // Los hosts de landing no requieren sesión
-        if (landingSlug(req.headers.get("host"))) return true;
+        const kind = resolveHost(req.headers.get("host")).kind;
+        if (kind === "slug" || kind === "domain") return true;
         return !!token;
       },
     },

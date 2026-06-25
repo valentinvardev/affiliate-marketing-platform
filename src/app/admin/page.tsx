@@ -9,9 +9,10 @@ import { SignOutButton } from "./sign-out-button";
 import { LogoPresetUploader } from "./logo-preset-uploader";
 import { fetchOffers } from "@/lib/taprain";
 import { AdminOffersTab } from "./admin-offers-tab";
-import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package, Layers, UserCog } from "lucide-react";
+import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package, Layers, UserCog, Globe } from "lucide-react";
 import { AdminStacksTab } from "./admin-stacks-tab";
 import { AdminAssignmentsTab } from "./admin-assignments-tab";
+import { AdminDomainsTab } from "./admin-domains-tab";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export default async function AdminPage({
   const TABS = [
     { key: "users",   label: "Usuarios",     icon: Users,    badge: pendingUsers.length || undefined },
     { key: "assign",  label: "Asignaciones", icon: UserCog,  badge: undefined },
+    { key: "domains", label: "Dominios",     icon: Globe,    badge: undefined },
     { key: "stacks",  label: "Stacks",       icon: Layers,   badge: undefined },
     { key: "colors",  label: "Colores",      icon: Palette,  badge: undefined },
     { key: "logos",   label: "Logos",        icon: ImageIcon, badge: undefined },
@@ -168,6 +170,9 @@ export default async function AdminPage({
 
         {/* ── ASIGNACIONES TAB ── */}
         {tab === "assign" && <AdminAssignmentsTab />}
+
+        {/* ── DOMINIOS TAB ── */}
+        {tab === "domains" && <AdminDomainsTab />}
 
         {/* ── STACKS TAB ── */}
         {tab === "stacks" && <AdminStacksTab />}

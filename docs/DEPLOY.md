@@ -109,11 +109,15 @@ sudo certbot --nginx -d playgames.com -d www.playgames.com
 
 **Subdominio** (`nuevo.tapsur.com`): nada — ya funciona si tenés el wildcard DNS + cert. El slug es `nuevo`.
 
-**Dominio custom** (`midominio.com`):
-1. El cliente apunta `A @` y `A www` → IP del VPS.
-2. Agregalo a `LANDING_DOMAINS` en `.env`: `{"midominio.com":"slug-de-la-campaña"}`.
-3. Agregalo al `server_name` de nginx (o un server block nuevo) y `sudo certbot --nginx -d midominio.com -d www.midominio.com`.
-4. `pm2 restart tapsur` (para tomar el `.env` nuevo) y `sudo systemctl reload nginx`.
+**Dominio custom** (`midominio.com`): el mapeo dominio→campaña se hace **desde el panel** (Admin → Dominios), sin tocar el `.env` ni redeploy. Solo queda la parte de infra:
+1. Apuntá `A @` y `A www` de `midominio.com` → IP del VPS.
+2. En el panel: **Admin → Dominios → Conectar dominio** (escribís `midominio.com` y elegís la campaña).
+3. Agregalo al `server_name` del bloque de landings en nginx y recargá:
+   `sudo nano /etc/nginx/sites-available/tapsur` → `sudo nginx -t && sudo systemctl reload nginx`
+4. Emití el cert: `sudo certbot --nginx -d midominio.com -d www.midominio.com`.
+
+> El paso 2 es lo único que cambia por dominio en el día a día; 3 y 4 son una vez por dominio nuevo.
+> `LANDING_DOMAINS` en el `.env` quedó **deprecado** (el mapeo ahora vive en la DB).
 
 ## Actualizar el código
 
