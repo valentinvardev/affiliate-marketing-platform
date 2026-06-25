@@ -12,10 +12,12 @@ try {
   const env = fs.readFileSync(path.join(ROOT, ".env"), "utf8");
   for (const line of env.split(/\r?\n/)) {
     const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/.exec(line);
-    if (!m) continue;
-    let v = m[2].trim();
+    const key = m && m[1];
+    const raw = m && m[2];
+    if (!key || raw === undefined) continue;
+    let v = raw.trim();
     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    if (!process.env[m[1]]) process.env[m[1]] = v;
+    if (!process.env[key]) process.env[key] = v;
   }
 } catch { /* el .env quizá ya está en el entorno */ }
 
