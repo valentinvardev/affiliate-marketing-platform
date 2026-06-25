@@ -16,7 +16,7 @@ module.exports = {
       max_memory_restart: "600M",
       env: {
         NODE_ENV: "production",
-        PORT: "3000",
+        PORT: "3010",          // ← puerto propio de tapsur (no pisa el 3000 de otras apps)
       },
     },
   ],

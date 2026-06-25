@@ -1,6 +1,7 @@
 # Deploy en VPS + dominios para landings
 
-El panel y las landings corren en **un solo proceso Next** (puerto 3000) detrás de **nginx**.
+El panel y las landings corren en **un solo proceso Next** (puerto **3010**) detrás de **nginx**.
+> El 3010 es a propósito: si el VPS ya tiene otra app en el 3000, tapsur no la pisa.
 nginx pasa *todos* los dominios a Next, y el **middleware** decide por el `Host`:
 
 - `APP_HOST` (ej. `app.tapsur.com`) → el **panel** (con login).
