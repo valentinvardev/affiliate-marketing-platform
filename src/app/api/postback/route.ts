@@ -7,11 +7,25 @@ import { db } from "@/server/db";
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams;
 
+  // Autenticidad: si POSTBACK_SECRET está configurado, exigir ?secret= que coincida.
+  // (Evita que cualquiera inyecte conversiones falsas e infle el revenue.)
+  const secret = process.env.POSTBACK_SECRET;
+  if (secret && p.get("secret") !== secret) {
+    return NextResponse.json({ message: "forbidden" }, { status: 403 });
+  }
+
   const priceRaw = p.get("price") ?? p.get("payout") ?? "0";
   const price = parseFloat(priceRaw);
 
   if (isNaN(price) || price < 0) {
     return NextResponse.json({ message: "invalid price" }, { status: 400 });
+  }
+
+  // Anti doble conteo: ignorar si ya existe esa conversion_id.
+  const conversionId = p.get("conversion_id");
+  if (conversionId) {
+    const dup = await db.conversion.findFirst({ where: { conversionId }, select: { id: true } });
+    if (dup) return NextResponse.json({ message: "duplicate" });
   }
 
   await db.conversion.create({
@@ -22,7 +36,7 @@ export async function GET(req: NextRequest) {
       s1:           p.get("s1") ?? null,
       s2:           p.get("s2") ?? null,
       clickId:      p.get("click_id") ?? null,
-      conversionId: p.get("conversion_id") ?? null,
+      conversionId: conversionId,
       ip:           p.get("ip") ?? req.headers.get("x-forwarded-for") ?? null,
     },
   });

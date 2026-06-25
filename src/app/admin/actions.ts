@@ -10,6 +10,12 @@ async function requireAdmin() {
   if (!session || session.user.role !== "admin") throw new Error("No autorizado");
 }
 
+/** Valida un color CSS (anti inyección en el <style> de la landing). */
+function safeColor(v: string): string {
+  if (!/^[a-zA-Z0-9()%.,\-/#\s]+$/.test(v) || v.length > 64) throw new Error("Color inválido");
+  return v;
+}
+
 export async function approveUser(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;
@@ -28,9 +34,9 @@ export async function createColorPreset(formData: FormData) {
   await requireAdmin();
   await db.colorPreset.create({
     data: {
-      name:         formData.get("name") as string,
-      colorPrimary: formData.get("colorPrimary") as string,
-      colorBg:      formData.get("colorBg") as string,
+      name:         (formData.get("name") as string).slice(0, 60),
+      colorPrimary: safeColor(formData.get("colorPrimary") as string),
+      colorBg:      safeColor(formData.get("colorBg") as string),
     },
   });
   revalidatePath("/admin");

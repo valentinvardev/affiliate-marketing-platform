@@ -14,17 +14,24 @@ async function assertCanEdit(ctx: GuardCtx, id: string) {
   }
 }
 
+// Color CSS seguro: bloquea `< > ; { } @ : "` para que no se pueda romper el
+// <style> de la landing (anti stored-XSS). Permite oklch/hsl/rgb/hex/color-mix.
+const cssColor = z
+  .string()
+  .max(64)
+  .regex(/^[a-zA-Z0-9()%.,\-/#\s]+$/, "Color inválido");
+
 const campaignInput = z.object({
   name: z.string().min(1).max(120),
-  slug: z.string().min(1).max(80).optional(),
-  templateSlug: z.string().default("gonza-gb-sn-fc"),
+  slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/i, "Slug inválido").optional(),
+  templateSlug: z.string().max(60).default("gonza-gb-sn-fc"),
   locale: z.string().min(2).max(10),
   currencySymbol: z.string().min(1).max(5),
   currencyCode: z.string().min(3).max(4),
   ctaUrl: z.string().url(),
   logoUrl: z.string().url().optional().nullable(),
-  colorPrimary: z.string().default("oklch(0.74 0.19 55)"),
-  colorBg: z.string().default("oklch(0.16 0.04 265)"),
+  colorPrimary: cssColor.default("oklch(0.74 0.19 55)"),
+  colorBg: cssColor.default("oklch(0.16 0.04 265)"),
   isActive: z.boolean().default(true),
 });
 
