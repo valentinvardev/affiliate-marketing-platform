@@ -5,6 +5,7 @@ import {
   Heart, MessageSquare, Bookmark, Loader2, Wallet, Search,
   RefreshCw, Check, X, AlertTriangle, Trash2,
 } from "lucide-react";
+import { api } from "@/trpc/react";
 
 /* ─── Service ID ranges (de panel-thingy) ─── */
 const RANGES = {
@@ -180,6 +181,7 @@ export default function InteractionsPage() {
         run: async () => {
           const data = await smm<{ order?: number }>({ action: "add", service: Number(commentsSvc), link: link.trim(), comments: lines.join("\n") });
           pushRecent({ uid: crypto.randomUUID(), kind, service: commentsSvc, count: lines.length, orderId: data.order != null ? String(data.order) : undefined, ts: Date.now() });
+          logSpend.mutate({ kind: "interaction", amount: priceOf(commentsSvc, lines.length), ref: data.order != null ? String(data.order) : undefined, note: `comments x${lines.length}` });
         },
       });
     } else {
@@ -192,9 +194,18 @@ export default function InteractionsPage() {
         run: async () => {
           const data = await smm<{ order?: number }>({ action: "add", service: Number(svc), link: link.trim(), quantity: qty });
           pushRecent({ uid: crypto.randomUUID(), kind, service: svc, count: qty, orderId: data.order != null ? String(data.order) : undefined, ts: Date.now() });
+          logSpend.mutate({ kind: "interaction", amount: priceOf(svc, qty), ref: data.order != null ? String(data.order) : undefined, note: `${kind} x${qty}` });
         },
       });
     }
+  }
+
+  // Costo SMM (rate por 1000) → atribuido al usuario
+  const logSpend = api.accounting.logSpend.useMutation();
+  function priceOf(serviceId: string, count: number) {
+    const s = services.find((x) => x.service === serviceId);
+    const rate = s ? parseFloat(s.rate) : 0;
+    return Number.isFinite(rate) && rate > 0 ? (count / 1000) * rate : 0;
   }
 
   async function runConfirm() {
