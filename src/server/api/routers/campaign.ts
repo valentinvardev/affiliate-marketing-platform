@@ -25,8 +25,12 @@ export const campaignRouter = createTRPCRouter({
       }).optional(),
     )
     .query(async ({ ctx, input }) => {
+      const isAdmin = ctx.session?.user?.role === "admin";
+      const me = ctx.session?.user?.id;
       return ctx.db.campaign.findMany({
         where: {
+          // admin ve todas; usuario normal solo las propias
+          ...(isAdmin ? {} : me ? { ownerId: me } : { ownerId: "__none__" }),
           ...(input?.onlyActive ? { isActive: true } : {}),
           ...(input?.search
             ? {
@@ -58,7 +62,7 @@ export const campaignRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const slug = input.slug ?? slugify(input.name);
       return ctx.db.campaign.create({
-        data: { ...input, slug },
+        data: { ...input, slug, ownerId: ctx.session?.user?.id ?? null },
       });
     }),
 

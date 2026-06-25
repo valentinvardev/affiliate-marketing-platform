@@ -22,12 +22,15 @@ model Campaign {
     colorPrimary   String          @default("oklch(0.74 0.19 55)")
     colorBg        String          @default("oklch(0.16 0.04 265)")
     isActive       Boolean         @default(true)
+    ownerId        String?
+    owner          User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
     createdAt      DateTime        @default(now())
     updatedAt      DateTime        @updatedAt
     offers         CampaignOffer[]
 
     @@index([slug])
     @@index([isActive])
+    @@index([ownerId])
 }
 
 model CampaignOffer {
@@ -59,6 +62,49 @@ model User {
     approved  Boolean  @default(false)
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    campaigns Campaign[]
+    cards     CardOwner[]
+    spend     SpendLog[]
+}
+
+// Mapea cada VCC de TapRain (id de la card) a su usuario dueño
+model CardOwner {
+    id        String   @id @default(cuid())
+    vccId     String   @unique
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    cardName  String?
+    createdAt DateTime @default(now())
+
+    @@index([userId])
+}
+
+// Gasto atribuido a un usuario (vcc | interaction | engagement | bc | email | ...)
+model SpendLog {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    kind      String
+    amount    Float
+    ref       String?
+    note      String?
+    createdAt DateTime @default(now())
+
+    @@index([userId, createdAt])
+}
+
+// Reparto de profit: por usuario fuente, filas (beneficiario, %) que suman 100
+model RevenueSplit {
+    id                String   @id @default(cuid())
+    sourceUserId      String
+    beneficiaryUserId String
+    percent           Float
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
+
+    @@unique([sourceUserId, beneficiaryUserId])
+    @@index([sourceUserId])
 }
 
 model ColorPreset {

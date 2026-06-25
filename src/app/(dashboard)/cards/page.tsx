@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   CreditCard, Plus, Loader2, RefreshCw, Eye, EyeOff, ArrowUpCircle,
   AlertTriangle, Link as LinkIcon, X, Check, Copy, Plug,
@@ -79,55 +79,41 @@ function CardVisual({ card, revealed }: { card?: VCC; revealed?: boolean }) {
 }
 
 export default function CardsPage() {
-  const [cards, setCards]   = useState<VCC[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [connected, setConnected] = useState(true);
-  const [error, setError]   = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [busy, setBusy]     = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", limit: "", bin: "", campaign: "" });
-  const [submitting, setSubmitting] = useState(false);
 
   // Conexión de sesión (cookie guardada en DB)
   const [cookieInput, setCookieInput] = useState("");
-  const utils = api.useUtils();
+  const [forceReconnect, setForceReconnect] = useState(false);
   const setCookie = api.config.setSuiteCookie.useMutation();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const { ok, status, data } = await suite("vcc");
-    if (status === 503 || status === 401 || status === 403) { setConnected(false); setLoading(false); return; }
-    setConnected(true);
-    if (!ok) { setError((data.message as string) ?? `Error ${status}`); setLoading(false); return; }
-    const list = Array.isArray(data) ? data : (data.vccs as VCC[]) ?? (data.cards as VCC[]) ?? [];
-    setCards(list);
-    setLoading(false);
-  }, []);
+  // Lista scopeada por rol/usuario (tRPC)
+  const cardsQuery = api.cards.list.useQuery(undefined, { retry: false });
+  const cards     = (cardsQuery.data?.cards ?? []) as unknown as VCC[];
+  const loading   = cardsQuery.isLoading;
+  const connected = (cardsQuery.data?.connected ?? true) && !forceReconnect;
+  const error     = cardsQuery.isError ? (cardsQuery.error?.message ?? "Error") : null;
 
-  useEffect(() => { void load(); }, [load]);
+  const load = () => cardsQuery.refetch();
 
-  async function createCard(e: React.FormEvent) {
+  const createMut = api.cards.create.useMutation({
+    onSuccess: () => { setForm({ name: "", limit: "", bin: "", campaign: "" }); setCreating(false); void cardsQuery.refetch(); },
+    onError:   (e) => alert(e.message),
+  });
+  const submitting = createMut.isPending;
+
+  function createCard(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim() || !form.limit) return;
-    setSubmitting(true);
-    const { ok, data } = await suite("vcc", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        cardName: form.name.trim(),
-        spendLimit: parseFloat(form.limit),
-        ...(form.bin ? { bin: form.bin } : {}),
-        ...(form.campaign ? { campaignId: form.campaign } : {}),
-      }),
+    createMut.mutate({
+      cardName:   form.name.trim(),
+      spendLimit: parseFloat(form.limit),
+      ...(form.bin ? { bin: form.bin } : {}),
+      ...(form.campaign ? { campaignId: form.campaign } : {}),
     });
-    setSubmitting(false);
-    if (!ok) { alert((data.message as string) ?? "No se pudo crear la tarjeta"); return; }
-    setForm({ name: "", limit: "", bin: "", campaign: "" });
-    setCreating(false);
-    void load();
   }
 
   async function increaseLimit(id: string) {
@@ -138,23 +124,23 @@ export default function CardsPage() {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spendLimit: parseFloat(v) }),
     });
     setBusy(null);
-    void load();
+    void cardsQuery.refetch();
   }
 
   async function syncSpend(id: string) {
     setBusy(id);
     await suite(`vcc/${id}/sync-spend`, { method: "POST" });
     setBusy(null);
-    void load();
+    void cardsQuery.refetch();
   }
 
   async function connect(e: React.FormEvent) {
     e.preventDefault();
     if (!cookieInput.trim()) return;
     await setCookie.mutateAsync({ value: cookieInput.trim() });
-    await utils.config.suiteStatus.invalidate();
     setCookieInput("");
-    void load();
+    setForceReconnect(false);
+    void cardsQuery.refetch();
   }
 
   return (
@@ -171,7 +157,7 @@ export default function CardsPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setConnected(false)}
+              onClick={() => setForceReconnect(true)}
               className="hidden text-[11px] transition-opacity hover:opacity-70 sm:inline"
               style={{ color: "var(--color-subtle)" }}
               title="Actualizar cookie de sesión"
