@@ -20,6 +20,10 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
+    if (password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
       return;
@@ -80,7 +84,7 @@ export default function RegisterPage() {
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
-            Contraseña <span style={{ color: "var(--color-subtle)" }}>(mín. 6 caracteres)</span>
+            Contraseña <span style={{ color: "var(--color-subtle)" }}>(mín. 8 caracteres)</span>
           </label>
           <div className="relative">
             <AuthInput

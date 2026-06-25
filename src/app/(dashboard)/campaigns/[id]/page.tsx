@@ -95,7 +95,8 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
 
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
-  if (!isAdmin && campaign.ownerId && campaign.ownerId !== session?.user?.id) notFound();
+  // Un usuario solo ve su propia campaña (las sin dueño también quedan ocultas).
+  if (!isAdmin && campaign.ownerId !== session?.user?.id) notFound();
 
   const loc = getLocaleByCode(campaign.locale);
 

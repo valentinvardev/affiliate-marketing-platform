@@ -1,16 +1,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/api/trpc";
 import { suiteFetch } from "@/lib/suite";
-
-type Ctx = { session?: { user?: { id?: string; role?: string } } | null };
-function requireAdmin(ctx: Ctx) {
-  if (ctx.session?.user?.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Solo admin" });
-}
 
 export const accountingRouter = createTRPCRouter({
   /** Registrar un gasto atribuido al usuario logueado. */
-  logSpend: adminProcedure
+  logSpend: protectedProcedure
     .input(z.object({ kind: z.string(), amount: z.number().min(0), ref: z.string().optional(), note: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session?.user?.id;
@@ -20,8 +15,9 @@ export const accountingRouter = createTRPCRouter({
       return { logged: true };
     }),
 
-  /** Resumen por usuario: revenue (sus campañas) − costos (VCC + suite) = profit, con reparto. */
-  summary: adminProcedure.query(async ({ ctx }) => {
+  /** Resumen por usuario: revenue (sus campañas) − costos (VCC + suite) = profit, con reparto.
+   *  Admin ve todos; un usuario solo su propia fila. */
+  summary: protectedProcedure.query(async ({ ctx }) => {
     const isAdmin = ctx.session?.user?.role === "admin";
     const me = ctx.session?.user?.id ?? "";
 
@@ -91,7 +87,6 @@ export const accountingRouter = createTRPCRouter({
       rows: z.array(z.object({ beneficiaryUserId: z.string(), percent: z.number().min(0).max(100) })),
     }))
     .mutation(async ({ ctx, input }) => {
-      requireAdmin(ctx);
       await ctx.db.revenueSplit.deleteMany({ where: { sourceUserId: input.sourceUserId } });
       const valid = input.rows.filter((r) => r.percent > 0);
       if (valid.length) {

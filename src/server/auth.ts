@@ -2,6 +2,7 @@ import { type DefaultSession, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/server/db";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 declare module "next-auth" {
   interface Session {
@@ -20,8 +21,12 @@ export const authOptions: NextAuthOptions = {
         username: { label: "Usuario", type: "text" },
         password: { label: "Contraseña", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.username || !credentials?.password) return null;
+
+        // Anti fuerza bruta: límite por IP (15 intentos / 10 min).
+        const ip = clientIp(req?.headers as Record<string, string | string[] | undefined> | undefined);
+        if (!rateLimit(`login:${ip}`, 15, 10 * 60 * 1000).ok) return null;
 
         const user = await db.user.findUnique({
           where: { username: credentials.username as string },
