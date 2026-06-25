@@ -7,22 +7,21 @@ import {
 } from "lucide-react";
 import { api } from "@/trpc/react";
 
-/* Shape defensivo — la respuesta real de /api/suite/vcc puede variar */
+/* Shape real de /api/suite/vcc */
 type VCC = {
   id: string;
-  name?: string;
-  label?: string;
-  number?: string;
+  slashCardId?: string;
+  cardName?: string;
+  cardNumber?: string;
   last4?: string;
   cvv?: string;
-  exp?: string;
-  expiry?: string;
-  limit?: number;
+  expiryMonth?: string;
+  expiryYear?: string;
   spendLimit?: number;
-  spent?: number;
-  spend?: number;
+  currentSpend?: number;
   status?: string;
-  campaign?: string;
+  isPaused?: boolean;
+  transactionCount?: number;
   [k: string]: unknown;
 };
 
@@ -37,10 +36,11 @@ async function suite(path: string, init?: RequestInit) {
 
 /* ── Tarjeta visual (firma) ── */
 function CardVisual({ card, revealed }: { card?: VCC; revealed?: boolean }) {
-  const name = card?.name ?? card?.label ?? "Nueva tarjeta";
-  const last4 = card?.last4 ?? card?.number?.replace(/\s/g, "").slice(-4) ?? "0000";
-  const number = revealed && card?.number ? card.number : `•••• •••• •••• ${last4}`;
-  const exp = card?.exp ?? card?.expiry ?? "••/••";
+  const name = card?.cardName ?? "Nueva tarjeta";
+  const last4 = card?.last4 ?? card?.cardNumber?.slice(-4) ?? "0000";
+  const full = card?.cardNumber ? card.cardNumber.replace(/(.{4})/g, "$1 ").trim() : "";
+  const number = revealed && full ? full : `•••• •••• •••• ${last4}`;
+  const exp = card?.expiryMonth ? `${card.expiryMonth}/${String(card.expiryYear ?? "").slice(-2)}` : "••/••";
   const cvv = revealed ? (card?.cvv ?? "•••") : "•••";
 
   return (
@@ -102,7 +102,7 @@ export default function CardsPage() {
     if (status === 503 || status === 401 || status === 403) { setConnected(false); setLoading(false); return; }
     setConnected(true);
     if (!ok) { setError((data.message as string) ?? `Error ${status}`); setLoading(false); return; }
-    const list = Array.isArray(data) ? data : (data.cards as VCC[]) ?? (data.vccs as VCC[]) ?? [];
+    const list = Array.isArray(data) ? data : (data.vccs as VCC[]) ?? (data.cards as VCC[]) ?? [];
     setCards(list);
     setLoading(false);
   }, []);
@@ -117,10 +117,10 @@ export default function CardsPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: form.name.trim(),
-        limit: parseFloat(form.limit),
+        cardName: form.name.trim(),
+        spendLimit: parseFloat(form.limit),
         ...(form.bin ? { bin: form.bin } : {}),
-        ...(form.campaign ? { campaign: form.campaign } : {}),
+        ...(form.campaign ? { campaignId: form.campaign } : {}),
       }),
     });
     setSubmitting(false);
@@ -135,7 +135,7 @@ export default function CardsPage() {
     if (!v) return;
     setBusy(id);
     await suite(`vcc/${id}/increase-limit`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ limit: parseFloat(v) }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spendLimit: parseFloat(v) }),
     });
     setBusy(null);
     void load();
@@ -271,8 +271,8 @@ export default function CardsPage() {
             ) : (
               <div className="grid gap-5 sm:grid-cols-2">
                 {cards.map((c) => {
-                  const limit = c.limit ?? c.spendLimit ?? 0;
-                  const spent = c.spent ?? c.spend ?? 0;
+                  const limit = c.spendLimit ?? 0;
+                  const spent = c.currentSpend ?? 0;
                   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
                   const isOpen = revealed[c.id];
                   return (
@@ -300,8 +300,8 @@ export default function CardsPage() {
                             {isOpen ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                             {isOpen ? "Ocultar" : "Revelar"}
                           </ActionBtn>
-                          {isOpen && c.number && (
-                            <ActionBtn onClick={() => void navigator.clipboard.writeText(c.number!.replace(/\s/g, ""))}>
+                          {isOpen && c.cardNumber && (
+                            <ActionBtn onClick={() => void navigator.clipboard.writeText(c.cardNumber!)}>
                               <Copy className="h-3 w-3" /> Copiar
                             </ActionBtn>
                           )}
