@@ -24,13 +24,27 @@ export const cardsRouter = createTRPCRouter({
 
     const all = ((data.vccs as RawVcc[]) ?? (data.cards as RawVcc[]) ?? []);
     const owners = await ctx.db.cardOwner.findMany();
-    const ownerByVcc = new Map(owners.map((o) => [o.vccId, o.userId]));
+    const ownerByVcc = new Map(owners.map((o) => [o.vccId, o]));
 
-    const withOwner = all.map((c) => ({ ...c, ownerUserId: ownerByVcc.get(c.id) ?? null }));
+    // Resolver usernames (dueño + quién cerró)
+    const ids = [...new Set(owners.flatMap((o) => [o.userId, o.closedById]).filter(Boolean) as string[])];
+    const usersList = ids.length ? await ctx.db.user.findMany({ where: { id: { in: ids } }, select: { id: true, username: true } }) : [];
+    const nameById = new Map(usersList.map((u) => [u.id, u.username]));
+
+    const withOwner = all.map((c) => {
+      const o = ownerByVcc.get(c.id);
+      return {
+        ...c,
+        ownerUserId:      o?.userId ?? null,
+        ownerUsername:    o ? nameById.get(o.userId) ?? null : null,
+        closedAt:         o?.closedAt ?? null,
+        closedByUsername: o?.closedById ? nameById.get(o.closedById) ?? null : null,
+      };
+    });
 
     const cards = isAdmin
       ? withOwner
-      : withOwner.filter((c) => c.ownerUserId === me && c.status === "active");
+      : withOwner.filter((c) => c.ownerUserId === me && c.status === "active" && !c.closedAt);
 
     return { connected: true, cards };
   }),
@@ -58,5 +72,39 @@ export const cardsRouter = createTRPCRouter({
         }).catch(() => { /* ya mapeada */ });
       }
       return data;
+    }),
+
+  /** Subir el límite de una tarjeta. */
+  increaseLimit: publicProcedure
+    .input(z.object({ vccId: z.string(), spendLimit: z.number().min(0) }))
+    .mutation(async ({ ctx, input }) => {
+      const me = ctx.session?.user?.id;
+      const isAdmin = ctx.session?.user?.role === "admin";
+      const owner = await ctx.db.cardOwner.findUnique({ where: { vccId: input.vccId } });
+      if (!isAdmin && owner?.userId !== me) throw new Error("No es tu tarjeta");
+      const { ok, data } = await suiteFetch(`vcc/${input.vccId}/increase-limit`, {
+        method: "POST", body: JSON.stringify({ spendLimit: input.spendLimit }),
+      });
+      if (!ok) throw new Error((data.message as string) ?? "No se pudo actualizar el límite");
+      return data;
+    }),
+
+  /** Cerrar una tarjeta: pausa en TapRain + registra quién la cerró. */
+  close: publicProcedure
+    .input(z.object({ vccId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const me = ctx.session?.user?.id;
+      if (!me) throw new Error("No autenticado");
+      const isAdmin = ctx.session?.user?.role === "admin";
+      const owner = await ctx.db.cardOwner.findUnique({ where: { vccId: input.vccId } });
+      if (!owner || (owner.userId !== me && !isAdmin)) throw new Error("No es tu tarjeta");
+
+      await ctx.db.cardOwner.update({
+        where: { vccId: input.vccId },
+        data:  { closedAt: new Date(), closedById: me },
+      });
+      // Pausar en TapRain (mejor acción disponible; no hay terminate)
+      await suiteFetch(`vcc/${input.vccId}`, { method: "PATCH", body: JSON.stringify({ action: "pause" }) }).catch(() => { /* best-effort */ });
+      return { closed: true };
     }),
 });

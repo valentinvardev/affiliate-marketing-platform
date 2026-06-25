@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   CreditCard, Plus, Loader2, RefreshCw, Eye, EyeOff, ArrowUpCircle,
-  AlertTriangle, Link as LinkIcon, X, Check, Copy, Plug,
+  AlertTriangle, Link as LinkIcon, X, Check, Copy, Plug, XCircle,
 } from "lucide-react";
 import { api } from "@/trpc/react";
 
@@ -22,6 +22,9 @@ type VCC = {
   status?: string;
   isPaused?: boolean;
   transactionCount?: number;
+  ownerUsername?: string | null;
+  closedByUsername?: string | null;
+  closedAt?: string | null;
   [k: string]: unknown;
 };
 
@@ -85,6 +88,11 @@ export default function CardsPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", limit: "", bin: "", campaign: "" });
 
+  // Modales límite / cerrar
+  const [limitModal, setLimitModal] = useState<{ id: string; name: string } | null>(null);
+  const [limitValue, setLimitValue] = useState("");
+  const [closeModal, setCloseModal] = useState<{ id: string; name: string } | null>(null);
+
   // Conexión de sesión (cookie guardada en DB)
   const [cookieInput, setCookieInput] = useState("");
   const [forceReconnect, setForceReconnect] = useState(false);
@@ -116,15 +124,19 @@ export default function CardsPage() {
     });
   }
 
-  async function increaseLimit(id: string) {
-    const v = prompt("Nuevo límite (USD):");
-    if (!v) return;
-    setBusy(id);
-    await suite(`vcc/${id}/increase-limit`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spendLimit: parseFloat(v) }),
-    });
-    setBusy(null);
-    void cardsQuery.refetch();
+  const incMut = api.cards.increaseLimit.useMutation({
+    onSuccess: () => { setLimitModal(null); setLimitValue(""); void cardsQuery.refetch(); },
+    onError:   (e) => alert(e.message),
+  });
+  const closeMut = api.cards.close.useMutation({
+    onSuccess: () => { setCloseModal(null); void cardsQuery.refetch(); },
+    onError:   (e) => alert(e.message),
+  });
+
+  function openLimit(id: string, name: string) { setLimitValue(""); setLimitModal({ id, name }); }
+  function confirmLimit() {
+    if (!limitModal || !limitValue) return;
+    incMut.mutate({ vccId: limitModal.id, spendLimit: parseFloat(limitValue) });
   }
 
   async function syncSpend(id: string) {
@@ -270,12 +282,23 @@ export default function CardsPage() {
                           <span style={{ color: "var(--color-muted-foreground)" }}>
                             <span className="font-semibold tabular-nums" style={{ color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }}>{usd(spent)}</span> / {usd(limit)}
                           </span>
-                          {c.status && (
+                          {c.closedAt ? (
+                            <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase" style={{ background: "var(--color-error-bg)", color: "var(--color-error)" }}>
+                              cerrada
+                            </span>
+                          ) : c.status && (
                             <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase" style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)" }}>
                               {c.status}
                             </span>
                           )}
                         </div>
+                        {/* dueño / cerrada por (visible para admin) */}
+                        {(c.ownerUsername || c.closedByUsername) && (
+                          <p className="mt-1.5 text-[10px]" style={{ color: "var(--color-subtle)" }}>
+                            {c.ownerUsername && <>dueño: <span style={{ color: "var(--color-muted-foreground)" }}>{c.ownerUsername}</span></>}
+                            {c.closedByUsername && <> · cerrada por <span style={{ color: "var(--color-error)" }}>{c.closedByUsername}</span></>}
+                          </p>
+                        )}
                         {/* progress */}
                         <div className="mt-2 h-1 overflow-hidden rounded-full" style={{ background: "var(--color-surface-overlay)" }}>
                           <div className="h-full" style={{ width: `${pct}%`, background: pct > 85 ? "var(--color-error)" : "var(--color-foreground)" }} />
@@ -291,12 +314,17 @@ export default function CardsPage() {
                               <Copy className="h-3 w-3" /> Copiar
                             </ActionBtn>
                           )}
-                          <ActionBtn onClick={() => increaseLimit(c.id)} disabled={busy === c.id}>
+                          <ActionBtn onClick={() => openLimit(c.id, c.cardName ?? "tarjeta")}>
                             <ArrowUpCircle className="h-3 w-3" /> Límite
                           </ActionBtn>
                           <ActionBtn onClick={() => syncSpend(c.id)} disabled={busy === c.id}>
                             {busy === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />} Sync
                           </ActionBtn>
+                          {!c.closedAt && (
+                            <ActionBtn onClick={() => setCloseModal({ id: c.id, name: c.cardName ?? "tarjeta" })} danger>
+                              <XCircle className="h-3 w-3" /> Cerrar
+                            </ActionBtn>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -355,18 +383,90 @@ export default function CardsPage() {
           </form>
         </div>
       )}
+
+      {/* Modal subir límite */}
+      {limitModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !incMut.isPending) setLimitModal(null); }}
+        >
+          <div className="w-full max-w-xs rounded-2xl p-5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Nuevo límite</p>
+              <button type="button" onClick={() => setLimitModal(null)} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+            </div>
+            <p className="mb-3 truncate text-xs" style={{ color: "var(--color-muted-foreground)" }}>{limitModal.name}</p>
+            <Input value={limitValue} onChange={setLimitValue} placeholder="Límite (USD)" type="number" />
+            <button
+              type="button"
+              onClick={confirmLimit}
+              disabled={incMut.isPending || !limitValue}
+              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-md py-2.5 text-sm font-semibold disabled:opacity-40"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+            >
+              {incMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUpCircle className="h-3.5 w-3.5" />}
+              Actualizar límite
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cerrar tarjeta */}
+      {closeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !closeMut.isPending) setCloseModal(null); }}
+        >
+          <div className="w-full max-w-xs rounded-2xl p-5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4" style={{ color: "var(--color-error)" }} />
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Cerrar tarjeta</p>
+            </div>
+            <p className="mt-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
+              Vas a cerrar <span className="font-medium" style={{ color: "var(--color-foreground)" }}>{closeModal.name}</span>. Se pausa y deja de aparecer en tu lista. Queda registrado que la cerraste vos.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setCloseModal(null)}
+                disabled={closeMut.isPending}
+                className="flex-1 rounded-md py-2 text-sm font-medium"
+                style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => closeMut.mutate({ vccId: closeModal.id })}
+                disabled={closeMut.isPending}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold"
+                style={{ background: "var(--color-error)", color: "#fff" }}
+              >
+                {closeMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function ActionBtn({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
+function ActionBtn({ children, onClick, disabled, danger }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
-      style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+      style={{
+        background: danger ? "var(--color-error-bg)" : "var(--color-surface-overlay)",
+        border: `1px solid ${danger ? "color-mix(in oklch, var(--color-error) 25%, transparent)" : "var(--color-border)"}`,
+        color: danger ? "var(--color-error)" : "var(--color-muted-foreground)",
+      }}
     >
       {children}
     </button>

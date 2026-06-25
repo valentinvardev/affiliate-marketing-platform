@@ -70,12 +70,14 @@ model User {
 
 // Mapea cada VCC de TapRain (id de la card) a su usuario dueño
 model CardOwner {
-    id        String   @id @default(cuid())
-    vccId     String   @unique
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    cardName  String?
-    createdAt DateTime @default(now())
+    id         String    @id @default(cuid())
+    vccId      String    @unique
+    userId     String
+    user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    cardName   String?
+    closedAt   DateTime?
+    closedById String?
+    createdAt  DateTime  @default(now())
 
     @@index([userId])
 }
