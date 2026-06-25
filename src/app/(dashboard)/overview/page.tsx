@@ -4,6 +4,7 @@ import ReactCountryFlag from "react-country-flag";
 import { authOptions } from "@/server/auth";
 import { db } from "@/server/db";
 import { getLocaleByCode } from "@/lib/locales";
+import { getScope, convWhere, campaignWhere } from "@/lib/scope";
 import {
   TrendingUp, TrendingDown, ArrowUpRight, LayoutGrid, Heart, Wallet,
   Package, MessageCircle, Trophy, Activity,
@@ -74,13 +75,16 @@ export default async function OverviewPage() {
   let recent: { id: string; price: number; offerName: string | null; country: string | null; receivedAt: Date }[] = [];
   let dbError = false;
 
+  const { slugs, isAdmin, userId } = await getScope();
+  const scope = convWhere(slugs);
+
   try {
     const [tc, yAgg, camps, totalAgg, rec] = await Promise.all([
-      db.conversion.findMany({ where: { receivedAt: { gte: startToday } }, select: { price: true, receivedAt: true } }),
-      db.conversion.aggregate({ where: { receivedAt: { gte: startYesterday, lt: startToday } }, _sum: { price: true }, _count: { id: true } }),
-      db.campaign.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, name: true, slug: true, isActive: true, colorPrimary: true, locale: true } }),
-      db.conversion.aggregate({ _sum: { price: true } }),
-      db.conversion.findMany({ orderBy: { receivedAt: "desc" }, take: 6, select: { id: true, price: true, offerName: true, country: true, receivedAt: true } }),
+      db.conversion.findMany({ where: { ...scope, receivedAt: { gte: startToday } }, select: { price: true, receivedAt: true } }),
+      db.conversion.aggregate({ where: { ...scope, receivedAt: { gte: startYesterday, lt: startToday } }, _sum: { price: true }, _count: { id: true } }),
+      db.campaign.findMany({ where: campaignWhere(isAdmin, userId), orderBy: { createdAt: "desc" }, select: { id: true, name: true, slug: true, isActive: true, colorPrimary: true, locale: true } }),
+      db.conversion.aggregate({ where: scope, _sum: { price: true } }),
+      db.conversion.findMany({ where: scope, orderBy: { receivedAt: "desc" }, take: 6, select: { id: true, price: true, offerName: true, country: true, receivedAt: true } }),
     ]);
     todayConvs = tc;
     yRevenue = yAgg._sum.price ?? 0;

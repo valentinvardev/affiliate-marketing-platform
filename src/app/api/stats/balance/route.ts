@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
+import { getScope, convWhere } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -8,14 +9,17 @@ export async function GET() {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfYesterday = new Date(startOfToday.getTime() - 86_400_000);
 
+  const { slugs } = await getScope();
+  const scope = convWhere(slugs);
+
   const [today, yesterday] = await Promise.all([
     db.conversion.aggregate({
-      where: { receivedAt: { gte: startOfToday } },
+      where: { ...scope, receivedAt: { gte: startOfToday } },
       _sum: { price: true },
       _count: { id: true },
     }),
     db.conversion.aggregate({
-      where: { receivedAt: { gte: startOfYesterday, lt: startOfToday } },
+      where: { ...scope, receivedAt: { gte: startOfYesterday, lt: startOfToday } },
       _sum: { price: true },
       _count: { id: true },
     }),

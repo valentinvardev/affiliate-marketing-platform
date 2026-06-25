@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { getScope, convWhere } from "@/lib/scope";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +20,16 @@ export default async function LeaderboardPage() {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfYesterday = new Date(startOfToday.getTime() - 86_400_000);
 
+  const { slugs } = await getScope();
+  const scope = convWhere(slugs);
+
   const [todayAgg, yesterdayAgg] = await Promise.all([
     db.conversion.aggregate({
-      where: { receivedAt: { gte: startOfToday } },
+      where: { ...scope, receivedAt: { gte: startOfToday } },
       _sum: { price: true }, _count: { id: true },
     }),
     db.conversion.aggregate({
-      where: { receivedAt: { gte: startOfYesterday, lt: startOfToday } },
+      where: { ...scope, receivedAt: { gte: startOfYesterday, lt: startOfToday } },
       _sum: { price: true }, _count: { id: true },
     }),
   ]);

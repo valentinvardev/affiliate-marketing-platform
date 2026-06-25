@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { getScope, convWhere } from "@/lib/scope";
 import { Wallet, ArrowDownToLine, Clock, HardHat } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +10,9 @@ const fmt = new Intl.NumberFormat("en-US", {
 });
 
 export default async function WalletPage() {
-  // Conectado a los fondos reales (suma de todas las conversiones)
-  const agg = await db.conversion.aggregate({ _sum: { price: true }, _count: { id: true } });
+  // Conectado a los fondos reales del usuario (sus conversiones)
+  const { slugs } = await getScope();
+  const agg = await db.conversion.aggregate({ where: convWhere(slugs), _sum: { price: true }, _count: { id: true } });
   const balance = agg._sum.price ?? 0;
   const count   = agg._count.id;
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { db } from "@/server/db";
+import { getScope, convWhere } from "@/lib/scope";
 import { fetchStats, type StatsRange } from "@/lib/taprain";
 import { DollarSign, Repeat2, MousePointerClick, Zap, AlertTriangle } from "lucide-react";
 import { StatsChart, type ChartPoint } from "./_components/stats-chart";
@@ -103,17 +104,20 @@ export default async function StatsPage({
   const proto = host.includes("localhost") ? "http" : "https";
   const baseUrl = `${proto}://${host}`;
 
+  const { slugs, isAdmin } = await getScope();
+
   // Fetch TapRain summary stats + local conversions in parallel
   const [statsResult, conversions] = await Promise.allSettled([
     fetchStats(range),
     db.conversion.findMany({
-      where: { receivedAt: { gte: window.from, lte: window.to } },
+      where: { ...convWhere(slugs), receivedAt: { gte: window.from, lte: window.to } },
       orderBy: { receivedAt: "desc" },
     }),
   ]);
 
   const data    = statsResult.status === "fulfilled" ? statsResult.value : null;
-  const apiError = statsResult.status === "rejected"
+  // El summary de TapRain es global de la cuenta → solo para admin. El usuario ve sus números locales.
+  const apiError = isAdmin && statsResult.status === "rejected"
     ? (statsResult.reason instanceof Error ? statsResult.reason.message : "Error desconocido")
     : null;
 
@@ -124,7 +128,7 @@ export default async function StatsPage({
   const localRevenue = convList.reduce((s, c) => s + c.price, 0);
   const localCount   = convList.length;
 
-  const summary = data?.summary;
+  const summary = isAdmin ? data?.summary : undefined;
   const rangeLabel = RANGES.find((r) => r.key === range)?.label ?? range;
 
   return (
