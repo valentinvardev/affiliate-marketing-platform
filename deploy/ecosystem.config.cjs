@@ -14,7 +14,7 @@ module.exports = {
       name: "tapsur",
       cwd: __dirname + "/..",                       // carpeta del proyecto
       script: "node_modules/next/dist/bin/next",    // binario de Next directo (sin npm)
-      args: "start -p 3010",                        // puerto propio (no pisa el 3000 de otras apps)
+      args: "start -p 4010",                        // puerto propio (3000=photoplatform, 3010=surcodia, etc.)
       exec_mode: "fork",                            // fork, NO cluster
       instances: 1,
       autorestart: true,
