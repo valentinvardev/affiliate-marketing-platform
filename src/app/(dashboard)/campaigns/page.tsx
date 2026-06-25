@@ -166,7 +166,7 @@ function CampaignRow({ campaign: c, last }: { campaign: Campaign; last: boolean 
       <CampaignCopyUrl slug={c.slug} />
       <CampaignToggle id={c.id} isActive={c.isActive} />
       <Link
-        href={`/campaigns/${c.id}`}
+        href={`/campaigns/${c.id}/edit`}
         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors"
         style={{ color: "var(--color-muted-foreground)" }}
         title="Editar"

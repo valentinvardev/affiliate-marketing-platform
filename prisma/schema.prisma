@@ -75,11 +75,13 @@ model CardOwner {
     userId     String
     user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
     cardName   String?
+    campaignId String?
     closedAt   DateTime?
     closedById String?
     createdAt  DateTime  @default(now())
 
     @@index([userId])
+    @@index([campaignId])
 }
 
 // Gasto atribuido a un usuario (vcc | interaction | engagement | bc | email | ...)

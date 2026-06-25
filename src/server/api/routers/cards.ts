@@ -7,6 +7,8 @@ type RawVcc = {
   cardName?: string;
   last4?: string;
   status?: string;
+  currentSpend?: number;
+  spendLimit?: number;
   [k: string]: unknown;
 };
 
@@ -37,6 +39,7 @@ export const cardsRouter = createTRPCRouter({
         ...c,
         ownerUserId:      o?.userId ?? null,
         ownerUsername:    o ? nameById.get(o.userId) ?? null : null,
+        campaignId:       o?.campaignId ?? null,
         closedAt:         o?.closedAt ?? null,
         closedByUsername: o?.closedById ? nameById.get(o.closedById) ?? null : null,
       };
@@ -106,5 +109,17 @@ export const cardsRouter = createTRPCRouter({
       // Pausar en TapRain (mejor acción disponible; no hay terminate)
       await suiteFetch(`vcc/${input.vccId}`, { method: "PATCH", body: JSON.stringify({ action: "pause" }) }).catch(() => { /* best-effort */ });
       return { closed: true };
+    }),
+
+  /** Vincular / desvincular una tarjeta a una campaña (para rastrear gasto del subid). */
+  linkCampaign: publicProcedure
+    .input(z.object({ vccId: z.string(), campaignId: z.string().nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const me = ctx.session?.user?.id;
+      const isAdmin = ctx.session?.user?.role === "admin";
+      const owner = await ctx.db.cardOwner.findUnique({ where: { vccId: input.vccId } });
+      if (!owner || (owner.userId !== me && !isAdmin)) throw new Error("No es tu tarjeta");
+      await ctx.db.cardOwner.update({ where: { vccId: input.vccId }, data: { campaignId: input.campaignId } });
+      return { ok: true };
     }),
 });
