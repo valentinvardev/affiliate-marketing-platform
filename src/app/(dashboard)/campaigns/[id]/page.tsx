@@ -5,7 +5,6 @@ import { authOptions } from "@/server/auth";
 import { db } from "@/server/db";
 import { suiteFetch } from "@/lib/suite";
 import { getLocaleByCode } from "@/lib/locales";
-import { StatsChart, type ChartPoint } from "@/app/(dashboard)/stats/_components/stats-chart";
 import { ConversionList } from "@/app/(dashboard)/stats/_components/conversion-list";
 import { SpendPanel, type LinkedCard } from "./_components/spend-panel";
 import { ChevronLeft, Pencil, ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
@@ -20,19 +19,73 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
 
-function buildDaily(convs: { price: number; receivedAt: Date }[], days = 14): ChartPoint[] {
-  const now = new Date();
-  const buckets: Record<string, number> = {};
+type PnlPoint = { label: string; profit: number; spend: number };
+
+/** Profit acumulado vs gasto, dos líneas sobre la misma escala con baseline en 0. */
+function buildPnl(convs: { price: number; receivedAt: Date }[], spend: number, days = 14): PnlPoint[] {
+  const today = new Date(); today.setHours(23, 59, 59, 999);
+  const out: PnlPoint[] = [];
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now); d.setDate(now.getDate() - i);
-    buckets[`${d.getMonth() + 1}/${d.getDate()}`] = 0;
+    const end = new Date(today); end.setDate(today.getDate() - i);
+    const cumRev = convs.filter((c) => new Date(c.receivedAt) <= end).reduce((s, c) => s + c.price, 0);
+    out.push({ label: `${end.getMonth() + 1}/${end.getDate()}`, profit: +(cumRev - spend).toFixed(2), spend: +spend.toFixed(2) });
   }
-  for (const c of convs) {
-    const d = new Date(c.receivedAt);
-    const label = `${d.getMonth() + 1}/${d.getDate()}`;
-    if (label in buckets) buckets[label]! += c.price;
-  }
-  return Object.entries(buckets).map(([label, revenue]) => ({ label, revenue: +revenue.toFixed(2) }));
+  return out;
+}
+
+/* ─── Chart comparativo Profit vs Gasto ─── */
+function PnlChart({ data }: { data: PnlPoint[] }) {
+  const W = 600, H = 180, padX = 10, padT = 14, padB = 22;
+  const n = data.length;
+  const profits = data.map((d) => d.profit);
+  const spends = data.map((d) => d.spend);
+  const max = Math.max(...profits, ...spends, 0);
+  const min = Math.min(...profits, ...spends, 0);
+  const range = (max - min) || 1;
+  const x = (i: number) => padX + (n <= 1 ? 0 : (i / (n - 1)) * (W - 2 * padX));
+  const y = (v: number) => padT + (1 - (v - min) / range) * (H - padT - padB);
+  const line = (vals: number[]) => vals.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const zeroY = y(0);
+  const last = data[n - 1] ?? { profit: 0, spend: 0 };
+  const profitColor = last.profit >= 0 ? "#50e3c2" : "#ff4444";
+  const profitArea = `${line(profits)} L ${x(n - 1).toFixed(1)} ${zeroY.toFixed(1)} L ${x(0).toFixed(1)} ${zeroY.toFixed(1)} Z`;
+
+  return (
+    <div>
+      {/* leyenda */}
+      <div className="mb-2 flex items-center gap-4 text-[11px]">
+        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--color-muted-foreground)" }}>
+          <span className="h-2 w-2 rounded-full" style={{ background: profitColor }} /> Profit
+          <span className="font-mono tabular-nums" style={{ color: profitColor }}>{usd(last.profit)}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--color-muted-foreground)" }}>
+          <span className="h-2 w-2 rounded-full" style={{ background: "#ff4444" }} /> Gasto
+          <span className="font-mono tabular-nums" style={{ color: "#ff4444" }}>{usd(last.spend)}</span>
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-44 w-full" style={{ display: "block" }}>
+        <defs>
+          <linearGradient id="pnlfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={profitColor} stopOpacity="0.16" />
+            <stop offset="100%" stopColor={profitColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* baseline 0 */}
+        <line x1={padX} y1={zeroY} x2={W - padX} y2={zeroY} stroke="rgba(255,255,255,0.18)" strokeWidth="1" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
+        {/* área de profit */}
+        <path d={profitArea} fill="url(#pnlfill)" />
+        {/* gasto (rojo, punteado) */}
+        <path d={line(spends)} fill="none" stroke="#ff4444" strokeWidth="1.5" strokeDasharray="5 4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        {/* profit */}
+        <path d={line(profits)} fill="none" stroke={profitColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <circle cx={x(n - 1)} cy={y(last.profit)} r="2.5" fill={profitColor} />
+      </svg>
+      {/* eje X */}
+      <div className="mt-1 flex justify-between font-mono text-[9px] tabular-nums" style={{ color: "var(--color-subtle)" }}>
+        <span>{data[0]?.label}</span><span>{data[Math.floor(n / 2)]?.label}</span><span>{last && data[n - 1]?.label}</span>
+      </div>
+    </div>
+  );
 }
 
 export default async function CampaignOverviewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,7 +106,6 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
   const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
   const todayRevenue = convs.filter((c) => new Date(c.receivedAt) >= startToday).reduce((s, c) => s + c.price, 0);
   const avg = count > 0 ? revenue / count : 0;
-  const chart = buildDaily(convs);
 
   // Tarjetas vinculadas + gasto (live de la suite)
   const linkOwners = await db.cardOwner.findMany({ where: { campaignId: id } });
@@ -75,6 +127,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
 
   const profit = revenue - spend;
   const up = profit >= 0;
+  const pnl = buildPnl(convs, spend);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -115,7 +168,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
                   ingresos <span style={{ color: "var(--color-success)" }}>{usd(revenue)}</span> − gasto <span style={{ color: "var(--color-error)" }}>{usd(spend)}</span>
                 </p>
                 <div className="mt-5">
-                  <StatsChart data={chart} label="Ingresos · 14 días" />
+                  <PnlChart data={pnl} />
                 </div>
               </div>
             </section>
