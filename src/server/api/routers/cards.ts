@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { suiteFetch } from "@/lib/suite";
 
 type RawVcc = {
@@ -14,7 +15,7 @@ type RawVcc = {
 
 export const cardsRouter = createTRPCRouter({
   /** Lista scopeada: admin ve todas (active+closed); usuario solo sus active. */
-  list: publicProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure.query(async ({ ctx }) => {
     const isAdmin = ctx.session?.user?.role === "admin";
     const me = ctx.session?.user?.id ?? "";
 
@@ -53,7 +54,7 @@ export const cardsRouter = createTRPCRouter({
   }),
 
   /** Crea una VCC en TapRain y la atribuye al usuario logueado. */
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({
       cardName:   z.string().min(1),
       spendLimit: z.number().min(0),
@@ -78,7 +79,7 @@ export const cardsRouter = createTRPCRouter({
     }),
 
   /** Subir el límite de una tarjeta. */
-  increaseLimit: publicProcedure
+  increaseLimit: protectedProcedure
     .input(z.object({ vccId: z.string(), spendLimit: z.number().min(0) }))
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session?.user?.id;
@@ -93,7 +94,7 @@ export const cardsRouter = createTRPCRouter({
     }),
 
   /** Cerrar una tarjeta: pausa en TapRain + registra quién la cerró. */
-  close: publicProcedure
+  close: protectedProcedure
     .input(z.object({ vccId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session?.user?.id;
@@ -112,7 +113,7 @@ export const cardsRouter = createTRPCRouter({
     }),
 
   /** Vincular / desvincular una tarjeta a una campaña (para rastrear gasto del subid). */
-  linkCampaign: publicProcedure
+  linkCampaign: protectedProcedure
     .input(z.object({ vccId: z.string(), campaignId: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session?.user?.id;
@@ -121,5 +122,20 @@ export const cardsRouter = createTRPCRouter({
       if (!owner || (owner.userId !== me && !isAdmin)) throw new Error("No es tu tarjeta");
       await ctx.db.cardOwner.update({ where: { vccId: input.vccId }, data: { campaignId: input.campaignId } });
       return { ok: true };
+    }),
+
+  /** Sincroniza el gasto de una tarjeta desde TapRain (scopeado al dueño). */
+  syncSpend: protectedProcedure
+    .input(z.object({ vccId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const me = ctx.session?.user?.id;
+      const isAdmin = ctx.session?.user?.role === "admin";
+      const owner = await ctx.db.cardOwner.findUnique({ where: { vccId: input.vccId } });
+      if (!isAdmin && owner?.userId !== me) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No es tu tarjeta" });
+      }
+      const { ok, data } = await suiteFetch(`vcc/${input.vccId}/sync-spend`, { method: "POST" });
+      if (!ok) throw new TRPCError({ code: "BAD_REQUEST", message: (data.message as string) ?? "No se pudo sincronizar" });
+      return data;
     }),
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
 
 type Ctx = { session?: { user?: { role?: string } } | null };
 function requireAdmin(ctx: Ctx) {
@@ -10,7 +10,7 @@ function requireAdmin(ctx: Ctx) {
 }
 
 export const adminRouter = createTRPCRouter({
-  users: publicProcedure.query(async ({ ctx }) => {
+  users: adminProcedure.query(async ({ ctx }) => {
     requireAdmin(ctx);
     return ctx.db.user.findMany({
       where: { approved: true },
@@ -20,7 +20,7 @@ export const adminRouter = createTRPCRouter({
   }),
 
   /** Asignar / desasignar una VCC a un usuario. */
-  assignCard: publicProcedure
+  assignCard: adminProcedure
     .input(z.object({ vccId: z.string(), cardName: z.string().optional(), userId: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);
@@ -37,7 +37,7 @@ export const adminRouter = createTRPCRouter({
     }),
 
   /** Asignar / desasignar una campaña (su slug = subid) a un usuario. */
-  assignCampaign: publicProcedure
+  assignCampaign: adminProcedure
     .input(z.object({ campaignId: z.string(), ownerId: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);

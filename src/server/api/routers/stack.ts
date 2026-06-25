@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 const itemInput = z.object({
   name:     z.string().min(1),
@@ -11,45 +11,45 @@ const itemInput = z.object({
 });
 
 export const stackRouter = createTRPCRouter({
-  list: publicProcedure.query(({ ctx }) =>
+  list: protectedProcedure.query(({ ctx }) =>
     ctx.db.appStack.findMany({
       orderBy: { createdAt: "asc" },
       include: { items: { orderBy: { position: "asc" } } },
     }),
   ),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(({ ctx, input }) =>
       ctx.db.appStack.create({ data: input, include: { items: true } }),
     ),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ ctx, input }) =>
       ctx.db.appStack.delete({ where: { id: input.id } }),
     ),
 
-  addItem: publicProcedure
+  addItem: protectedProcedure
     .input(z.object({ stackId: z.string() }).merge(itemInput))
     .mutation(({ ctx, input }) =>
       ctx.db.appStackItem.create({ data: input }),
     ),
 
-  updateItem: publicProcedure
+  updateItem: protectedProcedure
     .input(z.object({ id: z.string() }).merge(itemInput.partial()))
     .mutation(({ ctx, input }) => {
       const { id, ...data } = input;
       return ctx.db.appStackItem.update({ where: { id }, data });
     }),
 
-  removeItem: publicProcedure
+  removeItem: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ ctx, input }) =>
       ctx.db.appStackItem.delete({ where: { id: input.id } }),
     ),
 
-  applyToCampaign: publicProcedure
+  applyToCampaign: protectedProcedure
     .input(z.object({ stackId: z.string(), campaignId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const stack = await ctx.db.appStack.findUniqueOrThrow({
@@ -73,7 +73,7 @@ export const stackRouter = createTRPCRouter({
       return { applied: stack.items.length };
     }),
 
-  linkToOffer: publicProcedure
+  linkToOffer: protectedProcedure
     .input(z.object({
       offerId:    z.string(),
       offerName:  z.string(),

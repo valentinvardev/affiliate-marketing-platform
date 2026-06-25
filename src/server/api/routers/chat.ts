@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 export const chatRouter = createTRPCRouter({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
     .query(async ({ ctx, input }) => {
       const rows = await ctx.db.chatMessage.findMany({
@@ -12,7 +12,7 @@ export const chatRouter = createTRPCRouter({
       return rows.reverse(); // oldest → newest
     }),
 
-  send: publicProcedure
+  send: protectedProcedure
     .input(z.object({
       userId:   z.string().min(1),
       username: z.string().min(1).max(60),

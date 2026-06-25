@@ -1,6 +1,18 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { slugify } from "@/lib/utils";
+
+type GuardCtx = { db: typeof import("@/server/db").db; session: { user: { id: string; role: string } } };
+
+/** Admin puede todo; un usuario solo su propia campaña. */
+async function assertCanEdit(ctx: GuardCtx, id: string) {
+  const c = await ctx.db.campaign.findUnique({ where: { id }, select: { ownerId: true } });
+  if (!c) throw new TRPCError({ code: "NOT_FOUND", message: "Campaña no encontrada" });
+  if (ctx.session.user.role !== "admin" && c.ownerId !== ctx.session.user.id) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "No es tu campaña" });
+  }
+}
 
 const campaignInput = z.object({
   name: z.string().min(1).max(120),
@@ -17,7 +29,7 @@ const campaignInput = z.object({
 });
 
 export const campaignRouter = createTRPCRouter({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         search: z.string().optional(),
@@ -45,19 +57,27 @@ export const campaignRouter = createTRPCRouter({
       });
     }),
 
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.campaign.findUniqueOrThrow({ where: { id: input.id } });
+      const c = await ctx.db.campaign.findUniqueOrThrow({ where: { id: input.id } });
+      if (ctx.session.user.role !== "admin" && c.ownerId !== ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No es tu campaña" });
+      }
+      return c;
     }),
 
-  bySlug: publicProcedure
+  bySlug: protectedProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.campaign.findUnique({ where: { slug: input.slug } });
+      const c = await ctx.db.campaign.findUnique({ where: { slug: input.slug } });
+      if (c && ctx.session.user.role !== "admin" && c.ownerId !== ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No es tu campaña" });
+      }
+      return c;
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(campaignInput)
     .mutation(async ({ ctx, input }) => {
       const slug = input.slug ?? slugify(input.name);
@@ -66,9 +86,10 @@ export const campaignRouter = createTRPCRouter({
       });
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(z.object({ id: z.string() }).merge(campaignInput.partial()))
     .mutation(async ({ ctx, input }) => {
+      await assertCanEdit(ctx, input.id);
       const { id, slug: rawSlug, name, ...rest } = input;
       const slug =
         rawSlug !== undefined
@@ -82,15 +103,17 @@ export const campaignRouter = createTRPCRouter({
       });
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      await assertCanEdit(ctx, input.id);
       return ctx.db.campaign.delete({ where: { id: input.id } });
     }),
 
-  toggleActive: publicProcedure
+  toggleActive: protectedProcedure
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
+      await assertCanEdit(ctx, input.id);
       return ctx.db.campaign.update({
         where: { id: input.id },
         data: { isActive: input.isActive },

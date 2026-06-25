@@ -1,10 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth";
 import { db } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
 const BASE = process.env.TAPRAIN_SUITE_BASE ?? "https://taprain.com";
 const SUITE_COOKIE_KEY = "taprain_suite_cookie";
+
+/** Passthrough crudo al Ads Suite con la cookie de admin → SOLO admin. */
+async function requireAdmin() {
+  const session = await getServerSession(authOptions);
+  return session?.user?.role === "admin";
+}
 
 async function getCookie(): Promise<string> {
   try {
@@ -20,6 +28,10 @@ async function getCookie(): Promise<string> {
  * en DB (AppConfig) — editable desde la app cuando expira, sin redeploy.
  */
 async function forward(req: NextRequest, path: string[]) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const cookie = await getCookie();
   if (!cookie) {
     return NextResponse.json(

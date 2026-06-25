@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
 
 const SUITE_COOKIE_KEY = "taprain_suite_cookie";
 
 export const configRouter = createTRPCRouter({
-  suiteStatus: publicProcedure.query(async ({ ctx }) => {
+  suiteStatus: adminProcedure.query(async ({ ctx }) => {
     const row = await ctx.db.appConfig.findUnique({ where: { key: SUITE_COOKIE_KEY } });
     return { connected: !!row?.value, updatedAt: row?.updatedAt ?? null };
   }),
 
-  setSuiteCookie: publicProcedure
+  setSuiteCookie: adminProcedure
     .input(z.object({ value: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.appConfig.upsert({
@@ -20,7 +20,7 @@ export const configRouter = createTRPCRouter({
       return { connected: true };
     }),
 
-  clearSuiteCookie: publicProcedure.mutation(async ({ ctx }) => {
+  clearSuiteCookie: adminProcedure.mutation(async ({ ctx }) => {
     await ctx.db.appConfig.deleteMany({ where: { key: SUITE_COOKIE_KEY } });
     return { connected: false };
   }),

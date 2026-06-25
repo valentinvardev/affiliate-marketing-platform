@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
 import { suiteFetch } from "@/lib/suite";
 
 type Ctx = { session?: { user?: { id?: string; role?: string } } | null };
@@ -10,7 +10,7 @@ function requireAdmin(ctx: Ctx) {
 
 export const accountingRouter = createTRPCRouter({
   /** Registrar un gasto atribuido al usuario logueado. */
-  logSpend: publicProcedure
+  logSpend: adminProcedure
     .input(z.object({ kind: z.string(), amount: z.number().min(0), ref: z.string().optional(), note: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session?.user?.id;
@@ -21,7 +21,7 @@ export const accountingRouter = createTRPCRouter({
     }),
 
   /** Resumen por usuario: revenue (sus campañas) − costos (VCC + suite) = profit, con reparto. */
-  summary: publicProcedure.query(async ({ ctx }) => {
+  summary: adminProcedure.query(async ({ ctx }) => {
     const isAdmin = ctx.session?.user?.role === "admin";
     const me = ctx.session?.user?.id ?? "";
 
@@ -85,7 +85,7 @@ export const accountingRouter = createTRPCRouter({
   }),
 
   /** (admin) Definir el reparto de un usuario fuente: reemplaza sus filas. */
-  setSplit: publicProcedure
+  setSplit: adminProcedure
     .input(z.object({
       sourceUserId: z.string(),
       rows: z.array(z.object({ beneficiaryUserId: z.string(), percent: z.number().min(0).max(100) })),

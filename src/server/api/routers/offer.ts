@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 const offerInput = z.object({
   name:     z.string().min(1).max(120),
@@ -12,7 +12,7 @@ const offerInput = z.object({
 });
 
 export const offerRouter = createTRPCRouter({
-  listByCampaign: publicProcedure
+  listByCampaign: protectedProcedure
     .input(z.object({ campaignId: z.string() }))
     .query(({ ctx, input }) =>
       ctx.db.campaignOffer.findMany({
@@ -21,7 +21,7 @@ export const offerRouter = createTRPCRouter({
       }),
     ),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({ campaignId: z.string() }).merge(offerInput))
     .mutation(async ({ ctx, input }) => {
       const last = await ctx.db.campaignOffer.findFirst({
@@ -34,21 +34,21 @@ export const offerRouter = createTRPCRouter({
       });
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(z.object({ id: z.string() }).merge(offerInput.partial()))
     .mutation(({ ctx, input }) => {
       const { id, ...data } = input;
       return ctx.db.campaignOffer.update({ where: { id }, data });
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ ctx, input }) =>
       ctx.db.campaignOffer.delete({ where: { id: input.id } }),
     ),
 
   // Move offer up/down within the campaign
-  reorder: publicProcedure
+  reorder: protectedProcedure
     .input(z.object({ id: z.string(), direction: z.enum(["up", "down"]) }))
     .mutation(async ({ ctx, input }) => {
       const offer = await ctx.db.campaignOffer.findUniqueOrThrow({

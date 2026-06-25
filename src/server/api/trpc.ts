@@ -1,4 +1,4 @@
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { getServerSession } from "next-auth";
@@ -37,3 +37,19 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 });
 
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/** Requiere sesión iniciada. Estrecha ctx.session a no-nulo. */
+export const protectedProcedure = t.procedure.use(timingMiddleware).use(({ ctx, next }) => {
+  if (!ctx.session?.user?.id) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Iniciá sesión." });
+  }
+  return next({ ctx: { ...ctx, session: { ...ctx.session, user: ctx.session.user } } });
+});
+
+/** Requiere rol admin. */
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.session.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Solo admin." });
+  }
+  return next({ ctx });
+});

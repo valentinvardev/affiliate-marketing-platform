@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
 
 type Ctx = { session?: { user?: { role?: string } } | null };
 function requireAdmin(ctx: Ctx) {
@@ -19,7 +19,7 @@ function normalizeDomain(input: string): string {
 
 export const domainsRouter = createTRPCRouter({
   /** Lista de dominios custom → campaña (admin). */
-  list: publicProcedure.query(async ({ ctx }) => {
+  list: adminProcedure.query(async ({ ctx }) => {
     requireAdmin(ctx);
     return ctx.db.landingDomain.findMany({
       orderBy: { domain: "asc" },
@@ -30,7 +30,7 @@ export const domainsRouter = createTRPCRouter({
   }),
 
   /** Conecta (o reasigna) un dominio a una campaña. */
-  add: publicProcedure
+  add: adminProcedure
     .input(z.object({ domain: z.string().min(3), campaignId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);
@@ -46,7 +46,7 @@ export const domainsRouter = createTRPCRouter({
     }),
 
   /** Desconecta un dominio. */
-  remove: publicProcedure
+  remove: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);

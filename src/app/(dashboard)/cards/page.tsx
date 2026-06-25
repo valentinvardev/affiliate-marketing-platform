@@ -31,12 +31,6 @@ type VCC = {
 const usd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
 
-async function suite(path: string, init?: RequestInit) {
-  const res = await fetch(`/api/suite/${path}`, init);
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  return { ok: res.ok, status: res.status, data };
-}
-
 /* ── Tarjeta visual (firma) ── */
 function CardVisual({ card, revealed }: { card?: VCC; revealed?: boolean }) {
   const name = card?.cardName ?? "Nueva tarjeta";
@@ -132,6 +126,7 @@ export default function CardsPage() {
     onSuccess: () => { setCloseModal(null); void cardsQuery.refetch(); },
     onError:   (e) => alert(e.message),
   });
+  const syncMut = api.cards.syncSpend.useMutation();
 
   function openLimit(id: string, name: string) { setLimitValue(""); setLimitModal({ id, name }); }
   function confirmLimit() {
@@ -141,7 +136,7 @@ export default function CardsPage() {
 
   async function syncSpend(id: string) {
     setBusy(id);
-    await suite(`vcc/${id}/sync-spend`, { method: "POST" });
+    try { await syncMut.mutateAsync({ vccId: id }); } catch { /* mostrado abajo */ }
     setBusy(null);
     void cardsQuery.refetch();
   }

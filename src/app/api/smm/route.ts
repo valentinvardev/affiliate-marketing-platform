@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,11 @@ const ALLOWED = new Set(["balance", "services", "status", "add"]);
  * se expone al cliente. Solo se permiten las acciones whitelisteadas.
  */
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
   const key = process.env.SMM_KEY ?? "";
   if (!key) {
     return NextResponse.json(
