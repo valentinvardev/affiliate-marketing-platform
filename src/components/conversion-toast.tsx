@@ -15,36 +15,14 @@ type ConversionPayload = {
 
 type Toast = ConversionPayload & { uid: string };
 
-/* ─── Sound: coin drop + register chime ─── */
+/* ─── Sound: "cha-ching" (archivo en /public) ─── */
+let chimeAudio: HTMLAudioElement | null = null;
 function playChime() {
   try {
-    const ctx = new AudioContext();
-
-    const click = ctx.createOscillator();
-    const clickGain = ctx.createGain();
-    click.connect(clickGain);
-    clickGain.connect(ctx.destination);
-    click.type = "sine";
-    click.frequency.setValueAtTime(1200, ctx.currentTime);
-    click.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.06);
-    clickGain.gain.setValueAtTime(0.22, ctx.currentTime);
-    clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-    click.start(ctx.currentTime);
-    click.stop(ctx.currentTime + 0.08);
-
-    [0.06, 0.14].forEach((delay, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880 + i * 220, ctx.currentTime + delay);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.22);
-    });
-  } catch { /* blocked */ }
+    chimeAudio ??= Object.assign(new Audio("/cha-ching.mp3"), { volume: 0.6 });
+    chimeAudio.currentTime = 0;
+    void chimeAudio.play().catch(() => { /* autoplay bloqueado hasta la 1ra interacción */ });
+  } catch { /* sin Audio */ }
 }
 
 /* ─── Icon ─── */
