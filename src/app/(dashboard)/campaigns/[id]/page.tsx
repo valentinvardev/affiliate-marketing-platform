@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ExternalLink } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { api } from "@/trpc/server";
 import { HydrateClient } from "@/trpc/server";
 import { CampaignForm } from "@/components/campaign-form";
@@ -35,8 +35,6 @@ export default async function EditCampaignPage({
   void api.offer.listByCampaign.prefetch({ campaignId: id });
   const initialOffers = await api.offer.listByCampaign({ campaignId: id });
 
-  const configUrl = `/api/config/${campaign.slug}`;
-
   return (
     <HydrateClient>
       <div className="flex flex-col min-h-screen">
@@ -61,37 +59,6 @@ export default async function EditCampaignPage({
 
         <main className="flex-1 px-8 py-8">
           <div className="mx-auto max-w-2xl space-y-6">
-            {/* Config URL */}
-            <div
-              className="rounded-xl p-4"
-              style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
-            >
-              <p className="mb-1 text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
-                URL de configuración pública
-              </p>
-              <div className="flex items-center gap-2">
-                <code
-                  className="flex-1 truncate rounded-md px-3 py-1.5 font-mono text-xs"
-                  style={{
-                    background: "var(--color-surface-overlay)",
-                    color: "var(--color-foreground)",
-                    border: "1px solid var(--color-border)",
-                  }}
-                >
-                  {configUrl}
-                </code>
-                <a
-                  href={configUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-                  style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              </div>
-            </div>
-
             {/* Campaign settings — studio */}
             <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
               <CampaignForm campaign={campaign} />

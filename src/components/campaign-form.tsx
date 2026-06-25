@@ -9,7 +9,7 @@ import { CURRENCIES } from "@/lib/currencies";
 import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import {
-  Loader2, Upload, Copy, Check, X, ExternalLink, Smartphone, ChevronDown,
+  Loader2, Upload, Check, X, ExternalLink, Smartphone, ChevronDown,
   ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
   Globe, Palette, Layers,
 } from "lucide-react";
@@ -325,7 +325,6 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const router = useRouter();
   const isEdit = !!campaign;
   const [pending, startTransition] = useTransition();
-  const [slugCopied, setSlugCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [created, setCreated] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
@@ -391,12 +390,6 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     } catch { /* ignore */ } finally { setUploading(false); }
   }
 
-  function copySlugUrl() {
-    const slug = values.slug || campaign?.slug; if (!slug) return;
-    void navigator.clipboard.writeText(`${window.location.origin}/api/config/${slug}`);
-    setSlugCopied(true); setTimeout(() => setSlugCopied(false), 2000);
-  }
-
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     startTransition(() => {
@@ -432,8 +425,6 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     ? (stacks.find((s) => s.id === pendingStackId)?.items.map((it) => ({ name: it.name, amount: it.amount, badge: it.badge, imageUrl: it.imageUrl })) ?? [])
     : DEFAULT_OFFERS;
 
-  const cp = values.colorPrimary;
-
   return (
     <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>
       <OfferPickerModal open={offerModalOpen} onClose={() => setOfferModalOpen(false)}
@@ -442,9 +433,9 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
       {/* Created animation */}
       {created && (
         <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}>
-          <div style={{ width: 76, height: 76, borderRadius: "50%", background: cp, display: "flex", alignItems: "center", justifyContent: "center", animation: "successPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}>
+          <div style={{ width: 76, height: 76, borderRadius: "50%", background: "var(--color-foreground)", display: "flex", alignItems: "center", justifyContent: "center", animation: "successPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}>
             <svg width="38" height="38" viewBox="0 0 36 36" fill="none">
-              <polyline points="7,18 15,26 29,10" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ strokeDasharray: 50, strokeDashoffset: 50, animation: "checkDraw 0.4s ease 0.35s forwards" }} />
+              <polyline points="7,18 15,26 29,10" stroke="var(--color-background)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ strokeDasharray: 50, strokeDashoffset: 50, animation: "checkDraw 0.4s ease 0.35s forwards" }} />
             </svg>
           </div>
           <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>¡Campaña creada!</p>
@@ -462,12 +453,12 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                 <button key={s.key} type="button" onClick={() => setActive(s.key)}
                   className="flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
                   style={{
-                    background: on ? "color-mix(in oklch, " + cp + " 16%, transparent)" : "transparent",
-                    border: `1px solid ${on ? "color-mix(in oklch, " + cp + " 45%, transparent)" : "var(--color-border)"}`,
+                    background: on ? "var(--color-surface-overlay)" : "transparent",
+                    border: `1px solid ${on ? "var(--color-border-focus)" : "var(--color-border)"}`,
                     color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)",
                   }}>
                   <span className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
-                    style={{ background: s.done ? cp : on ? "transparent" : "var(--color-surface-overlay)", color: s.done ? "#fff" : on ? cp : "var(--color-subtle)", border: s.done ? "none" : `1px solid ${on ? cp : "var(--color-border)"}` }}>
+                    style={{ background: s.done ? "var(--color-foreground)" : "transparent", color: s.done ? "var(--color-background)" : on ? "var(--color-foreground)" : "var(--color-subtle)", border: s.done ? "none" : `1px solid ${on ? "var(--color-foreground)" : "var(--color-border)"}` }}>
                     {s.done ? <Check className="h-2.5 w-2.5" /> : i + 1}
                   </span>
                   {s.label}
@@ -485,8 +476,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                   <Field label="Nombre"><Input placeholder="UK Marzo 2025" value={values.name} onChange={(e) => handleNameChange(e.target.value)} required /></Field>
                   <Field label="Slug (ID público)" hint="Usado como ?c=slug en la plantilla">
                     <Input placeholder="uk-marzo-2025" value={values.slug} onChange={(e) => set("slug", e.target.value)} required
-                      style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}
-                      suffix={values.slug ? (<button type="button" onClick={copySlugUrl} title="Copiar URL de config">{slugCopied ? <Check className="h-3.5 w-3.5" style={{ color: "var(--color-success)" }} /> : <Copy className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />}</button>) : null} />
+                      style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} />
                   </Field>
                 </>
               )}
@@ -665,7 +655,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         {/* progreso */}
         <div className="hidden flex-1 items-center gap-2 sm:flex">
           <div className="h-1 w-32 overflow-hidden rounded-full" style={{ background: "var(--color-surface-overlay)" }}>
-            <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: cp }} />
+            <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: "var(--color-foreground)" }} />
           </div>
           <span className="text-[11px] tabular-nums" style={{ color: "var(--color-subtle)" }}>{progress}%</span>
         </div>
@@ -676,7 +666,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
           <button type="button" onClick={() => router.back()} className="rounded-md px-3 py-2 text-sm transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
           <button type="button" onClick={() => handleSubmit()} disabled={!canSubmit}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-40 sm:flex-none"
-            style={{ background: cp, color: "#fff" }}>
+            style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
             {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
             {campaign ? "Guardar cambios" : "Crear campaña"}
           </button>
