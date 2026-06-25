@@ -44,11 +44,11 @@ DATABASE_URL="...supabase pooler..."
 DIRECT_URL="...supabase directo..."
 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / NEXT_PUBLIC_SUPABASE_* / NEXTAUTH_SECRET
 
-# Panel
-NEXTAUTH_URL="https://app.tapsur.com"
+# Panel (en la raíz tapsur.com)
+NEXTAUTH_URL="https://tapsur.com"
 
 # Routing por dominio
-APP_HOST="app.tapsur.com"
+APP_HOST="tapsur.com"                                       # la raíz es el panel; los subdominios son landings
 LANDING_BASE="tapsur.com"                                   # uk-marzo.tapsur.com → /landing/uk-marzo
 LANDING_DOMAINS={"playgames.com":"uk-marzo","ganaplata.net":"ar-abril"}
 
@@ -82,17 +82,17 @@ En tu proveedor de DNS, A records → IP del VPS:
 
 | Tipo | Nombre | Valor |
 |---|---|---|
-| A | `app` | IP del VPS |
-| A | `@` (tapsur.com) | IP del VPS |
-| A | `*` (wildcard, subdominios) | IP del VPS |
+| A | `@` (tapsur.com — panel) | IP del VPS |
+| A | `www` | IP del VPS |
+| A | `*` (wildcard, subdominios = landings) | IP del VPS |
 
 Para un **dominio custom de cliente**: que apunten su `A @` y `A www` a la IP del VPS, agregalo a `LANDING_DOMAINS` y a `server_name` de nginx.
 
 ## 7. SSL (https)
 
 ```bash
-# Panel + dominio raíz
-sudo certbot --nginx -d app.tapsur.com -d tapsur.com
+# Panel (raíz) + www
+sudo certbot --nginx -d tapsur.com -d www.tapsur.com
 
 # Wildcard *.tapsur.com (subdominios) requiere reto DNS-01:
 sudo certbot certonly --manual --preferred-challenges dns -d "*.tapsur.com"
