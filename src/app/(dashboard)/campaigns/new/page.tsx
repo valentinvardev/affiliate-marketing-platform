@@ -26,11 +26,9 @@ export default function NewCampaignPage() {
         </span>
       </header>
 
-      {/* Form */}
-      <main className="flex-1 px-8 py-8">
-        <div className="mx-auto max-w-2xl">
-          <CampaignForm />
-        </div>
+      {/* Studio */}
+      <main className="min-h-0 flex-1">
+        <CampaignForm />
       </main>
     </div>
   );

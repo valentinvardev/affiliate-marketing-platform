@@ -9,8 +9,9 @@ import { CURRENCIES } from "@/lib/currencies";
 import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import {
-  Loader2, Upload, Copy, Check, X,
-  ExternalLink, Smartphone, ChevronLeft, ChevronDown, ImageIcon, Bookmark, Link as LinkIcon, Search,
+  Loader2, Upload, Copy, Check, X, ExternalLink, Smartphone, ChevronDown,
+  ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
+  Globe, Palette, Layers,
 } from "lucide-react";
 import { OfferPickerModal } from "@/components/offer-picker-modal";
 
@@ -31,11 +32,18 @@ type Campaign = {
   colorPrimary: string; colorBg: string; isActive: boolean;
 };
 
+type PreviewOffer = { name: string; amount: number; badge: string; imageUrl?: string | null };
+const DEFAULT_OFFERS: PreviewOffer[] = [
+  { name: "Block Blast", amount: 12, badge: "TOP" },
+  { name: "Clash Royale", amount: 15, badge: "HOT" },
+  { name: "Candy Crush", amount: 35, badge: "TOP" },
+  { name: "Subway Surfers", amount: 12, badge: "HOT" },
+];
+
 /* ─── URL validator hook ─── */
 function useUrlStatus(url: string): UrlStatus {
   const [status, setStatus] = useState<UrlStatus>("idle");
   const timer = useRef<ReturnType<typeof setTimeout>>(null);
-
   useEffect(() => {
     if (!url.trim()) { setStatus("idle"); return; }
     setStatus("checking");
@@ -44,180 +52,94 @@ function useUrlStatus(url: string): UrlStatus {
       try {
         const u = new URL(url);
         setStatus(u.protocol === "https:" || u.protocol === "http:" ? "valid" : "invalid");
-      } catch {
-        setStatus("invalid");
-      }
+      } catch { setStatus("invalid"); }
     }, 600);
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [url]);
-
   return status;
 }
 
 /* ─── Base input ─── */
 function Input({
-  suffix,
-  className = "",
-  style: extraStyle,
-  ...props
+  suffix, className = "", style: extraStyle, ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & { suffix?: React.ReactNode }) {
   const [focused, setFocused] = useState(false);
-
   if (suffix) {
     return (
-      <div
-        className="flex items-center rounded-md overflow-hidden transition-colors"
-        style={{
-          border: `1px solid ${focused ? "var(--color-border-focus)" : "var(--color-border)"}`,
-          background: "var(--color-surface-overlay)",
-        }}
-      >
-        <input
-          {...props}
-          className={`flex-1 bg-transparent px-3 py-2 text-sm outline-none ${className}`}
+      <div className="flex items-center rounded-md overflow-hidden transition-colors"
+        style={{ border: `1px solid ${focused ? "var(--color-border-focus)" : "var(--color-border)"}`, background: "var(--color-surface-overlay)" }}>
+        <input {...props} className={`flex-1 bg-transparent px-3 py-2 text-sm outline-none ${className}`}
           style={{ color: "var(--color-foreground)", ...extraStyle }}
           onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
-          onBlur={(e)  => { setFocused(false); props.onBlur?.(e); }}
-        />
+          onBlur={(e) => { setFocused(false); props.onBlur?.(e); }} />
         <div className="flex shrink-0 items-center pr-2.5">{suffix}</div>
       </div>
     );
   }
-
   return (
-    <input
-      {...props}
-      className={`w-full rounded-md px-3 py-2 text-sm outline-none transition-colors ${className}`}
-      style={{
-        background: "var(--color-surface-overlay)",
-        border: `1px solid ${focused ? "var(--color-border-focus)" : "var(--color-border)"}`,
-        color: "var(--color-foreground)",
-        ...extraStyle,
-      }}
+    <input {...props} className={`w-full rounded-md px-3 py-2 text-sm outline-none transition-colors ${className}`}
+      style={{ background: "var(--color-surface-overlay)", border: `1px solid ${focused ? "var(--color-border-focus)" : "var(--color-border)"}`, color: "var(--color-foreground)", ...extraStyle }}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
-      onBlur={(e)  => { setFocused(false); props.onBlur?.(e); }}
-    />
+      onBlur={(e) => { setFocused(false); props.onBlur?.(e); }} />
   );
 }
 
 /* ─── Dropdown ─── */
 function Dropdown({
-  value,
-  onChange,
-  options,
+  value, onChange, options,
 }: {
-  value: string;
-  onChange: (value: string) => void;
+  value: string; onChange: (value: string) => void;
   options: { value: string; label: string; prefix?: string; countryCode?: string; meta?: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
-
   useEffect(() => {
-    function onMouse(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
+    function onMouse(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
     if (open) document.addEventListener("mousedown", onMouse);
     return () => document.removeEventListener("mousedown", onMouse);
   }, [open]);
-
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
     if (open) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
-
-  // Scroll selected item into view when panel opens
   useEffect(() => {
     if (!open || !listRef.current) return;
-    const active = listRef.current.querySelector("[data-selected]") as HTMLElement | null;
-    active?.scrollIntoView({ block: "nearest" });
+    (listRef.current.querySelector("[data-selected]") as HTMLElement | null)?.scrollIntoView({ block: "nearest" });
   }, [open]);
-
   return (
     <div ref={ref} className="relative">
-      {/* Trigger */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
+      <button type="button" onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors"
-        style={{
-          background: "var(--color-surface-overlay)",
-          border: `1px solid ${open ? "var(--color-border-focus)" : "var(--color-border)"}`,
-          color: "var(--color-foreground)",
-        }}
-      >
+        style={{ background: "var(--color-surface-overlay)", border: `1px solid ${open ? "var(--color-border-focus)" : "var(--color-border)"}`, color: "var(--color-foreground)" }}>
         <span className="flex items-center gap-2 truncate">
-          {selected?.countryCode && (
-            <ReactCountryFlag countryCode={selected.countryCode} svg
-              style={{ width: "1.25em", height: "0.95em", borderRadius: 2, flexShrink: 0 }} />
-          )}
-          {!selected?.countryCode && selected?.prefix && (
-            <span className="shrink-0 text-base leading-none">{selected.prefix}</span>
-          )}
+          {selected?.countryCode && <ReactCountryFlag countryCode={selected.countryCode} svg style={{ width: "1.25em", height: "0.95em", borderRadius: 2, flexShrink: 0 }} />}
+          {!selected?.countryCode && selected?.prefix && <span className="shrink-0 text-base leading-none">{selected.prefix}</span>}
           <span className="truncate">{selected?.label ?? "Seleccionar…"}</span>
-          {selected?.meta && (
-            <span className="shrink-0 text-xs" style={{ color: "var(--color-subtle)" }}>{selected.meta}</span>
-          )}
+          {selected?.meta && <span className="shrink-0 text-xs" style={{ color: "var(--color-subtle)" }}>{selected.meta}</span>}
         </span>
-        <ChevronDown
-          className="h-3.5 w-3.5 shrink-0 transition-transform duration-150"
-          style={{
-            color: "var(--color-subtle)",
-            transform: open ? "rotate(180deg)" : "none",
-          }}
-        />
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform duration-150" style={{ color: "var(--color-subtle)", transform: open ? "rotate(180deg)" : "none" }} />
       </button>
-
-      {/* Panel */}
       {open && (
-        <div
-          className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-lg"
-          style={{
-            background: "var(--color-surface-raised)",
-            border: "1px solid var(--color-border)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-          }}
-        >
+        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-lg"
+          style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 12px 40px rgba(0,0,0,0.6)" }}>
           <div ref={listRef} className="max-h-60 overflow-y-auto py-1">
             {options.map((opt) => {
               const isSelected = opt.value === value;
               return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  data-selected={isSelected ? true : undefined}
+                <button key={opt.value} type="button" data-selected={isSelected ? true : undefined}
                   onClick={() => { onChange(opt.value); setOpen(false); }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors"
-                  style={{
-                    background: isSelected ? "rgba(255,255,255,0.06)" : "transparent",
-                    color: isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
-                    (e.currentTarget as HTMLElement).style.color = "var(--color-foreground)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = isSelected ? "rgba(255,255,255,0.06)" : "transparent";
-                    (e.currentTarget as HTMLElement).style.color = isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)";
-                  }}
-                >
-                  {opt.countryCode && (
-                    <ReactCountryFlag countryCode={opt.countryCode} svg
-                      style={{ width: "1.25em", height: "0.95em", borderRadius: 2, flexShrink: 0 }} />
-                  )}
-                  {!opt.countryCode && opt.prefix && (
-                    <span className="shrink-0 text-base leading-none">{opt.prefix}</span>
-                  )}
+                  style={{ background: isSelected ? "rgba(255,255,255,0.06)" : "transparent", color: isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--color-foreground)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = isSelected ? "rgba(255,255,255,0.06)" : "transparent"; e.currentTarget.style.color = isSelected ? "var(--color-foreground)" : "var(--color-muted-foreground)"; }}>
+                  {opt.countryCode && <ReactCountryFlag countryCode={opt.countryCode} svg style={{ width: "1.25em", height: "0.95em", borderRadius: 2, flexShrink: 0 }} />}
+                  {!opt.countryCode && opt.prefix && <span className="shrink-0 text-base leading-none">{opt.prefix}</span>}
                   <span className="flex-1 truncate">{opt.label}</span>
-                  {opt.meta && (
-                    <span className="shrink-0 text-[11px]" style={{ color: "var(--color-subtle)" }}>{opt.meta}</span>
-                  )}
-                  {isSelected && (
-                    <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
-                  )}
+                  {opt.meta && <span className="shrink-0 text-[11px]" style={{ color: "var(--color-subtle)" }}>{opt.meta}</span>}
+                  {isSelected && <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />}
                 </button>
               );
             })}
@@ -232,229 +154,107 @@ function Dropdown({
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
-        {label}
-      </label>
+      <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{label}</label>
       {children}
       {hint && <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{hint}</p>}
     </div>
   );
 }
 
-/* ─── Section ─── */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-4">
-      <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
-        {title}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function Divider() {
-  return <div style={{ height: "1px", background: "var(--color-border)" }} />;
-}
-
-/* ─── URL status indicator ─── */
 function UrlIndicator({ status }: { status: UrlStatus }) {
-  if (status === "idle")     return null;
+  if (status === "idle") return null;
   if (status === "checking") return <Loader2 className="h-4 w-4 animate-spin" style={{ color: "var(--color-subtle)" }} />;
-  if (status === "valid")    return <Check className="h-4 w-4" style={{ color: "var(--color-success)" }} />;
+  if (status === "valid") return <Check className="h-4 w-4" style={{ color: "var(--color-success)" }} />;
   return <X className="h-4 w-4" style={{ color: "var(--color-error)" }} />;
 }
 
-/* ─── Preview modal ─── */
-function PreviewModal({
-  open,
-  onClose,
-  colorPrimary,
-  colorBg,
-  logoUrl,
-  currencySymbol,
-  locale,
+/* ═══════════════════════════════════════════════
+   LIVE PHONE PREVIEW (reactivo — CTA usa colorPrimary)
+═══════════════════════════════════════════════ */
+function LandingPreview({
+  colorPrimary, colorBg, logoUrl, currencySymbol, locale, offers,
 }: {
-  open: boolean;
-  onClose: () => void;
-  colorPrimary: string;
-  colorBg: string;
-  logoUrl: string;
-  currencySymbol: string;
-  locale: string;
+  colorPrimary: string; colorBg: string; logoUrl: string;
+  currencySymbol: string; locale: string; offers: PreviewOffer[];
 }) {
   const loc = LOCALES.find((l) => l.code === locale);
   const flag = loc?.flag ?? "🌐";
-
-  const [mounted, setMounted] = useState(false);
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    if (open) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  useEffect(() => {
-    if (open) {
-      setMounted(true);
-      const id = requestAnimationFrame(() => setShow(true));
-      return () => cancelAnimationFrame(id);
-    }
-    setShow(false);
-    const t = setTimeout(() => setMounted(false), 220);
-    return () => clearTimeout(t);
-  }, [open]);
-
-  if (!mounted) return null;
+  const cp = colorPrimary;
+  const light = `color-mix(in oklch, ${cp} 80%, white 20%)`;
+  const dark  = `color-mix(in oklch, ${cp} 55%, black 45%)`;
+  const ctaGrad = `linear-gradient(180deg, ${light}, ${cp})`;
+  const apps = offers.length ? offers : DEFAULT_OFFERS;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{
-        background: "rgba(0,0,0,0.85)",
-        backdropFilter: "blur(6px)",
-        opacity: show ? 1 : 0,
-        transition: "opacity 0.2s ease",
-      }}
-      onClick={onClose}
-    >
-      {/* Phone frame */}
-      <div
-        className="relative flex flex-col overflow-hidden"
-        style={{
-          width: 390,
-          height: 720,
-          maxHeight: "90vh",
-          borderRadius: 44,
-          border: "10px solid #1a1a1a",
-          boxShadow: "0 0 0 2px #333, 0 40px 80px rgba(0,0,0,0.8)",
-          background: colorBg,
-          opacity: show ? 1 : 0,
-          transform: show ? "scale(1)" : "scale(0.96)",
-          transition: "opacity 0.2s ease, transform 0.2s ease",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Notch */}
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 z-20"
-          style={{ width: 120, height: 28, background: "#1a1a1a", borderRadius: "0 0 20px 20px" }}
-        />
+    <div className="relative flex flex-col overflow-hidden"
+      style={{ width: 300, height: 600, borderRadius: 40, border: "9px solid #1a1a1a", boxShadow: "0 0 0 2px #2a2a2a, 0 30px 60px rgba(0,0,0,0.6)", background: colorBg }}>
+      {/* Notch */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20" style={{ width: 100, height: 22, background: "#1a1a1a", borderRadius: "0 0 16px 16px" }} />
+      {/* Glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div style={{ position: "absolute", top: -30, left: -30, width: 180, height: 180, background: `radial-gradient(circle, color-mix(in oklch, ${cp} 45%, transparent) 0%, transparent 70%)`, transition: "background .4s ease" }} />
+        <div style={{ position: "absolute", bottom: 0, left: "20%", width: 160, height: 160, background: `radial-gradient(circle, color-mix(in oklch, ${cp} 28%, transparent) 0%, transparent 70%)`, transition: "background .4s ease" }} />
+      </div>
 
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 z-30 flex h-8 w-8 items-center justify-center rounded-full transition-opacity hover:opacity-80"
-          style={{ background: "rgba(255,255,255,0.1)", color: "white" }}
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        {/* Glow blobs */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div style={{ position: "absolute", top: -40, left: -40, width: 220, height: 220, background: `radial-gradient(circle, ${colorPrimary}55 0%, transparent 70%)` }} />
-          <div style={{ position: "absolute", top: "30%", right: -60, width: 220, height: 220, background: "radial-gradient(circle, oklch(0.55 0.18 280 / 0.3) 0%, transparent 70%)" }} />
-          <div style={{ position: "absolute", bottom: 0, left: "20%", width: 200, height: 200, background: `radial-gradient(circle, ${colorPrimary}33 0%, transparent 70%)` }} />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 flex-1 overflow-y-auto" style={{ paddingTop: 36, scrollbarWidth: "none" }}>
-          {/* Hero */}
-          <div className="flex flex-col items-center px-5 pt-8 pb-4 text-center">
-            {logoUrl ? (
-              <img src={logoUrl} alt="logo" className="h-14 w-14 rounded-xl object-contain mb-3" />
-            ) : (
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl text-2xl"
-                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                {flag}
-              </div>
-            )}
-
-            <h1 className="text-3xl font-black leading-tight text-white">
-              Earn money by playing{" "}
-              <span style={{ color: colorPrimary }}>games</span>
-            </h1>
-            <p className="mt-2 text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
-              Play your favourite games to earn money
-            </p>
-
-            {/* CTA Button */}
-            <div className="relative mt-5 w-full">
-              <span className="absolute inset-0 translate-y-1 rounded-full bg-green-700" />
-              <div className="relative flex items-center justify-center gap-3 rounded-full border-t border-white/30 bg-gradient-to-b from-green-400 to-green-500 px-8 py-3.5 shadow-xl">
-                <span className="text-base font-black uppercase tracking-tight text-white">Download now</span>
-              </div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>
-              {["Free", "Instant cash out", "Unlimited offers"].map((b) => (
-                <span key={b} className="inline-flex items-center gap-1">
-                  <span style={{ color: colorPrimary }}>✓</span> {b}
-                </span>
-              ))}
+      <div className="relative z-10 flex-1 overflow-y-auto" style={{ paddingTop: 30, scrollbarWidth: "none" }}>
+        {/* Hero */}
+        <div className="flex flex-col items-center px-4 pt-6 pb-3 text-center">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={logoUrl} src={logoUrl} alt="logo" className="mb-2.5 h-12 w-12 rounded-xl object-contain" style={{ animation: "lpPop .4s cubic-bezier(0.175,0.885,0.32,1.275)" }} />
+          ) : (
+            <div className="mb-2.5 flex h-12 w-12 items-center justify-center rounded-xl text-xl" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>{flag}</div>
+          )}
+          <h1 className="text-2xl font-black leading-tight text-white">Earn money by playing <span style={{ color: cp, transition: "color .35s ease" }}>games</span></h1>
+          <p className="mt-1.5 text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>Play your favourite games to earn money</p>
+          {/* CTA */}
+          <div className="relative mt-4 w-full">
+            <span className="absolute inset-0 translate-y-1 rounded-full" style={{ background: dark, transition: "background .35s ease" }} />
+            <div className="relative flex items-center justify-center rounded-full border-t border-white/30 px-6 py-3 shadow-xl" style={{ background: ctaGrad, transition: "background .35s ease" }}>
+              <span className="text-sm font-black uppercase tracking-tight text-white">Download now</span>
             </div>
           </div>
-
-          {/* Popular offers grid */}
-          <div className="px-4 pb-4">
-            <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Popular offers
-            </p>
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                { name: "Block Blast", amount: 12, badge: "TOP" },
-                { name: "Clash Royale", amount: 15, badge: "HOT" },
-                { name: "Candy Crush", amount: 35, badge: "TOP" },
-                { name: "Subway Surfers", amount: 12, badge: "HOT" },
-              ].map((o) => (
-                <div
-                  key={o.name}
-                  className="overflow-hidden rounded-xl"
-                  style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)" }}
-                >
-                  <div className="relative aspect-square" style={{ background: `linear-gradient(135deg, ${colorPrimary}22, rgba(255,255,255,0.04))` }}>
-                    <span className="absolute right-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] font-black text-white"
-                      style={{ background: colorPrimary }}>
-                      {o.badge}
-                    </span>
-                    <div className="flex h-full items-center justify-center text-3xl">🎮</div>
-                  </div>
-                  <div className="p-2.5">
-                    <p className="text-[13px] font-extrabold text-white">{o.name}</p>
-                    <p className="text-[9px]" style={{ color: "rgba(255,255,255,0.4)" }}>Per hour played</p>
-                    <p className="mt-1 text-lg font-black" style={{ color: colorPrimary }}>
-                      {currencySymbol}{o.amount}
-                    </p>
-                  </div>
+          <div className="mt-2.5 flex flex-wrap justify-center gap-x-2.5 gap-y-1 text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+            {["Free", "Instant cash out", "Unlimited"].map((b) => (
+              <span key={b} className="inline-flex items-center gap-1"><span style={{ color: cp }}>✓</span> {b}</span>
+            ))}
+          </div>
+        </div>
+        {/* Offers */}
+        <div className="px-3 pb-3">
+          <p className="mb-2 text-center text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.4)" }}>Popular offers</p>
+          <div className="grid grid-cols-2 gap-2">
+            {apps.slice(0, 4).map((o, i) => (
+              <div key={`${o.name}-${i}`} className="overflow-hidden rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", animation: `lpRise .4s ease ${i * 0.06}s both` }}>
+                <div className="relative aspect-square" style={{ background: `linear-gradient(135deg, color-mix(in oklch, ${cp} 13%, transparent), rgba(255,255,255,0.04))` }}>
+                  <span className="absolute right-1 top-1 rounded px-1 py-0.5 text-[8px] font-black text-white" style={{ background: cp }}>{o.badge}</span>
+                  {o.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={o.imageUrl} alt={o.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-2xl">🎮</div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sticky CTA */}
-        <div className="relative z-10 p-3 pt-0">
-          <div className="relative">
-            <span className="absolute inset-0 translate-y-1 rounded-full bg-green-700" />
-            <div className="relative flex items-center justify-between rounded-full border-t border-white/30 bg-gradient-to-b from-green-400 to-green-500 p-3 pl-4">
-              <div>
-                <p className="text-sm font-extrabold text-white">Download the app now</p>
-                <p className="text-[10px] text-green-50/80">Free · Instant cash out</p>
+                <div className="p-2">
+                  <p className="truncate text-[12px] font-extrabold text-white">{o.name}</p>
+                  <p className="text-[8px]" style={{ color: "rgba(255,255,255,0.4)" }}>Per hour played</p>
+                  <p className="mt-0.5 text-base font-black" style={{ color: cp }}>{currencySymbol}{o.amount}</p>
+                </div>
               </div>
-              <span className="rounded-full bg-green-400/40 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white">
-                FREE
-              </span>
-            </div>
+            ))}
           </div>
         </div>
       </div>
-
-      {/* Hint */}
-      <p className="absolute bottom-4 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-        Esc o clic fuera para cerrar
-      </p>
+      {/* Sticky CTA */}
+      <div className="relative z-10 p-2.5 pt-0">
+        <div className="relative">
+          <span className="absolute inset-0 translate-y-1 rounded-full" style={{ background: dark }} />
+          <div className="relative flex items-center justify-between rounded-full border-t border-white/30 p-2.5 pl-3.5" style={{ background: ctaGrad }}>
+            <div><p className="text-[13px] font-extrabold text-white">Download the app now</p><p className="text-[9px] text-white/75">Free · Instant cash out</p></div>
+            <span className="rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-white" style={{ background: "rgba(255,255,255,0.25)" }}>FREE</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -462,112 +262,51 @@ function PreviewModal({
 /* ─── Saved CTA URLs (localStorage) ─── */
 const SAVED_URLS_KEY = "aff_saved_cta_urls";
 type SavedUrl = { id: string; name: string; url: string };
-
 function useSavedUrls() {
   const [items, setItems] = useState<SavedUrl[]>([]);
-
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SAVED_URLS_KEY);
-      if (raw) setItems(JSON.parse(raw) as SavedUrl[]);
-    } catch {}
+    try { const raw = localStorage.getItem(SAVED_URLS_KEY); if (raw) setItems(JSON.parse(raw) as SavedUrl[]); } catch {}
   }, []);
-
   function saveUrl(name: string, url: string) {
     const next = [...items, { id: `${Date.now()}`, name, url }];
-    setItems(next);
-    localStorage.setItem(SAVED_URLS_KEY, JSON.stringify(next));
+    setItems(next); localStorage.setItem(SAVED_URLS_KEY, JSON.stringify(next));
   }
-
   function deleteUrl(id: string) {
     const next = items.filter((i) => i.id !== id);
-    setItems(next);
-    localStorage.setItem(SAVED_URLS_KEY, JSON.stringify(next));
+    setItems(next); localStorage.setItem(SAVED_URLS_KEY, JSON.stringify(next));
   }
-
   return { items, saveUrl, deleteUrl };
 }
 
-/* ─── Saved URL dropdown ─── */
-function SavedUrlDropdown({
-  items,
-  onSelect,
-  onDelete,
-}: {
-  items: SavedUrl[];
-  onSelect: (url: string) => void;
-  onDelete: (id: string) => void;
-}) {
+function SavedUrlDropdown({ items, onSelect, onDelete }: { items: SavedUrl[]; onSelect: (url: string) => void; onDelete: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    function onMouse(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
+    function onMouse(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
     if (open) document.addEventListener("mousedown", onMouse);
     return () => document.removeEventListener("mousedown", onMouse);
   }, [open]);
-
   return (
     <div ref={ref} className="relative mt-2">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
+      <button type="button" onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm"
-        style={{
-          background: "var(--color-surface-overlay)",
-          border: `1px solid ${open ? "var(--color-border-focus)" : "var(--color-border)"}`,
-          color: "var(--color-muted-foreground)",
-        }}
-      >
-        <span className="flex items-center gap-2">
-          <Bookmark className="h-3.5 w-3.5 shrink-0" />
-          <span>URLs guardadas ({items.length})</span>
-        </span>
-        <ChevronDown
-          className="h-3.5 w-3.5 shrink-0 transition-transform duration-150"
-          style={{ transform: open ? "rotate(180deg)" : "none", color: "var(--color-subtle)" }}
-        />
+        style={{ background: "var(--color-surface-overlay)", border: `1px solid ${open ? "var(--color-border-focus)" : "var(--color-border)"}`, color: "var(--color-muted-foreground)" }}>
+        <span className="flex items-center gap-2"><Bookmark className="h-3.5 w-3.5 shrink-0" /><span>URLs guardadas ({items.length})</span></span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform duration-150" style={{ transform: open ? "rotate(180deg)" : "none", color: "var(--color-subtle)" }} />
       </button>
-
       {open && (
-        <div
-          className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-lg"
-          style={{
-            background: "var(--color-surface-raised)",
-            border: "1px solid var(--color-border)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-          }}
-        >
+        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-lg" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 12px 40px rgba(0,0,0,0.6)" }}>
           <div className="max-h-48 overflow-y-auto py-1">
             {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-2 px-3 py-2 transition-colors"
-                style={{ color: "var(--color-muted-foreground)" }}
+              <div key={item.id} className="flex items-center gap-2 px-3 py-2 transition-colors" style={{ color: "var(--color-muted-foreground)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <button
-                  type="button"
-                  className="flex flex-1 items-center gap-2 text-left text-sm"
-                  style={{ color: "var(--color-foreground)" }}
-                  onClick={() => { onSelect(item.url); setOpen(false); }}
-                >
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <button type="button" className="flex flex-1 items-center gap-2 text-left text-sm" style={{ color: "var(--color-foreground)" }} onClick={() => { onSelect(item.url); setOpen(false); }}>
                   <LinkIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
                   <span className="flex-1 truncate font-medium">{item.name}</span>
-                  <span className="max-w-[140px] truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>
-                    {item.url}
-                  </span>
+                  <span className="max-w-[140px] truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>{item.url}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(item.id)}
-                  className="shrink-0 transition-opacity hover:opacity-70"
-                  title="Eliminar"
-                  style={{ color: "var(--color-subtle)" }}
-                >
+                <button type="button" onClick={() => onDelete(item.id)} className="shrink-0 transition-opacity hover:opacity-70" title="Eliminar" style={{ color: "var(--color-subtle)" }}>
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -580,117 +319,86 @@ function SavedUrlDropdown({
 }
 
 /* ═══════════════════════════════════════════════
-   MAIN FORM
+   CAMPAIGN STUDIO
 ═══════════════════════════════════════════════ */
 export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const router = useRouter();
+  const isEdit = !!campaign;
   const [pending, startTransition] = useTransition();
   const [slugCopied, setSlugCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [created, setCreated]         = useState(false);
+  const [created, setCreated] = useState(false);
+  const [mobilePreview, setMobilePreview] = useState(false);
 
   const { data: colorPresets = [] } = api.preset.colorList.useQuery();
-  const { data: logoPresets = [] }  = api.preset.logoList.useQuery();
-  const { data: stacks = [] }       = api.stack.list.useQuery();
+  const { data: logoPresets = [] } = api.preset.logoList.useQuery();
+  const { data: stacks = [] } = api.stack.list.useQuery();
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
-  const [savingUrl, setSavingUrl]   = useState(false);
-  const [saveName, setSaveName]     = useState("");
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [saveName, setSaveName] = useState("");
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [pendingStackId, setPendingStackId] = useState<string | null>(null);
 
   const [values, setValues] = useState<FormValues>({
-    name:          campaign?.name          ?? "",
-    slug:          campaign?.slug          ?? "",
-    templateSlug:  campaign?.templateSlug  ?? "gonza-gb-sn-fc",
-    locale:        campaign?.locale        ?? "en",
-    currencyCode:  campaign?.currencyCode  ?? "GBP",
-    currencySymbol:campaign?.currencySymbol?? "£",
-    ctaUrl:        campaign?.ctaUrl        ?? "",
-    logoUrl:       campaign?.logoUrl       ?? "",
-    colorPrimary:  campaign?.colorPrimary  ?? "oklch(0.74 0.19 55)",
-    colorBg:       campaign?.colorBg       ?? "oklch(0.16 0.04 265)",
-    isActive:      campaign?.isActive      ?? true,
+    name: campaign?.name ?? "",
+    slug: campaign?.slug ?? "",
+    templateSlug: campaign?.templateSlug ?? "gonza-gb-sn-fc",
+    locale: campaign?.locale ?? "en",
+    currencyCode: campaign?.currencyCode ?? "GBP",
+    currencySymbol: campaign?.currencySymbol ?? "£",
+    ctaUrl: campaign?.ctaUrl ?? "",
+    logoUrl: campaign?.logoUrl ?? "",
+    colorPrimary: campaign?.colorPrimary ?? "oklch(0.74 0.19 55)",
+    colorBg: campaign?.colorBg ?? "oklch(0.16 0.04 265)",
+    isActive: campaign?.isActive ?? true,
   });
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
-
   const applyStack = api.stack.applyToCampaign.useMutation();
 
   const create = api.campaign.create.useMutation({
     onSuccess: async (c) => {
-      if (pendingStackId) {
-        await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id });
-      }
+      if (pendingStackId) await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id });
       setCreated(true);
       setTimeout(() => router.push(`/campaigns/${c.id}`), 1600);
     },
   });
   const update = api.campaign.update.useMutation({
     onSuccess: async (c) => {
-      if (pendingStackId) {
-        await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id });
-        setPendingStackId(null);
-      }
+      if (pendingStackId) { await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id }); setPendingStackId(null); }
       router.refresh();
     },
   });
 
-  function set<K extends keyof FormValues>(key: K, val: FormValues[K]) {
-    setValues((p) => ({ ...p, [key]: val }));
-  }
-
-  function handleNameChange(name: string) {
-    set("name", name);
-    if (!campaign) set("slug", slugify(name));
-  }
-
+  function set<K extends keyof FormValues>(key: K, val: FormValues[K]) { setValues((p) => ({ ...p, [key]: val })); }
+  function handleNameChange(name: string) { set("name", name); if (!campaign) set("slug", slugify(name)); }
   function handleLocaleChange(locale: string) {
     set("locale", locale);
     const loc = LOCALES.find((l) => l.code === locale);
-    if (loc) {
-      const cur = CURRENCIES.find((c) => c.code === loc.defaultCurrencyCode);
-      if (cur) { set("currencyCode", cur.code); set("currencySymbol", cur.symbol); }
-    }
+    if (loc) { const cur = CURRENCIES.find((c) => c.code === loc.defaultCurrencyCode); if (cur) { set("currencyCode", cur.code); set("currencySymbol", cur.symbol); } }
   }
-
-  function handleCurrencyChange(code: string) {
-    const cur = CURRENCIES.find((c) => c.code === code);
-    if (cur) { set("currencyCode", cur.code); set("currencySymbol", cur.symbol); }
-  }
+  function handleCurrencyChange(code: string) { const cur = CURRENCIES.find((c) => c.code === code); if (cur) { set("currencyCode", cur.code); set("currencySymbol", cur.symbol); } }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
+    const file = e.target.files?.[0]; if (!file) return; e.target.value = "";
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
+      const fd = new FormData(); fd.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) {
-        console.error("[logo upload] failed:", res.status);
-        return;
-      }
+      if (!res.ok) return;
       const data = (await res.json()) as { url?: string };
       if (data.url) set("logoUrl", data.url);
-    } catch (err) {
-      console.error("[logo upload] error:", err);
-    } finally {
-      setUploading(false);
-    }
+    } catch { /* ignore */ } finally { setUploading(false); }
   }
 
   function copySlugUrl() {
-    const slug = values.slug || campaign?.slug;
-    if (!slug) return;
+    const slug = values.slug || campaign?.slug; if (!slug) return;
     void navigator.clipboard.writeText(`${window.location.origin}/api/config/${slug}`);
-    setSlugCopied(true);
-    setTimeout(() => setSlugCopied(false), 2000);
+    setSlugCopied(true); setTimeout(() => setSlugCopied(false), 2000);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     startTransition(() => {
       const payload = { ...values, logoUrl: values.logoUrl || null };
       if (campaign) update.mutate({ id: campaign.id, ...payload });
@@ -701,523 +409,317 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const isSaving = pending || create.isPending || update.isPending || applyStack.isPending;
   const error = create.error?.message ?? update.error?.message;
 
+  /* ── Pasos ── */
+  const hasStacks = stacks.length > 0;
+  const stepDefs = [
+    { key: "identidad", label: "Identidad", icon: Tag,    done: !!values.name && !!values.slug },
+    { key: "mercado",   label: "Mercado",   icon: Globe,  done: !!values.locale && !!values.currencyCode },
+    { key: "oferta",    label: "Oferta",    icon: LinkIcon, done: ctaStatus === "valid" },
+    { key: "marca",     label: "Marca",     icon: Palette, done: !!values.colorPrimary && !!values.colorBg },
+    ...(hasStacks ? [{ key: "apps", label: "Apps", icon: Layers, done: true }] : []),
+    { key: "lanzar",    label: "Lanzar",    icon: Rocket, done: false },
+  ] as const;
+
+  const [active, setActive] = useState<string>("identidad");
+  const contentSteps = stepDefs.filter((s) => s.key !== "lanzar");
+  const progress = Math.round((contentSteps.filter((s) => s.done).length / contentSteps.length) * 100);
+  const canSubmit = !isSaving && ctaStatus !== "invalid" && !!values.name && !!values.slug && !!values.ctaUrl;
+  const idx = stepDefs.findIndex((s) => s.key === active);
+  const next = stepDefs[idx + 1];
+
+  // Offers del stack seleccionado (para el preview)
+  const previewOffers: PreviewOffer[] = pendingStackId
+    ? (stacks.find((s) => s.id === pendingStackId)?.items.map((it) => ({ name: it.name, amount: it.amount, badge: it.badge, imageUrl: it.imageUrl })) ?? [])
+    : DEFAULT_OFFERS;
+
+  const cp = values.colorPrimary;
+
   return (
-    <>
-      <OfferPickerModal
-        open={offerModalOpen}
-        onClose={() => setOfferModalOpen(false)}
-        onSelect={(url) => { set("ctaUrl", url); setOfferModalOpen(false); }}
-        defaultS1={values.slug}
-      />
+    <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>
+      <OfferPickerModal open={offerModalOpen} onClose={() => setOfferModalOpen(false)}
+        onSelect={(url) => { set("ctaUrl", url); setOfferModalOpen(false); }} defaultS1={values.slug} />
 
-      <PreviewModal
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        colorPrimary={values.colorPrimary}
-        colorBg={values.colorBg}
-        logoUrl={values.logoUrl}
-        currencySymbol={values.currencySymbol}
-        locale={values.locale}
-      />
-
-      {/* Campaign created animation */}
+      {/* Created animation */}
       {created && (
-        <div
-          className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4"
-          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
-        >
-          <div
-            style={{
-              width: 72, height: 72,
-              borderRadius: "50%",
-              background: "var(--color-foreground)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              animation: "successPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards",
-            }}
-          >
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-              <polyline
-                points="7,18 15,26 29,10"
-                stroke="var(--color-background)"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  strokeDasharray: 50,
-                  strokeDashoffset: 50,
-                  animation: "checkDraw 0.4s ease 0.35s forwards",
-                }}
-              />
+        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}>
+          <div style={{ width: 76, height: 76, borderRadius: "50%", background: cp, display: "flex", alignItems: "center", justifyContent: "center", animation: "successPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}>
+            <svg width="38" height="38" viewBox="0 0 36 36" fill="none">
+              <polyline points="7,18 15,26 29,10" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ strokeDasharray: 50, strokeDashoffset: 50, animation: "checkDraw 0.4s ease 0.35s forwards" }} />
             </svg>
           </div>
-          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
-            ¡Campaña creada!
-          </p>
-          <style>{`
-            @keyframes successPop {
-              0%   { transform: scale(0); opacity: 0; }
-              70%  { transform: scale(1.12); opacity: 1; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-            @keyframes checkDraw {
-              to { stroke-dashoffset: 0; }
-            }
-          `}</style>
+          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>¡Campaña creada!</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-
-        {/* ── Identidad + Mercado (same aligned 2-col grid) ── */}
-        <Section title="Campaña">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-            {/* Row 1: Nombre | Slug */}
-            <Field label="Nombre">
-              <Input
-                placeholder="UK Marzo 2025"
-                value={values.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                required
-              />
-            </Field>
-
-            <Field label="Slug (ID público)" hint="Usado como ?c=slug en la plantilla">
-              <Input
-                placeholder="uk-marzo-2025"
-                value={values.slug}
-                onChange={(e) => set("slug", e.target.value)}
-                required
-                suffix={
-                  values.slug ? (
-                    <button type="button" onClick={copySlugUrl} title="Copiar URL de config">
-                      {slugCopied
-                        ? <Check className="h-3.5 w-3.5" style={{ color: "var(--color-success)" }} />
-                        : <Copy className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />}
-                    </button>
-                  ) : null
-                }
-              />
-            </Field>
-
-            {/* Row 2: Idioma | Moneda */}
-            <Field label="Idioma / País">
-              <Dropdown
-                value={values.locale}
-                onChange={handleLocaleChange}
-                options={LOCALES.map((l) => ({ value: l.code, label: l.label, countryCode: l.countryCode }))}
-              />
-            </Field>
-
-            <Field label="Moneda" hint={`Símbolo: ${values.currencySymbol}`}>
-              <Dropdown
-                value={values.currencyCode}
-                onChange={handleCurrencyChange}
-                options={CURRENCIES.map((c) => ({ value: c.code, label: c.label, meta: c.symbol }))}
-              />
-            </Field>
+      <div className="flex min-h-0 flex-1">
+        {/* ── Columna form ── */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Stepper */}
+          <div className="flex shrink-0 gap-1.5 overflow-x-auto px-4 py-3 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
+            {stepDefs.map((s, i) => {
+              const on = active === s.key;
+              return (
+                <button key={s.key} type="button" onClick={() => setActive(s.key)}
+                  className="flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{
+                    background: on ? "color-mix(in oklch, " + cp + " 16%, transparent)" : "transparent",
+                    border: `1px solid ${on ? "color-mix(in oklch, " + cp + " 45%, transparent)" : "var(--color-border)"}`,
+                    color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                  }}>
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+                    style={{ background: s.done ? cp : on ? "transparent" : "var(--color-surface-overlay)", color: s.done ? "#fff" : on ? cp : "var(--color-subtle)", border: s.done ? "none" : `1px solid ${on ? cp : "var(--color-border)"}` }}>
+                    {s.done ? <Check className="h-2.5 w-2.5" /> : i + 1}
+                  </span>
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
-        </Section>
 
-        <Divider />
+          {/* Active section */}
+          <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8" key={active} style={{ animation: "lpFade .25s ease" }}>
+            <div className="mx-auto max-w-xl space-y-5">
+              {active === "identidad" && (
+                <>
+                  <StepHead title="Identidad" sub="Nombre interno y el slug público de la campaña." />
+                  <Field label="Nombre"><Input placeholder="UK Marzo 2025" value={values.name} onChange={(e) => handleNameChange(e.target.value)} required /></Field>
+                  <Field label="Slug (ID público)" hint="Usado como ?c=slug en la plantilla">
+                    <Input placeholder="uk-marzo-2025" value={values.slug} onChange={(e) => set("slug", e.target.value)} required
+                      style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}
+                      suffix={values.slug ? (<button type="button" onClick={copySlugUrl} title="Copiar URL de config">{slugCopied ? <Check className="h-3.5 w-3.5" style={{ color: "var(--color-success)" }} /> : <Copy className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />}</button>) : null} />
+                  </Field>
+                </>
+              )}
 
-        {/* ── CTA ── */}
-        <div>
-          <Field label="URL de afiliado">
-            <Input
-              type="url"
-              placeholder="https://taprkr.com/r/..."
-              value={values.ctaUrl}
-              onChange={(e) => set("ctaUrl", e.target.value)}
-              required
-              suffix={<UrlIndicator status={ctaStatus} />}
-            />
+              {active === "mercado" && (
+                <>
+                  <StepHead title="Mercado" sub="Idioma/país y moneda. El preview se actualiza al instante." />
+                  <Field label="Idioma / País"><Dropdown value={values.locale} onChange={handleLocaleChange} options={LOCALES.map((l) => ({ value: l.code, label: l.label, countryCode: l.countryCode }))} /></Field>
+                  <Field label="Moneda" hint={`Símbolo: ${values.currencySymbol}`}><Dropdown value={values.currencyCode} onChange={handleCurrencyChange} options={CURRENCIES.map((c) => ({ value: c.code, label: c.label, meta: c.symbol }))} /></Field>
+                </>
+              )}
 
-            {/* Action buttons */}
-            <div className="mt-2 flex gap-2">
-              <button
-                type="button"
-                disabled={ctaStatus !== "valid"}
-                onClick={() => window.open(values.ctaUrl, "_blank", "noopener,noreferrer")}
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
-                style={{
-                  background: "var(--color-surface-overlay)",
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-foreground)",
-                }}
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Abrir
-              </button>
+              {active === "oferta" && (
+                <>
+                  <StepHead title="Oferta / CTA" sub="La URL de afiliado a la que apunta el botón. Sin tracking válido la campaña no convierte." />
+                  <Field label="URL de afiliado">
+                    <Input type="url" placeholder="https://taprkr.com/r/..." value={values.ctaUrl} onChange={(e) => set("ctaUrl", e.target.value)} required
+                      style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} suffix={<UrlIndicator status={ctaStatus} />} />
+                    <div className="mt-2 flex gap-2">
+                      <button type="button" disabled={ctaStatus !== "valid"} onClick={() => window.open(values.ctaUrl, "_blank", "noopener,noreferrer")}
+                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
+                        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><ExternalLink className="h-3.5 w-3.5" />Abrir</button>
+                      <button type="button" disabled={ctaStatus !== "valid"} onClick={() => { setSavingUrl(true); setSaveName(""); }}
+                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
+                        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><Bookmark className="h-3.5 w-3.5" />Guardar</button>
+                      <button type="button" onClick={() => setOfferModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                        style={{ background: "var(--color-foreground)", border: "1px solid var(--color-border)", color: "var(--color-background)" }}><Search className="h-3.5 w-3.5" />Buscar oferta</button>
+                    </div>
+                    {savingUrl && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <Input autoFocus placeholder="Nombre para esta URL…" value={saveName} onChange={(e) => setSaveName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter" && saveName.trim()) { saveUrl(saveName.trim(), values.ctaUrl); setSavingUrl(false); } if (e.key === "Escape") setSavingUrl(false); }} />
+                        <button type="button" disabled={!saveName.trim()} onClick={() => { saveUrl(saveName.trim(), values.ctaUrl); setSavingUrl(false); }}
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md disabled:opacity-40" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}><Check className="h-3.5 w-3.5" /></button>
+                        <button type="button" onClick={() => setSavingUrl(false)} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                    )}
+                    {savedUrls.length > 0 && !savingUrl && <SavedUrlDropdown items={savedUrls} onSelect={(url) => set("ctaUrl", url)} onDelete={deleteUrl} />}
+                  </Field>
+                </>
+              )}
 
-              <button
-                type="button"
-                disabled={ctaStatus !== "valid"}
-                onClick={() => { setSavingUrl(true); setSaveName(""); }}
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
-                style={{
-                  background: "var(--color-surface-overlay)",
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-foreground)",
-                }}
-              >
-                <Bookmark className="h-3.5 w-3.5" />
-                Guardar
-              </button>
+              {active === "marca" && (
+                <>
+                  <StepHead title="Marca" sub="Logo y colores. El color principal también pinta el CTA del preview." />
+                  {/* Logo */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                        {uploading ? <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--color-muted-foreground)" }} /> : values.logoUrl ? (
+                          <><Image src={values.logoUrl} alt="Logo" fill className="object-contain p-2" /><button type="button" onClick={() => set("logoUrl", "")} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: "rgba(0,0,0,0.7)", color: "white" }}><X className="h-3 w-3" /></button></>
+                        ) : <ImageIcon className="h-7 w-7" style={{ color: "var(--color-subtle)" }} />}
+                      </div>
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+                        <input type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} /><Upload className="h-4 w-4" />Subir logo
+                      </label>
+                    </div>
+                    {logoPresets.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {logoPresets.map((p) => {
+                          const on = values.logoUrl === p.imageUrl;
+                          return (
+                            <button key={p.id} type="button" title={p.name} onClick={() => set("logoUrl", p.imageUrl)}
+                              className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl transition-opacity hover:opacity-80"
+                              style={{ border: `1px solid ${on ? "var(--color-border-focus)" : "var(--color-border)"}`, background: "var(--color-surface-overlay)", outline: on ? "2px solid var(--color-foreground)" : "none", outlineOffset: 2 }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.imageUrl} alt={p.name} className="h-12 w-12 object-contain p-1" />
+                              {on && <span className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full" style={{ background: "var(--color-foreground)" }}><Check className="h-2.5 w-2.5" style={{ color: "var(--color-background)" }} /></span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {/* Colores */}
+                  {colorPresets.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {colorPresets.map((p) => {
+                        const on = values.colorPrimary === p.colorPrimary;
+                        return (
+                          <button key={p.id} type="button" onClick={() => { set("colorPrimary", p.colorPrimary); set("colorBg", p.colorBg); }}
+                            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
+                            style={{ border: `1px solid ${on ? "var(--color-border-focus)" : "var(--color-border)"}`, background: on ? "var(--color-surface-overlay)" : "transparent", color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}>
+                            <span className="flex gap-0.5 shrink-0"><span className="h-3.5 w-3.5 rounded-sm" style={{ background: p.colorPrimary }} /><span className="h-3.5 w-3.5 rounded-sm" style={{ background: p.colorBg }} /></span>
+                            {p.name}{on && <Check className="h-3 w-3 shrink-0" style={{ color: "var(--color-success)" }} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs" style={{ color: "var(--color-subtle)" }}>Sin presets. El admin puede agregar en <a href="/admin?tab=colors" className="underline" style={{ color: "var(--color-muted-foreground)" }}>/admin → Colores</a>.</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Color principal">
+                      <div className="flex gap-2">
+                        <input type="color" className="h-9 w-10 cursor-pointer rounded-md p-0.5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }} value={toHex(values.colorPrimary)} onChange={(e) => set("colorPrimary", e.target.value)} />
+                        <Input value={values.colorPrimary} onChange={(e) => set("colorPrimary", e.target.value)} placeholder="oklch(0.74 0.19 55)" style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }} />
+                      </div>
+                    </Field>
+                    <Field label="Color de fondo">
+                      <div className="flex gap-2">
+                        <input type="color" className="h-9 w-10 cursor-pointer rounded-md p-0.5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }} value={toHex(values.colorBg)} onChange={(e) => set("colorBg", e.target.value)} />
+                        <Input value={values.colorBg} onChange={(e) => set("colorBg", e.target.value)} placeholder="oklch(0.16 0.04 265)" style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }} />
+                      </div>
+                    </Field>
+                  </div>
+                </>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setOfferModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                style={{
-                  background: "var(--color-foreground)",
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-background)",
-                }}
-              >
-                <Search className="h-3.5 w-3.5" />
-                Buscar oferta
-              </button>
+              {active === "apps" && hasStacks && (
+                <>
+                  <StepHead title="Aplicaciones" sub="Elegí un stack de apps para mostrar en la landing. Se aplica al guardar." />
+                  <div className="flex flex-wrap gap-2">
+                    {stacks.map((s) => {
+                      const on = pendingStackId === s.id;
+                      return (
+                        <button key={s.id} type="button" onClick={() => setPendingStackId(on ? null : s.id)}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
+                          style={{ border: `1px solid ${on ? "var(--color-border-focus)" : "var(--color-border)"}`, background: on ? "var(--color-surface-overlay)" : "transparent", color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}>
+                          <span className="font-medium">{s.name}</span><span style={{ color: "var(--color-subtle)" }}>{s.items.length} apps</span>
+                          {on && <Check className="h-3 w-3 shrink-0" style={{ color: "var(--color-foreground)" }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {active === "lanzar" && (
+                <>
+                  <StepHead title="Lanzar" sub="Revisá y creá la campaña." />
+                  <div className="grid grid-cols-2 gap-3">
+                    <ReviewItem label="Nombre" value={values.name || "—"} />
+                    <ReviewItem label="Slug" value={values.slug || "—"} mono />
+                    <ReviewItem label="Mercado" value={`${LOCALES.find((l) => l.code === values.locale)?.label ?? values.locale} · ${values.currencyCode}`} />
+                    <ReviewItem label="CTA" value={ctaStatus === "valid" ? "válida ✓" : ctaStatus === "invalid" ? "inválida ✗" : "—"} />
+                    <ReviewItem label="Apps" value={pendingStackId ? `${stacks.find((s) => s.id === pendingStackId)?.items.length ?? 0}` : "default"} />
+                    <div className="rounded-lg p-3" style={{ border: "1px solid var(--color-border)" }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Color</p>
+                      <div className="mt-1.5 flex gap-1"><span className="h-4 w-4 rounded" style={{ background: values.colorPrimary }} /><span className="h-4 w-4 rounded" style={{ background: values.colorBg }} /></div>
+                    </div>
+                  </div>
+                  {/* Estado */}
+                  <label className="flex cursor-pointer items-center gap-3 w-fit pt-1">
+                    <button type="button" role="switch" aria-checked={values.isActive} onClick={() => set("isActive", !values.isActive)}
+                      className="relative h-5 w-9 shrink-0 rounded-full transition-colors" style={{ background: values.isActive ? "var(--color-foreground)" : "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+                      <span className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all duration-150" style={{ background: values.isActive ? "var(--color-background)" : "var(--color-subtle)", left: values.isActive ? "calc(100% - 16px)" : "2px" }} />
+                    </button>
+                    <span className="text-sm" style={{ color: "var(--color-foreground)" }}>{values.isActive ? "Activa" : "Pausada"}</span>
+                  </label>
+                  {error && <p className="rounded-md px-3 py-2 text-xs" style={{ color: "var(--color-error)", background: "var(--color-error-bg)" }}>{error}</p>}
+                </>
+              )}
+
+              {/* Siguiente */}
+              {next && (
+                <button type="button" onClick={() => setActive(next.key)} className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
+                  Siguiente: {next.label} <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-
-            {/* Save name input */}
-            {savingUrl && (
-              <div className="mt-2 flex items-center gap-2">
-                <Input
-                  autoFocus
-                  placeholder="Nombre para esta URL…"
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && saveName.trim()) {
-                      saveUrl(saveName.trim(), values.ctaUrl);
-                      setSavingUrl(false);
-                    }
-                    if (e.key === "Escape") setSavingUrl(false);
-                  }}
-                />
-                <button
-                  type="button"
-                  disabled={!saveName.trim()}
-                  onClick={() => { saveUrl(saveName.trim(), values.ctaUrl); setSavingUrl(false); }}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md disabled:opacity-40"
-                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-                >
-                  <Check className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSavingUrl(false)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
-                  style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Saved URLs dropdown */}
-            {savedUrls.length > 0 && !savingUrl && (
-              <SavedUrlDropdown
-                items={savedUrls}
-                onSelect={(url) => set("ctaUrl", url)}
-                onDelete={deleteUrl}
-              />
-            )}
-          </Field>
+          </div>
         </div>
 
-        <Divider />
-
-        {/* ── Logo ── */}
-        <Section title="Logo">
-          <div className="flex items-start gap-4">
-            {/* Left: preview box + upload */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div
-                className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
-              >
-                {uploading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--color-muted-foreground)" }} />
-                ) : values.logoUrl ? (
-                  <>
-                    <Image src={values.logoUrl} alt="Logo" fill className="object-contain p-2" />
-                    <button
-                      type="button"
-                      onClick={() => set("logoUrl", "")}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
-                      style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </>
-                ) : (
-                  <ImageIcon className="h-7 w-7" style={{ color: "var(--color-subtle)" }} />
-                )}
-              </div>
-
-              <label
-                className="inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-                style={{
-                  background: "var(--color-surface-overlay)",
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-foreground)",
-                }}
-              >
-                <input type="file" accept="image/*" className="sr-only" onChange={handleLogoUpload} />
-                <Upload className="h-4 w-4" />
-                Subir logo
-              </label>
-            </div>
-
-            {/* Right: logo presets from admin */}
-            {logoPresets.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {logoPresets.map((p) => {
-                  const active = values.logoUrl === p.imageUrl;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      title={p.name}
-                      onClick={() => set("logoUrl", p.imageUrl)}
-                      className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl transition-opacity hover:opacity-80"
-                      style={{
-                        border: `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
-                        background: "var(--color-surface-overlay)",
-                        outline: active ? "2px solid var(--color-foreground)" : "none",
-                        outlineOffset: 2,
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.imageUrl} alt={p.name} className="h-12 w-12 object-contain p-1" />
-                      {active && (
-                        <span
-                          className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full"
-                          style={{ background: "var(--color-foreground)" }}
-                        >
-                          <Check className="h-2.5 w-2.5" style={{ color: "var(--color-background)" }} />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </Section>
-
-        <Divider />
-
-        {/* ── Colores ── */}
-        <Section title="Colores">
-          {/* Presets from DB */}
-          {colorPresets.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {colorPresets.map((p) => {
-                const active = values.colorPrimary === p.colorPrimary;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => { set("colorPrimary", p.colorPrimary); set("colorBg", p.colorBg); }}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
-                    style={{
-                      border: `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
-                      background: active ? "var(--color-surface-overlay)" : "transparent",
-                      color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-                    }}
-                  >
-                    <span className="flex gap-0.5 shrink-0">
-                      <span className="h-3.5 w-3.5 rounded-sm" style={{ background: p.colorPrimary }} />
-                      <span className="h-3.5 w-3.5 rounded-sm" style={{ background: p.colorBg }} />
-                    </span>
-                    {p.name}
-                    {active && <Check className="h-3 w-3 shrink-0" style={{ color: "var(--color-success)" }} />}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
-              Sin presets. El admin puede agregar en{" "}
-              <a href="/admin?tab=colors" className="underline" style={{ color: "var(--color-muted-foreground)" }}>
-                /admin → Colores
-              </a>.
-            </p>
-          )}
-
-          {/* Custom inputs */}
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Color principal">
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  className="h-9 w-10 cursor-pointer rounded-md p-0.5"
-                  style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
-                  value={toHex(values.colorPrimary)}
-                  onChange={(e) => set("colorPrimary", e.target.value)}
-                />
-                <Input
-                  value={values.colorPrimary}
-                  onChange={(e) => set("colorPrimary", e.target.value)}
-                  placeholder="oklch(0.74 0.19 55)"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }}
-                />
-              </div>
-            </Field>
-
-            <Field label="Color de fondo">
-              <div className="flex gap-2">
-                <input
-                  type="color"
-                  className="h-9 w-10 cursor-pointer rounded-md p-0.5"
-                  style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
-                  value={toHex(values.colorBg)}
-                  onChange={(e) => set("colorBg", e.target.value)}
-                />
-                <Input
-                  value={values.colorBg}
-                  onChange={(e) => set("colorBg", e.target.value)}
-                  placeholder="oklch(0.16 0.04 265)"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }}
-                />
-              </div>
-            </Field>
-          </div>
-
-        </Section>
-
-        <Divider />
-
-        {/* ── Estado ── */}
-        <Section title="Estado">
-          <div className="flex flex-col gap-2">
-            <label className="flex cursor-pointer items-center gap-3 w-fit">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={values.isActive}
-                onClick={() => set("isActive", !values.isActive)}
-                className="relative h-5 w-9 shrink-0 rounded-full transition-colors"
-                style={{
-                  background: values.isActive ? "var(--color-foreground)" : "var(--color-surface-overlay)",
-                  border: "1px solid var(--color-border)",
-                }}
-              >
-                <span
-                  className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all duration-150"
-                  style={{
-                    background: values.isActive ? "var(--color-background)" : "var(--color-subtle)",
-                    left: values.isActive ? "calc(100% - 16px)" : "2px",
-                  }}
-                />
-              </button>
-              <span className="text-sm" style={{ color: "var(--color-foreground)" }}>
-                {values.isActive ? "Activa" : "Pausada"}
-              </span>
-            </label>
-            <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>
-              Las campañas pausadas no aparecen en la API pública.
-            </p>
-          </div>
-        </Section>
-
-        <Divider />
-
-        {/* ── Aplicaciones (Stack) ── */}
-        {stacks.length > 0 && (
-          <Section title="Aplicaciones">
-            <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
-              Elegí un stack de aplicaciones para mostrar en la landing. Se aplicará al guardar.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {stacks.map((s) => {
-                const active = pendingStackId === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setPendingStackId(active ? null : s.id)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
-                    style={{
-                      border:     `1px solid ${active ? "var(--color-border-focus)" : "var(--color-border)"}`,
-                      background: active ? "var(--color-surface-overlay)" : "transparent",
-                      color:      active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-                    }}
-                  >
-                    <span className="font-medium">{s.name}</span>
-                    <span style={{ color: "var(--color-subtle)" }}>{s.items.length} apps</span>
-                    {active && <Check className="h-3 w-3 shrink-0" style={{ color: "var(--color-foreground)" }} />}
-                  </button>
-                );
-              })}
-            </div>
-            {pendingStackId && (
-              <div className="flex flex-wrap gap-1.5">
-                {stacks.find(s => s.id === pendingStackId)?.items.map((item) => (
-                  <span
-                    key={item.id}
-                    className="rounded-md px-2 py-1 text-[11px]"
-                    style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
-                  >
-                    {item.name} · ${item.amount}
-                  </span>
-                ))}
-              </div>
-            )}
-          </Section>
+        {/* ── Preview en vivo (desktop, solo al crear) ── */}
+        {!isEdit && (
+          <aside className="hidden shrink-0 items-center justify-center p-6 lg:flex" style={{ width: 380, borderLeft: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+            <LandingPreview colorPrimary={values.colorPrimary} colorBg={values.colorBg} logoUrl={values.logoUrl} currencySymbol={values.currencySymbol} locale={values.locale} offers={previewOffers} />
+          </aside>
         )}
+      </div>
 
-        <Divider />
-
-        {/* ── Submit ── */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={isSaving || ctaStatus === "invalid"}
-              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
-              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-            >
-              {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {campaign ? "Guardar cambios" : "Crear campaña"}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="rounded-md px-4 py-2 text-sm transition-opacity hover:opacity-70"
-              style={{ color: "var(--color-muted-foreground)" }}
-            >
-              Cancelar
-            </button>
+      {/* ── Action bar ── */}
+      <div className="flex shrink-0 items-center gap-3 px-4 py-3 md:px-8" style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+        {/* progreso */}
+        <div className="hidden flex-1 items-center gap-2 sm:flex">
+          <div className="h-1 w-32 overflow-hidden rounded-full" style={{ background: "var(--color-surface-overlay)" }}>
+            <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: cp }} />
           </div>
-
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{
-              background: "var(--color-surface-overlay)",
-              border: "1px solid var(--color-border)",
-              color: "var(--color-foreground)",
-            }}
-          >
-            <Smartphone className="h-4 w-4" />
-            Ver preview en mobile
+          <span className="text-[11px] tabular-nums" style={{ color: "var(--color-subtle)" }}>{progress}%</span>
+        </div>
+        <div className="flex flex-1 items-center gap-2 sm:flex-none">
+          <button type="button" onClick={() => setMobilePreview(true)} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium ${isEdit ? "" : "lg:hidden"}`} style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+            <Smartphone className="h-3.5 w-3.5" />Preview
+          </button>
+          <button type="button" onClick={() => router.back()} className="rounded-md px-3 py-2 text-sm transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+          <button type="button" onClick={() => handleSubmit()} disabled={!canSubmit}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-40 sm:flex-none"
+            style={{ background: cp, color: "#fff" }}>
+            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
+            {campaign ? "Guardar cambios" : "Crear campaña"}
           </button>
         </div>
+      </div>
 
-        {error && (
-          <p className="rounded-md px-3 py-2 text-xs" style={{ color: "var(--color-error)", background: "var(--color-error-bg)" }}>
-            {error}
-          </p>
-        )}
-      </form>
-    </>
+      {/* ── Preview sheet ── */}
+      {mobilePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }} onClick={() => setMobilePreview(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <LandingPreview colorPrimary={values.colorPrimary} colorBg={values.colorBg} logoUrl={values.logoUrl} currencySymbol={values.currencySymbol} locale={values.locale} offers={previewOffers} />
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes successPop { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes checkDraw { to { stroke-dashoffset: 0; } }
+        @keyframes lpPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes lpRise { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes lpFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { [style*="animation"] { animation: none !important; } }
+      `}</style>
+    </div>
   );
 }
 
-function toHex(color: string): string {
-  return color.startsWith("#") ? color : "#888888";
+function StepHead({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div>
+      <h2 className="text-base font-bold" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>{title}</h2>
+      <p className="mt-0.5 text-xs leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>{sub}</p>
+    </div>
+  );
 }
+
+function ReviewItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="rounded-lg p-3" style={{ border: "1px solid var(--color-border)" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{label}</p>
+      <p className="mt-1 truncate text-sm" style={{ color: "var(--color-foreground)", fontFamily: mono ? "var(--font-mono)" : undefined }}>{value}</p>
+    </div>
+  );
+}
+
+function toHex(color: string): string { return color.startsWith("#") ? color : "#888888"; }

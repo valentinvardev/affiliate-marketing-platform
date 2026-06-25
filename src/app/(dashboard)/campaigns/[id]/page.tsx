@@ -92,10 +92,10 @@ export default async function EditCampaignPage({
               </div>
             </div>
 
-            {/* Campaign settings */}
-            <SectionCard title="Configuración general">
+            {/* Campaign settings — studio */}
+            <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
               <CampaignForm campaign={campaign} />
-            </SectionCard>
+            </div>
 
             {/* Offers */}
             <SectionCard
