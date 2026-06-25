@@ -10,7 +10,8 @@ module.exports = {
       name: "tapsur",
       cwd: __dirname + "/..",          // carpeta del proyecto (aff-cms)
       script: "npm",
-      args: "start",                   // = next start -p 3000
+      args: "start",                   // = next start -p 3010
+      exec_mode: "fork",               // fork (NO cluster): cluster no sirve con `npm start`
       instances: 1,
       autorestart: true,
       max_memory_restart: "600M",
