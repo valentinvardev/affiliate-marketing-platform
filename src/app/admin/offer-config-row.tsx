@@ -2,12 +2,15 @@
 
 import { useTransition, useRef, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
-import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers } from "lucide-react";
+import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers, Palette, Image as ImageIcon, Globe } from "lucide-react";
 import { toggleOfferWhitelist, updateOfferImage } from "./actions";
 import { api } from "@/trpc/react";
 import type { Offer } from "@/lib/taprain";
 
-type Config = { whitelisted: boolean; imageUrl: string | null; appStackId: string | null } | null;
+type Config = {
+  whitelisted: boolean; imageUrl: string | null; appStackId: string | null;
+  colorPresetId: string | null; logoPresetId: string | null; domain: string | null;
+} | null;
 
 export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config }) {
   const [pending, start]               = useTransition();
@@ -15,12 +18,21 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
   const [uploadError, setUploadError]  = useState(false);
   const [localImageUrl, setLocalImageUrl] = useState<string | null>(config?.imageUrl ?? null);
   const [stackId, setStackId]          = useState<string | null>(config?.appStackId ?? null);
+  const [colorId, setColorId]          = useState<string | null>(config?.colorPresetId ?? null);
+  const [logoId, setLogoId]            = useState<string | null>(config?.logoPresetId ?? null);
+  const [domain, setDomain]            = useState<string | null>(config?.domain ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: stacks = [] } = api.stack.list.useQuery();
+  const { data: colors = [] } = api.preset.colorList.useQuery();
+  const { data: logos = []  } = api.preset.logoList.useQuery();
+  const { data: hosts = []  } = api.domains.hosts.useQuery();
   const linkStack = api.stack.linkToOffer.useMutation({
     onSuccess: (data) => setStackId(data.appStackId),
   });
+  const setPkg = api.stack.setOfferPackage.useMutation();
+  const savePkg = (patch: { colorPresetId?: string | null; logoPresetId?: string | null; domain?: string | null }) =>
+    setPkg.mutate({ offerId: offer.id, offerName: offer.name, ...patch });
 
   const whitelisted = config?.whitelisted ?? false;
   const imageUrl    = localImageUrl ?? offer.image_url;
@@ -149,7 +161,55 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
       </div>{/* /Image + info */}
 
       {/* Controles */}
-      <div className="flex w-full items-center gap-2 sm:w-auto">
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+
+        {/* Color preset */}
+        {colors.length > 0 && (
+          <div className="flex items-center gap-1">
+            <Palette className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
+            <select
+              value={colorId ?? ""}
+              onChange={(e) => { const v = e.target.value || null; setColorId(v); savePkg({ colorPresetId: v }); }}
+              className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
+              style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: colorId ? "var(--color-foreground)" : "var(--color-subtle)" }}
+            >
+              <option value="">Color</option>
+              {colors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Logo preset */}
+        {logos.length > 0 && (
+          <div className="flex items-center gap-1">
+            <ImageIcon className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
+            <select
+              value={logoId ?? ""}
+              onChange={(e) => { const v = e.target.value || null; setLogoId(v); savePkg({ logoPresetId: v }); }}
+              className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
+              style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: logoId ? "var(--color-foreground)" : "var(--color-subtle)" }}
+            >
+              <option value="">Logo</option>
+              {logos.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Dominio */}
+        {hosts.length > 0 && (
+          <div className="flex items-center gap-1">
+            <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
+            <select
+              value={domain ?? ""}
+              onChange={(e) => { const v = e.target.value || null; setDomain(v); savePkg({ domain: v }); }}
+              className="rounded-md px-2 py-1 text-xs outline-none max-w-[130px]"
+              style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: domain ? "var(--color-foreground)" : "var(--color-subtle)" }}
+            >
+              <option value="">Dominio</option>
+              {hosts.map((h) => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
+        )}
 
         {/* Stack selector */}
         {stacks.length > 0 && (

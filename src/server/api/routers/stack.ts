@@ -86,4 +86,30 @@ export const stackRouter = createTRPCRouter({
         update: { appStackId: input.appStackId },
       }),
     ),
+
+  /** Setea el "paquete" de la oferta: color preset, logo preset y dominio. */
+  setOfferPackage: protectedProcedure
+    .input(z.object({
+      offerId:       z.string(),
+      offerName:     z.string(),
+      colorPresetId: z.string().nullable().optional(),
+      logoPresetId:  z.string().nullable().optional(),
+      domain:        z.string().nullable().optional(),
+    }))
+    .mutation(({ ctx, input }) =>
+      ctx.db.offerConfig.upsert({
+        where:  { offerId: input.offerId },
+        create: {
+          offerId: input.offerId, offerName: input.offerName,
+          colorPresetId: input.colorPresetId ?? null,
+          logoPresetId:  input.logoPresetId ?? null,
+          domain:        input.domain ?? null,
+        },
+        update: {
+          ...(input.colorPresetId !== undefined ? { colorPresetId: input.colorPresetId } : {}),
+          ...(input.logoPresetId  !== undefined ? { logoPresetId:  input.logoPresetId  } : {}),
+          ...(input.domain        !== undefined ? { domain:        input.domain        } : {}),
+        },
+      }),
+    ),
 });

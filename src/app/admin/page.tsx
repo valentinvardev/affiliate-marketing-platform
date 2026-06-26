@@ -36,11 +36,11 @@ export default async function AdminPage({
 
   // Only fetch TapRain offers when on the offers tab
   let tapRainOffers: Awaited<ReturnType<typeof fetchOffers>>["offers"] = [];
-  let offerConfigs: { offerId: string; whitelisted: boolean; imageUrl: string | null; appStackId: string | null }[] = [];
+  let offerConfigs: { offerId: string; whitelisted: boolean; imageUrl: string | null; appStackId: string | null; colorPresetId: string | null; logoPresetId: string | null; domain: string | null }[] = [];
   if (tab === "offers") {
     const [offersResult, configsResult] = await Promise.allSettled([
       fetchOffers({ limit: 200 }),
-      db.offerConfig.findMany({ select: { offerId: true, whitelisted: true, imageUrl: true, appStackId: true } }),
+      db.offerConfig.findMany({ select: { offerId: true, whitelisted: true, imageUrl: true, appStackId: true, colorPresetId: true, logoPresetId: true, domain: true } }),
     ]);
     if (offersResult.status === "fulfilled") tapRainOffers = offersResult.value.offers;
     if (configsResult.status === "fulfilled") offerConfigs = configsResult.value;
