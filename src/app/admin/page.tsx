@@ -68,7 +68,7 @@ export default async function AdminPage({
     <div className="min-h-screen" style={{ background: "var(--color-background)" }}>
       {/* Header */}
       <header
-        className="flex h-14 items-center justify-between px-8"
+        className="flex h-14 items-center justify-between px-4 sm:px-6"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <div className="flex items-center gap-3">
@@ -88,30 +88,40 @@ export default async function AdminPage({
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-6 py-8">
-        {/* Tab nav */}
-        <nav className="mb-8 flex gap-1 rounded-xl p-1" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
-          {TABS.map(({ key, label, icon: Icon, badge }) => (
-            <Link
-              key={key}
-              href={`/admin?tab=${key}`}
-              className="relative flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-              style={{
-                background: tab === key ? "var(--color-surface-overlay)" : "transparent",
-                color: tab === key ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-              }}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-              {badge ? (
-                <span className="absolute right-2 top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black"
-                  style={{ background: "var(--color-error)", color: "white" }}>
-                  {badge}
-                </span>
-              ) : null}
-            </Link>
-          ))}
-        </nav>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+        <div className="lg:grid lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-8">
+          {/* Navegación: scroll horizontal en móvil, riel vertical sticky en desktop */}
+          <nav className="mb-6 lg:mb-0">
+            <div className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0 lg:pb-0">
+              {TABS.map(({ key, label, icon: Icon, badge }) => {
+                const active = tab === key;
+                return (
+                  <Link
+                    key={key}
+                    href={`/admin?tab=${key}`}
+                    className="relative flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors lg:shrink"
+                    style={{
+                      background: active ? "var(--color-surface-raised)" : "transparent",
+                      color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                      border: `1px solid ${active ? "var(--color-border)" : "transparent"}`,
+                    }}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="whitespace-nowrap">{label}</span>
+                    {badge ? (
+                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-black lg:ml-auto"
+                        style={{ background: "var(--color-error)", color: "white" }}>
+                        {badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Contenido */}
+          <div className="min-w-0">
 
         {/* ── USERS TAB ── */}
         {tab === "users" && (
@@ -310,6 +320,8 @@ export default async function AdminPage({
             )}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
