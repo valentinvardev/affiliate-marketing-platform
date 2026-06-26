@@ -18,31 +18,28 @@ function normalizeDomain(input: string): string {
 }
 
 export const domainsRouter = createTRPCRouter({
-  /** Lista de dominios custom → campaña (admin). */
+  /** Registro de dominios raíz conectados (admin). */
   list: adminProcedure.query(async ({ ctx }) => {
     requireAdmin(ctx);
     return ctx.db.landingDomain.findMany({
       orderBy: { domain: "asc" },
-      include: {
-        campaign: { select: { id: true, name: true, slug: true, colorPrimary: true, isActive: true } },
-      },
+      select: { id: true, domain: true, createdAt: true },
     });
   }),
 
-  /** Registra un dominio raíz (campaña "home" opcional). */
+  /** Registra un dominio raíz. Después se asigna a las ofertas (en Offers). */
   add: adminProcedure
-    .input(z.object({ domain: z.string().min(3), campaignId: z.string().optional() }))
+    .input(z.object({ domain: z.string().min(3) }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);
       const domain = normalizeDomain(input.domain);
       if (!domain.includes(".") || domain.includes(" ")) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Dominio inválido" });
       }
-      const campaignId = input.campaignId || null;
       return ctx.db.landingDomain.upsert({
         where: { domain },
-        create: { domain, campaignId },
-        update: { campaignId },
+        create: { domain },
+        update: {},
       });
     }),
 
