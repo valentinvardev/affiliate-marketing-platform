@@ -12,7 +12,7 @@ import { LANDING_FONTS } from "@/lib/fonts";
 import {
   Loader2, Upload, Check, X, ExternalLink, Smartphone, ChevronDown,
   ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
-  Globe, Palette, Layers, Package,
+  Globe, Palette, Layers, Package, Copy,
 } from "lucide-react";
 import { OfferPickerModal } from "@/components/offer-picker-modal";
 
@@ -261,6 +261,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
   const [created, setCreated] = useState(false);
+  const [savedInfo, setSavedInfo] = useState<{ id: string; slug: string; domain: string | null } | null>(null);
+  const [copiedSaved, setCopiedSaved] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
 
   const { data: colorPresets = [] } = api.preset.colorList.useQuery();
@@ -329,6 +331,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     onSuccess: async (c) => {
       if (pendingStackId) { await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id }); setPendingStackId(null); }
       router.refresh();
+      setSavedInfo({ id: c.id, slug: c.slug, domain: c.domain ?? null });
     },
   });
 
@@ -425,6 +428,62 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
           <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>¡Campaña creada!</p>
         </div>
       )}
+
+      {/* Cambios guardados — confirmación con URL + acciones */}
+      {savedInfo && (() => {
+        const url = savedInfo.domain
+          ? `https://${savedInfo.domain}/${savedInfo.slug}`
+          : (typeof window !== "undefined" ? `${window.location.origin}/landing/${savedInfo.slug}` : `/landing/${savedInfo.slug}`);
+        const copy = async () => {
+          try { await navigator.clipboard.writeText(url); setCopiedSaved(true); setTimeout(() => setCopiedSaved(false), 1600); } catch { /* bloqueado */ }
+        };
+        return (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}
+            onClick={() => setSavedInfo(null)}>
+            <div className="w-full max-w-sm rounded-2xl p-6" onClick={(e) => e.stopPropagation()}
+              style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", animation: "successPop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}>
+              <div className="flex flex-col items-center text-center">
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--color-foreground)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Check className="h-7 w-7" style={{ color: "var(--color-background)" }} />
+                </div>
+                <p className="mt-3 text-base font-semibold" style={{ color: "var(--color-foreground)" }}>Cambios guardados</p>
+                <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+                  {savedInfo.domain ? "La landing ya está actualizada." : "Asignale un dominio para publicarla en dominio/slug."}
+                </p>
+              </div>
+
+              {/* URL + copiar */}
+              <div className="mt-5">
+                <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>Link de la campaña</label>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <input readOnly value={url} onFocus={(e) => e.currentTarget.select()}
+                    className="min-w-0 flex-1 rounded-md px-3 py-2 text-xs outline-none"
+                    style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }} />
+                  <button type="button" onClick={copy} title="Copiar"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
+                    style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)", color: copiedSaved ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
+                    {copiedSaved ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="mt-5 flex gap-2">
+                <button type="button" onClick={() => router.push("/campaigns")}
+                  className="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+                  Volver
+                </button>
+                <button type="button" onClick={() => router.push(`/campaigns/${savedInfo.id}`)}
+                  className="flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+                  Entrar a la campaña
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="flex min-h-0 flex-1">
         {/* ── Columna form ── */}
