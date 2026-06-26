@@ -105,9 +105,19 @@ export const campaignRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }).merge(campaignInput.partial()))
     .mutation(async ({ ctx, input }) => {
       await assertCanEdit(ctx, input.id);
-      // El slug es inmutable después de crear (no romper la URL pública dominio/slug).
-      const { id, slug: _slug, ...rest } = input;
-      return ctx.db.campaign.update({ where: { id }, data: rest });
+      const { id, slug: rawSlug, ...rest } = input;
+      // Si viene slug (= s1), lo normalizo y deduplico (excluyéndome a mí mismo).
+      let slug: string | undefined;
+      if (rawSlug) {
+        const base = slugify(rawSlug) || "campania";
+        slug = base;
+        for (let i = 2; ; i++) {
+          const exists = await ctx.db.campaign.findUnique({ where: { slug }, select: { id: true } });
+          if (!exists || exists.id === id) break;
+          slug = `${base}-${i}`;
+        }
+      }
+      return ctx.db.campaign.update({ where: { id }, data: { ...rest, ...(slug ? { slug } : {}) } });
     }),
 
   delete: protectedProcedure

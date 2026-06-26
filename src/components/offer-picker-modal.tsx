@@ -9,7 +9,7 @@ import type { Offer, OffersResponse } from "@/lib/taprain";
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSelect: (url: string) => void;
+  onSelect: (url: string, s1: string) => void;
   defaultS1?: string;
 };
 
@@ -453,7 +453,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
                 </button>
                 <button
                   type="button"
-                  onClick={() => onSelect(finalUrl)}
+                  onClick={() => onSelect(finalUrl, s1.trim())}
                   disabled={!hasTracking}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold"
                   style={{

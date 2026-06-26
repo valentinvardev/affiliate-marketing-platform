@@ -415,7 +415,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   return (
     <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>
       <OfferPickerModal open={offerModalOpen} onClose={() => setOfferModalOpen(false)}
-        onSelect={(url) => { set("ctaUrl", url); setOfferModalOpen(false); }} defaultS1={values.slug} />
+        onSelect={(url, s1) => { set("ctaUrl", url); if (s1) set("slug", slugify(s1)); setOfferModalOpen(false); }} defaultS1={values.slug} />
 
       {/* Created animation */}
       {created && (
@@ -552,7 +552,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
                     <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: values.domain ? "var(--color-success)" : "var(--color-subtle)" }} />
                     <span className="truncate font-mono" style={{ color: values.domain ? "var(--color-foreground)" : "var(--color-subtle)" }}>
-                      {values.domain ? `https://${values.domain}/${values.slug || "…"}` : "Elegí un dominio para ver la URL"}
+                      {values.domain ? `https://${values.domain}/${values.slug || "…"}` : `s1 / slug: ${values.slug || "—"}`}
                     </span>
                   </div>
                 </>
