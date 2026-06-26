@@ -8,7 +8,7 @@ import { StatsChart, type ChartPoint } from "./_components/stats-chart";
 import { ConversionList } from "./_components/conversion-list";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Stats" };
+export const metadata = { title: "Estadísticas" };
 
 const RANGES: { key: StatsRange; label: string }[] = [
   { key: "hour",      label: "Última hora" },
@@ -137,7 +137,7 @@ export default async function StatsPage({
         className="flex h-14 shrink-0 items-center px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Stats</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Estadísticas</h1>
         <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>TapRain</span>
       </header>
 

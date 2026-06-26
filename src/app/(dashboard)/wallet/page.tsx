@@ -3,7 +3,7 @@ import { getScope, convWhere } from "@/lib/scope";
 import { Wallet, ArrowDownToLine, Clock, HardHat } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Wallet" };
+export const metadata = { title: "Billetera" };
 
 const fmt = new Intl.NumberFormat("en-US", {
   style: "currency", currency: "USD", minimumFractionDigits: 2,

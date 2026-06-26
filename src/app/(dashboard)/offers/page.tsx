@@ -166,7 +166,7 @@ export default function OffersPage() {
         className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Offers</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Ofertas</h1>
         {!loading && (
           <span
             className="rounded-full px-2 py-0.5 text-[11px] tabular-nums"

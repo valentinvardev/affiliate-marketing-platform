@@ -12,13 +12,13 @@ const NAV_BASE = [
   { href: "/overview",      icon: LayoutDashboard, label: "Inicio" },
   { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
   { href: "/campaigns/new", icon: BookOpen,   label: "Nueva campaña" },
-  { href: "/offers",        icon: Package,    label: "Offers" },
-  { href: "/stats",         icon: BarChart2,  label: "Stats" },
+  { href: "/offers",        icon: Package,    label: "Ofertas" },
+  { href: "/stats",         icon: BarChart2,  label: "Estadísticas" },
   { href: "/leaderboard",  icon: Trophy,     label: "Leaderboard" },
   { href: "/interactions", icon: Heart,      label: "Interacciones" },
   { href: "/cards",        icon: CreditCard, label: "Tarjetas" },
   { href: "/finanzas",     icon: Coins,      label: "Finanzas" },
-  { href: "/wallet",       icon: Wallet,     label: "Wallet" },
+  { href: "/wallet",       icon: Wallet,     label: "Billetera" },
 ];
 
 export function Sidebar() {

@@ -60,7 +60,7 @@ export default async function AdminPage({
     { key: "stacks",  label: "Stacks",       icon: Layers,   badge: undefined },
     { key: "colors",  label: "Colores",      icon: Palette,  badge: undefined },
     { key: "logos",   label: "Logos",        icon: ImageIcon, badge: undefined },
-    { key: "offers",  label: "Offers",       icon: Package,  badge: undefined },
+    { key: "offers",  label: "Ofertas",       icon: Package,  badge: undefined },
     { key: "account", label: "Cuenta",       icon: KeyRound, badge: undefined },
   ];
 
