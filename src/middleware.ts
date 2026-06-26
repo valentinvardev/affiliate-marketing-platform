@@ -50,7 +50,15 @@ export default withAuth(
       if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.includes(".")) {
         return NextResponse.next();
       }
-      const target = r.kind === "slug" ? `/landing/${r.slug}` : "/landing";
+      // Subdominio: el slug ES el subdominio → /landing/<sub>.
+      // Dominio custom (path-based): <domain>/<slug> → /landing/<slug>;
+      //   el root <domain>/ → /landing (campaña "home" del dominio, si hay).
+      const target =
+        r.kind === "slug"
+          ? `/landing/${r.slug}`
+          : pathname === "/"
+            ? "/landing"
+            : `/landing${pathname}`;
       return NextResponse.rewrite(new URL(target, req.url));
     }
 

@@ -49,14 +49,14 @@ export function AdminDomainsTab() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Campaña</label>
+              <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Campaña home (opcional)</label>
               <select
                 value={campaignId}
                 onChange={(e) => setCampaignId(e.target.value)}
                 className="w-full rounded-md px-3 py-2 text-sm outline-none sm:w-56"
                 style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: campaignId ? "var(--color-foreground)" : "var(--color-subtle)" }}
               >
-                <option value="">Elegí una campaña…</option>
+                <option value="">Sin home (path-based)</option>
                 {camps.map((c) => (
                   <option key={c.id} value={c.id}>{c.name} (s1={c.slug})</option>
                 ))}
@@ -66,12 +66,12 @@ export function AdminDomainsTab() {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={add.isPending || !domain || !campaignId}
+              disabled={add.isPending || !domain}
               className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
               style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
             >
               {add.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Conectar dominio
+              Registrar dominio
             </button>
             {add.error && (
               <span className="inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}>
@@ -80,8 +80,9 @@ export function AdminDomainsTab() {
             )}
           </div>
           <p className="text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}>
-            Se guarda el apex en minúsculas (sin <code>www</code>). Acordate de apuntar el DNS del dominio al VPS y
-            agregarlo al nginx + certbot — el panel solo maneja el mapeo dominio→campaña.
+            Path-based: una vez registrado, el dominio sirve <code>dominio/&lt;slug&gt;</code> para cualquier campaña.
+            Asignás el dominio a las <strong>ofertas</strong> (en Offers) y las campañas creadas desde ellas salen ahí.
+            La campaña "home" (opcional) es lo que muestra el root <code>dominio/</code>.
           </p>
         </form>
       </Section>
@@ -100,7 +101,7 @@ export function AdminDomainsTab() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5"
                 style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
               >
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: d.campaign.colorPrimary }} />
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: d.campaign?.colorPrimary ?? "var(--color-subtle)" }} />
                 <div className="min-w-0 flex-1">
                   <a
                     href={`https://${d.domain}`}
@@ -113,15 +114,15 @@ export function AdminDomainsTab() {
                     <ExternalLink className="h-3 w-3" style={{ color: "var(--color-subtle)" }} />
                   </a>
                   <p className="truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>
-                    → {d.campaign.name} <span className="font-mono">(s1={d.campaign.slug})</span>
-                    {!d.campaign.isActive && <span style={{ color: "var(--color-warning)" }}> · campaña inactiva</span>}
+                    {d.campaign ? (
+                      <>home: {d.campaign.name} <span className="font-mono">(s1={d.campaign.slug})</span>
+                        {!d.campaign.isActive && <span style={{ color: "var(--color-warning)" }}> · inactiva</span>}</>
+                    ) : (
+                      <>path-based · sin home</>
+                    )}
                   </p>
                 </div>
-                {d.campaign.isActive ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--color-success)" }} />
-                ) : (
-                  <AlertCircle className="h-4 w-4 shrink-0" style={{ color: "var(--color-warning)" }} />
-                )}
+                <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "var(--color-success)" }} />
                 <button
                   type="button"
                   title="Desconectar dominio"

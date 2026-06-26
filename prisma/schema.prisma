@@ -22,6 +22,7 @@ model Campaign {
     colorPrimary   String          @default("oklch(0.74 0.19 55)")
     colorBg        String          @default("oklch(0.16 0.04 265)")
     isActive       Boolean         @default(true)
+    domain         String?         // root domain en el que se sirve (path-based: <domain>/<slug>)
     ownerId        String?
     owner          User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
     createdAt      DateTime        @default(now())
@@ -34,14 +35,15 @@ model Campaign {
     @@index([ownerId])
 }
 
-// Dominio custom (ej. empfohlen.lat) → campaña cuya landing sirve.
-// Lo resuelve el server component /landing por el header Host (sin tocar el .env).
+// Registro de dominios raíz conectados (ej. empfohlen.lat). Path-based:
+// <domain>/<slug> sirve la campaña con ese slug. campaignId opcional = campaña
+// "home" del dominio (lo que muestra el root `domain/`).
 model LandingDomain {
-    id         String   @id @default(cuid())
-    domain     String   @unique // apex en minúsculas, sin www (ej. "empfohlen.lat")
-    campaignId String
-    campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-    createdAt  DateTime @default(now())
+    id         String    @id @default(cuid())
+    domain     String    @unique // apex en minúsculas, sin www (ej. "empfohlen.lat")
+    campaignId String?
+    campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+    createdAt  DateTime  @default(now())
 
     @@index([campaignId])
 }
@@ -140,16 +142,20 @@ model LogoPreset {
 }
 
 model OfferConfig {
-    id          String    @id @default(cuid())
-    offerId     String    @unique
-    offerName   String
-    whitelisted Boolean   @default(false)
-    imageUrl    String?
-    notes       String?
-    appStackId  String?
-    appStack    AppStack? @relation(fields: [appStackId], references: [id], onDelete: SetNull)
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
+    id            String    @id @default(cuid())
+    offerId       String    @unique
+    offerName     String
+    whitelisted   Boolean   @default(false)
+    imageUrl      String?
+    notes         String?
+    appStackId    String?
+    appStack      AppStack? @relation(fields: [appStackId], references: [id], onDelete: SetNull)
+    // Paquete completo que arrastra la oferta al crear campaña (autocompletado):
+    colorPresetId String?   // → ColorPreset (colores)
+    logoPresetId  String?   // → LogoPreset (logo)
+    domain        String?   // root domain donde se publican las campañas de esta oferta
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
 
     @@index([whitelisted])
     @@index([appStackId])

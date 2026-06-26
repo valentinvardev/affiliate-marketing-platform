@@ -29,21 +29,28 @@ export const domainsRouter = createTRPCRouter({
     });
   }),
 
-  /** Conecta (o reasigna) un dominio a una campaña. */
+  /** Registra un dominio raíz (campaña "home" opcional). */
   add: adminProcedure
-    .input(z.object({ domain: z.string().min(3), campaignId: z.string().min(1) }))
+    .input(z.object({ domain: z.string().min(3), campaignId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);
       const domain = normalizeDomain(input.domain);
       if (!domain.includes(".") || domain.includes(" ")) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Dominio inválido" });
       }
+      const campaignId = input.campaignId || null;
       return ctx.db.landingDomain.upsert({
         where: { domain },
-        create: { domain, campaignId: input.campaignId },
-        update: { campaignId: input.campaignId },
+        create: { domain, campaignId },
+        update: { campaignId },
       });
     }),
+
+  /** Lista simple de dominios registrados (para selects). */
+  hosts: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.landingDomain.findMany({ orderBy: { domain: "asc" }, select: { domain: true } });
+    return rows.map((r) => r.domain);
+  }),
 
   /** Desconecta un dominio. */
   remove: adminProcedure
