@@ -272,14 +272,24 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function applyOfferPackage(offerId: string) {
     const pkg = offerPkgs.find((p) => p.offerId === offerId);
     if (!pkg) return;
-    if (pkg.colorPrimary) set("colorPrimary", pkg.colorPrimary);
-    if (pkg.colorBg) set("colorBg", pkg.colorBg);
-    if (pkg.logoUrl) set("logoUrl", pkg.logoUrl);
-    if (pkg.domain) set("domain", pkg.domain);
-    if (pkg.fontTitle) set("fontTitle", pkg.fontTitle);
-    if (pkg.fontBody) set("fontBody", pkg.fontBody);
-    if (pkg.appStackId) setPendingStackId(pkg.appStackId);
-    if (!values.name.trim()) handleNameChange(pkg.offerName);
+    // selectedOffer todavía es la selección ANTERIOR (setSelectedOffer es async).
+    const prevOffer = offerPkgs.find((p) => p.offerId === selectedOffer);
+    setValues((p) => {
+      // El nombre se reemplaza si está vacío o si quedó auto-puesto por la oferta anterior.
+      const autoName = !p.name.trim() || (!!prevOffer && p.name === prevOffer.offerName);
+      return {
+        ...p,
+        colorPrimary: pkg.colorPrimary ?? "oklch(0.74 0.19 55)",
+        colorBg:      pkg.colorBg ?? "oklch(0.16 0.04 265)",
+        logoUrl:      pkg.logoUrl ?? "",
+        domain:       pkg.domain ?? "",
+        fontTitle:    pkg.fontTitle ?? "",
+        fontBody:     pkg.fontBody ?? "",
+        name:         autoName ? pkg.offerName : p.name,
+        slug:         autoName ? slugify(pkg.offerName) : p.slug,
+      };
+    });
+    setPendingStackId(pkg.appStackId ?? null);
   }
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
   const [savingUrl, setSavingUrl] = useState(false);
