@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, adminProcedure, protectedProcedure } from "@/server/api/trpc";
 
 type Ctx = { session?: { user?: { role?: string } } | null };
 function requireAdmin(ctx: Ctx) {
@@ -46,8 +46,8 @@ export const domainsRouter = createTRPCRouter({
       });
     }),
 
-  /** Lista simple de dominios registrados (para selects). */
-  hosts: adminProcedure.query(async ({ ctx }) => {
+  /** Lista de dominios registrados (para selects). No es dato sensible. */
+  hosts: protectedProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db.landingDomain.findMany({ orderBy: { domain: "asc" }, select: { domain: true } });
     return rows.map((r) => r.domain);
   }),

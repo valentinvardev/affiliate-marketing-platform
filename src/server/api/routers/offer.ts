@@ -12,6 +12,36 @@ const offerInput = z.object({
 });
 
 export const offerRouter = createTRPCRouter({
+  /** Ofertas whitelisteadas con su "paquete" resuelto (color/logo/dominio/stack)
+   *  para autocompletar al crear una campaña. */
+  packages: protectedProcedure.query(async ({ ctx }) => {
+    const configs = await ctx.db.offerConfig.findMany({
+      where: { whitelisted: true },
+      select: { offerId: true, offerName: true, appStackId: true, domain: true, colorPresetId: true, logoPresetId: true },
+      orderBy: { offerName: "asc" },
+    });
+    const colorIds = configs.map((c) => c.colorPresetId).filter(Boolean) as string[];
+    const logoIds = configs.map((c) => c.logoPresetId).filter(Boolean) as string[];
+    const [colors, logos] = await Promise.all([
+      colorIds.length ? ctx.db.colorPreset.findMany({ where: { id: { in: colorIds } } }) : [],
+      logoIds.length ? ctx.db.logoPreset.findMany({ where: { id: { in: logoIds } } }) : [],
+    ]);
+    const colorById = new Map(colors.map((c) => [c.id, c]));
+    const logoById = new Map(logos.map((l) => [l.id, l]));
+    return configs.map((c) => {
+      const col = c.colorPresetId ? colorById.get(c.colorPresetId) : null;
+      return {
+        offerId:      c.offerId,
+        offerName:    c.offerName,
+        appStackId:   c.appStackId,
+        domain:       c.domain,
+        colorPrimary: col?.colorPrimary ?? null,
+        colorBg:      col?.colorBg ?? null,
+        logoUrl:      c.logoPresetId ? logoById.get(c.logoPresetId)?.imageUrl ?? null : null,
+      };
+    });
+  }),
+
   listByCampaign: protectedProcedure
     .input(z.object({ campaignId: z.string() }))
     .query(({ ctx, input }) =>

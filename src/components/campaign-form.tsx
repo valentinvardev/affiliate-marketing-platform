@@ -11,7 +11,7 @@ import { slugify } from "@/lib/utils";
 import {
   Loader2, Upload, Check, X, ExternalLink, Smartphone, ChevronDown,
   ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
-  Globe, Palette, Layers,
+  Globe, Palette, Layers, Package,
 } from "lucide-react";
 import { OfferPickerModal } from "@/components/offer-picker-modal";
 
@@ -23,6 +23,7 @@ type FormValues = {
   locale: string; currencyCode: string; currencySymbol: string;
   ctaUrl: string; logoUrl: string;
   colorPrimary: string; colorBg: string; isActive: boolean;
+  domain: string;
 };
 
 type Campaign = {
@@ -30,6 +31,7 @@ type Campaign = {
   locale: string; currencyCode: string; currencySymbol: string;
   ctaUrl: string; logoUrl: string | null;
   colorPrimary: string; colorBg: string; isActive: boolean;
+  domain?: string | null;
 };
 
 type PreviewOffer = { name: string; amount: number; badge: string; imageUrl?: string | null };
@@ -332,6 +334,19 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const { data: colorPresets = [] } = api.preset.colorList.useQuery();
   const { data: logoPresets = [] } = api.preset.logoList.useQuery();
   const { data: stacks = [] } = api.stack.list.useQuery();
+  const { data: hosts = [] } = api.domains.hosts.useQuery();
+  const { data: offerPkgs = [] } = api.offer.packages.useQuery(undefined, { enabled: !campaign });
+
+  function applyOfferPackage(offerId: string) {
+    const pkg = offerPkgs.find((p) => p.offerId === offerId);
+    if (!pkg) return;
+    if (pkg.colorPrimary) set("colorPrimary", pkg.colorPrimary);
+    if (pkg.colorBg) set("colorBg", pkg.colorBg);
+    if (pkg.logoUrl) set("logoUrl", pkg.logoUrl);
+    if (pkg.domain) set("domain", pkg.domain);
+    if (pkg.appStackId) setPendingStackId(pkg.appStackId);
+    if (!values.name.trim()) handleNameChange(pkg.offerName);
+  }
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
   const [savingUrl, setSavingUrl] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -350,6 +365,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     colorPrimary: campaign?.colorPrimary ?? "oklch(0.74 0.19 55)",
     colorBg: campaign?.colorBg ?? "oklch(0.16 0.04 265)",
     isActive: campaign?.isActive ?? true,
+    domain: campaign?.domain ?? "",
   });
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
@@ -393,7 +409,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     startTransition(() => {
-      const payload = { ...values, logoUrl: values.logoUrl || null };
+      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null };
       if (campaign) update.mutate({ id: campaign.id, ...payload });
       else create.mutate(payload);
     });
@@ -467,6 +483,29 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
             })}
           </div>
 
+          {/* Empezar desde una oferta — autocompleta colores, logo, apps y dominio */}
+          {!campaign && offerPkgs.length > 0 && (
+            <div className="shrink-0 px-4 pt-3 md:px-8">
+              <div className="mx-auto flex max-w-xl items-center gap-3 rounded-xl px-4 py-2.5"
+                style={{ border: "1px solid var(--color-border-focus)", background: "var(--color-surface-overlay)" }}>
+                <Package className="h-4 w-4 shrink-0" style={{ color: "var(--color-foreground)" }} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>Empezar desde una oferta</p>
+                  <p className="text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>Autocompleta colores, logo, apps y dominio.</p>
+                </div>
+                <select
+                  defaultValue=""
+                  onChange={(e) => { if (e.target.value) { applyOfferPackage(e.target.value); setActive("identidad"); } }}
+                  className="shrink-0 rounded-md px-2 py-1.5 text-xs outline-none"
+                  style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", maxWidth: 180 }}
+                >
+                  <option value="">Elegí una oferta…</option>
+                  {offerPkgs.map((p) => <option key={p.offerId} value={p.offerId}>{p.offerName}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Active section */}
           <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8" key={active} style={{ animation: "lpFade .25s ease" }}>
             <div className="mx-auto max-w-xl space-y-5">
@@ -478,6 +517,22 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     <Input placeholder="uk-marzo-2025" value={values.slug} onChange={(e) => set("slug", e.target.value)} required
                       style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} />
                   </Field>
+                  <Field label="Dominio" hint="Path-based: la landing queda en dominio/slug">
+                    <Dropdown
+                      value={values.domain}
+                      onChange={(v) => set("domain", v)}
+                      options={[{ value: "", label: "Sin dominio" }, ...hosts.map((h) => ({ value: h, label: h }))]}
+                    />
+                  </Field>
+                  {values.domain && values.slug && (
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
+                      style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                      <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
+                      <span className="truncate font-mono" style={{ color: "var(--color-foreground)" }}>
+                        https://{values.domain}/{values.slug}
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
 
