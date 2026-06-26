@@ -90,9 +90,14 @@ export const campaignRouter = createTRPCRouter({
   create: protectedProcedure
     .input(campaignInput)
     .mutation(async ({ ctx, input }) => {
-      const slug = input.slug ?? slugify(input.name);
+      // Slug automático y único: si está tomado, agrega -2, -3, …
+      const base = slugify(input.slug || input.name) || "campania";
+      let slug = base;
+      for (let i = 2; await ctx.db.campaign.findUnique({ where: { slug }, select: { id: true } }); i++) {
+        slug = `${base}-${i}`;
+      }
       return ctx.db.campaign.create({
-        data: { ...input, slug, ownerId: ctx.session?.user?.id ?? null },
+        data: { ...input, slug, ownerId: ctx.session.user.id },
       });
     }),
 
@@ -100,17 +105,9 @@ export const campaignRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }).merge(campaignInput.partial()))
     .mutation(async ({ ctx, input }) => {
       await assertCanEdit(ctx, input.id);
-      const { id, slug: rawSlug, name, ...rest } = input;
-      const slug =
-        rawSlug !== undefined
-          ? rawSlug
-          : name !== undefined
-            ? slugify(name)
-            : undefined;
-      return ctx.db.campaign.update({
-        where: { id },
-        data: { ...(name ? { name } : {}), ...(slug ? { slug } : {}), ...rest },
-      });
+      // El slug es inmutable después de crear (no romper la URL pública dominio/slug).
+      const { id, slug: _slug, ...rest } = input;
+      return ctx.db.campaign.update({ where: { id }, data: rest });
     }),
 
   delete: protectedProcedure

@@ -7,6 +7,7 @@ import { suiteFetch } from "@/lib/suite";
 import { getLocaleByCode } from "@/lib/locales";
 import { ConversionList } from "@/app/(dashboard)/stats/_components/conversion-list";
 import { SpendPanel, type LinkedCard } from "./_components/spend-panel";
+import { CopyLink } from "./_components/copy-link";
 import { ChevronLeft, Pencil, ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -142,12 +143,11 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
         <span className="hidden items-center rounded-md px-2 py-0.5 font-mono text-[11px] sm:inline-flex" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
           s1·{campaign.slug}
         </span>
-        <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[11px]" style={{ color: campaign.isActive ? "var(--color-success)" : "var(--color-subtle)" }}>
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: campaign.isActive ? "var(--color-success)" : "var(--color-subtle)" }} />
-          {campaign.isActive ? "Activa" : "Pausada"}
-        </span>
-        <a href={`/landing/${campaign.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title="Ver landing"><ExternalLink className="h-3.5 w-3.5" /></a>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <CopyLink domain={campaign.domain} slug={campaign.slug} />
+        <a href={campaign.domain ? `https://${campaign.domain}/${campaign.slug}` : `/landing/${campaign.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title="Ver landing"><ExternalLink className="h-3.5 w-3.5" /></a>
         <Link href={`/campaigns/${campaign.id}/edit`} className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title="Editar"><Pencil className="h-3.5 w-3.5" /></Link>
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-6 md:px-8">

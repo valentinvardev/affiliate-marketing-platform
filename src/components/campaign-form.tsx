@@ -171,93 +171,24 @@ function UrlIndicator({ status }: { status: UrlStatus }) {
   return <X className="h-4 w-4" style={{ color: "var(--color-error)" }} />;
 }
 
+/* base64url para pasar la config al iframe de preview */
+function toB64Url(s: string): string {
+  const b64 = btoa(unescape(encodeURIComponent(s)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 /* ═══════════════════════════════════════════════
-   LIVE PHONE PREVIEW (reactivo — CTA usa colorPrimary)
+   PREVIEW REAL — iframe a la plantilla en un marco de teléfono
 ═══════════════════════════════════════════════ */
-function LandingPreview({
-  colorPrimary, colorBg, logoUrl, currencySymbol, locale, offers,
-}: {
-  colorPrimary: string; colorBg: string; logoUrl: string;
-  currencySymbol: string; locale: string; offers: PreviewOffer[];
-}) {
-  const loc = LOCALES.find((l) => l.code === locale);
-  const flag = loc?.flag ?? "🌐";
-  const cp = colorPrimary;
-  const light = `color-mix(in oklch, ${cp} 80%, white 20%)`;
-  const dark  = `color-mix(in oklch, ${cp} 55%, black 45%)`;
-  const ctaGrad = `linear-gradient(180deg, ${light}, ${cp})`;
-  const apps = offers.length ? offers : DEFAULT_OFFERS;
-
+function PreviewFrame({ url }: { url: string }) {
   return (
-    <div className="relative flex flex-col overflow-hidden"
-      style={{ width: 300, height: 600, borderRadius: 40, border: "9px solid #1a1a1a", boxShadow: "0 0 0 2px #2a2a2a, 0 30px 60px rgba(0,0,0,0.6)", background: colorBg }}>
-      {/* Notch */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20" style={{ width: 100, height: 22, background: "#1a1a1a", borderRadius: "0 0 16px 16px" }} />
-      {/* Glow */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div style={{ position: "absolute", top: -30, left: -30, width: 180, height: 180, background: `radial-gradient(circle, color-mix(in oklch, ${cp} 45%, transparent) 0%, transparent 70%)`, transition: "background .4s ease" }} />
-        <div style={{ position: "absolute", bottom: 0, left: "20%", width: 160, height: 160, background: `radial-gradient(circle, color-mix(in oklch, ${cp} 28%, transparent) 0%, transparent 70%)`, transition: "background .4s ease" }} />
-      </div>
-
-      <div className="relative z-10 flex-1 overflow-y-auto" style={{ paddingTop: 30, scrollbarWidth: "none" }}>
-        {/* Hero */}
-        <div className="flex flex-col items-center px-4 pt-6 pb-3 text-center">
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={logoUrl} src={logoUrl} alt="logo" className="mb-2.5 h-12 w-12 rounded-xl object-contain" style={{ animation: "lpPop .4s cubic-bezier(0.175,0.885,0.32,1.275)" }} />
-          ) : (
-            <div className="mb-2.5 flex h-12 w-12 items-center justify-center rounded-xl text-xl" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>{flag}</div>
-          )}
-          <h1 className="text-2xl font-black leading-tight text-white">Earn money by playing <span style={{ color: cp, transition: "color .35s ease" }}>games</span></h1>
-          <p className="mt-1.5 text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>Play your favourite games to earn money</p>
-          {/* CTA */}
-          <div className="relative mt-4 w-full">
-            <span className="absolute inset-0 translate-y-1 rounded-full" style={{ background: dark, transition: "background .35s ease" }} />
-            <div className="relative flex items-center justify-center rounded-full border-t border-white/30 px-6 py-3 shadow-xl" style={{ background: ctaGrad, transition: "background .35s ease" }}>
-              <span className="text-sm font-black uppercase tracking-tight text-white">Download now</span>
-            </div>
-          </div>
-          <div className="mt-2.5 flex flex-wrap justify-center gap-x-2.5 gap-y-1 text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>
-            {["Free", "Instant cash out", "Unlimited"].map((b) => (
-              <span key={b} className="inline-flex items-center gap-1"><span style={{ color: cp }}>✓</span> {b}</span>
-            ))}
-          </div>
-        </div>
-        {/* Offers */}
-        <div className="px-3 pb-3">
-          <p className="mb-2 text-center text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.4)" }}>Popular offers</p>
-          <div className="grid grid-cols-2 gap-2">
-            {apps.slice(0, 4).map((o, i) => (
-              <div key={`${o.name}-${i}`} className="overflow-hidden rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", animation: `lpRise .4s ease ${i * 0.06}s both` }}>
-                <div className="relative aspect-square" style={{ background: `linear-gradient(135deg, color-mix(in oklch, ${cp} 13%, transparent), rgba(255,255,255,0.04))` }}>
-                  <span className="absolute right-1 top-1 rounded px-1 py-0.5 text-[8px] font-black text-white" style={{ background: cp }}>{o.badge}</span>
-                  {o.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={o.imageUrl} alt={o.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-2xl">🎮</div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <p className="truncate text-[12px] font-extrabold text-white">{o.name}</p>
-                  <p className="text-[8px]" style={{ color: "rgba(255,255,255,0.4)" }}>Per hour played</p>
-                  <p className="mt-0.5 text-base font-black" style={{ color: cp }}>{currencySymbol}{o.amount}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* Sticky CTA */}
-      <div className="relative z-10 p-2.5 pt-0">
-        <div className="relative">
-          <span className="absolute inset-0 translate-y-1 rounded-full" style={{ background: dark }} />
-          <div className="relative flex items-center justify-between rounded-full border-t border-white/30 p-2.5 pl-3.5" style={{ background: ctaGrad }}>
-            <div><p className="text-[13px] font-extrabold text-white">Download the app now</p><p className="text-[9px] text-white/75">Free · Instant cash out</p></div>
-            <span className="rounded-full px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-white" style={{ background: "rgba(255,255,255,0.25)" }}>FREE</span>
-          </div>
-        </div>
-      </div>
+    <div className="relative overflow-hidden"
+      style={{ width: 320, height: 640, borderRadius: 40, border: "9px solid #1a1a1a", boxShadow: "0 0 0 2px #2a2a2a, 0 30px 60px rgba(0,0,0,0.6)", background: "#000" }}>
+      {url ? (
+        <iframe src={url} title="Preview de la landing" style={{ width: "100%", height: "100%", border: "none", display: "block" }} />
+      ) : (
+        <div className="flex h-full items-center justify-center text-xs" style={{ color: "var(--color-subtle)" }}>Completá la campaña…</div>
+      )}
     </div>
   );
 }
@@ -355,6 +286,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [saveName, setSaveName] = useState("");
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [pendingStackId, setPendingStackId] = useState<string | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState("");
 
   const [values, setValues] = useState<FormValues>({
     name: campaign?.name ?? "",
@@ -426,7 +358,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   /* ── Pasos ── */
   const hasStacks = stacks.length > 0;
   const stepDefs = [
-    { key: "identidad", label: "Identidad", icon: Tag,    done: !!values.name && !!values.slug },
+    { key: "identidad", label: "Identidad", icon: Tag,    done: !!values.name },
     { key: "mercado",   label: "Mercado",   icon: Globe,  done: !!values.locale && !!values.currencyCode },
     { key: "oferta",    label: "Oferta",    icon: LinkIcon, done: ctaStatus === "valid" },
     { key: "marca",     label: "Marca",     icon: Palette, done: !!values.colorPrimary && !!values.colorBg },
@@ -437,7 +369,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [active, setActive] = useState<string>("identidad");
   const contentSteps = stepDefs.filter((s) => s.key !== "lanzar");
   const progress = Math.round((contentSteps.filter((s) => s.done).length / contentSteps.length) * 100);
-  const canSubmit = !isSaving && ctaStatus !== "invalid" && !!values.name && !!values.slug && !!values.ctaUrl;
+  const canSubmit = !isSaving && ctaStatus !== "invalid" && !!values.name && !!values.ctaUrl;
   const idx = stepDefs.findIndex((s) => s.key === active);
   const next = stepDefs[idx + 1];
 
@@ -445,6 +377,27 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const previewOffers: PreviewOffer[] = pendingStackId
     ? (stacks.find((s) => s.id === pendingStackId)?.items.map((it) => ({ name: it.name, amount: it.amount, badge: it.badge, imageUrl: it.imageUrl })) ?? [])
     : DEFAULT_OFFERS;
+
+  // URL del preview real (iframe a /landing-preview con la config codificada)
+  const [previewUrl, setPreviewUrl] = useState("");
+  const offersKey = JSON.stringify(previewOffers);
+  useEffect(() => {
+    const cfg = {
+      name: values.name || "Preview",
+      locale: values.locale,
+      colorPrimary: values.colorPrimary,
+      colorBg: values.colorBg,
+      ctaUrl: values.ctaUrl || "#",
+      logoUrl: values.logoUrl || null,
+      currencySymbol: values.currencySymbol,
+      fontTitle: values.fontTitle || null,
+      fontBody: values.fontBody || null,
+      offers: previewOffers.map((o, i) => ({ id: String(i), name: o.name, imageUrl: o.imageUrl ?? null, tag: "1 hr", badge: o.badge, amount: o.amount, rating: 4.9, note: null })),
+    };
+    const t = setTimeout(() => setPreviewUrl(`/landing-preview?c=${toB64Url(JSON.stringify(cfg))}`), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.name, values.locale, values.colorPrimary, values.colorBg, values.ctaUrl, values.logoUrl, values.currencySymbol, values.fontTitle, values.fontBody, offersKey]);
 
   return (
     <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>
@@ -488,56 +441,51 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
             })}
           </div>
 
-          {/* Empezar desde una oferta — autocompleta colores, logo, apps y dominio */}
-          {!campaign && offerPkgs.length > 0 && (
-            <div className="shrink-0 px-4 pt-3 md:px-8">
-              <div className="mx-auto flex max-w-xl items-center gap-3 rounded-xl px-4 py-2.5"
-                style={{ border: "1px solid var(--color-border-focus)", background: "var(--color-surface-overlay)" }}>
-                <Package className="h-4 w-4 shrink-0" style={{ color: "var(--color-foreground)" }} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>Empezar desde una oferta</p>
-                  <p className="text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>Autocompleta colores, logo, apps y dominio.</p>
-                </div>
-                <select
-                  defaultValue=""
-                  onChange={(e) => { if (e.target.value) { applyOfferPackage(e.target.value); setActive("identidad"); } }}
-                  className="shrink-0 rounded-md px-2 py-1.5 text-xs outline-none"
-                  style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", maxWidth: 180 }}
-                >
-                  <option value="">Elegí una oferta…</option>
-                  {offerPkgs.map((p) => <option key={p.offerId} value={p.offerId}>{p.offerName}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* Active section */}
           <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8" key={active} style={{ animation: "lpFade .25s ease" }}>
             <div className="mx-auto max-w-xl space-y-5">
               {active === "identidad" && (
                 <>
-                  <StepHead title="Identidad" sub="Nombre interno y el slug público de la campaña." />
+                  <StepHead title="Identidad" sub="Elegí una oferta para autocompletar todo, o cargá los datos a mano." />
+
+                  {/* Empezar desde una oferta — autocompleta colores, logo, fuentes, apps y dominio */}
+                  {!campaign && offerPkgs.length > 0 && (
+                    <div className="rounded-xl p-3.5" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
+                      <div className="mb-2.5 flex items-center gap-2">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: "var(--color-foreground)" }}>
+                          <Package className="h-4 w-4" style={{ color: "var(--color-background)" }} />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Empezar desde una oferta</p>
+                          <p className="text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>Autocompleta colores, logo, fuentes, apps y dominio.</p>
+                        </div>
+                      </div>
+                      <Dropdown
+                        value={selectedOffer}
+                        onChange={(v) => { setSelectedOffer(v); if (v) applyOfferPackage(v); }}
+                        options={[{ value: "", label: "Elegí una oferta…" }, ...offerPkgs.map((p) => ({ value: p.offerId, label: p.offerName }))]}
+                      />
+                    </div>
+                  )}
+
                   <Field label="Nombre"><Input placeholder="UK Marzo 2025" value={values.name} onChange={(e) => handleNameChange(e.target.value)} required /></Field>
-                  <Field label="Slug (ID público)" hint="Usado como ?c=slug en la plantilla">
-                    <Input placeholder="uk-marzo-2025" value={values.slug} onChange={(e) => set("slug", e.target.value)} required
-                      style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} />
-                  </Field>
-                  <Field label="Dominio" hint="Path-based: la landing queda en dominio/slug">
+
+                  <Field label="Dominio" hint="La landing queda en dominio/slug. Lo trae la oferta; podés cambiarlo.">
                     <Dropdown
                       value={values.domain}
                       onChange={(v) => set("domain", v)}
                       options={[{ value: "", label: "Sin dominio" }, ...hosts.map((h) => ({ value: h, label: h }))]}
                     />
                   </Field>
-                  {values.domain && values.slug && (
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
-                      style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-                      <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
-                      <span className="truncate font-mono" style={{ color: "var(--color-foreground)" }}>
-                        https://{values.domain}/{values.slug}
-                      </span>
-                    </div>
-                  )}
+
+                  {/* URL pública resultante (slug automático) */}
+                  <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
+                    style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                    <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: values.domain ? "var(--color-success)" : "var(--color-subtle)" }} />
+                    <span className="truncate font-mono" style={{ color: values.domain ? "var(--color-foreground)" : "var(--color-subtle)" }}>
+                      {values.domain ? `https://${values.domain}/${values.slug || "…"}` : "Elegí un dominio para ver la URL"}
+                    </span>
+                  </div>
                 </>
               )}
 
@@ -691,14 +639,6 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                       <div className="mt-1.5 flex gap-1"><span className="h-4 w-4 rounded" style={{ background: values.colorPrimary }} /><span className="h-4 w-4 rounded" style={{ background: values.colorBg }} /></div>
                     </div>
                   </div>
-                  {/* Estado */}
-                  <label className="flex cursor-pointer items-center gap-3 w-fit pt-1">
-                    <button type="button" role="switch" aria-checked={values.isActive} onClick={() => set("isActive", !values.isActive)}
-                      className="relative h-5 w-9 shrink-0 rounded-full transition-colors" style={{ background: values.isActive ? "var(--color-foreground)" : "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
-                      <span className="absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all duration-150" style={{ background: values.isActive ? "var(--color-background)" : "var(--color-subtle)", left: values.isActive ? "calc(100% - 16px)" : "2px" }} />
-                    </button>
-                    <span className="text-sm" style={{ color: "var(--color-foreground)" }}>{values.isActive ? "Activa" : "Pausada"}</span>
-                  </label>
                   {error && <p className="rounded-md px-3 py-2 text-xs" style={{ color: "var(--color-error)", background: "var(--color-error-bg)" }}>{error}</p>}
                 </>
               )}
@@ -713,10 +653,10 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
           </div>
         </div>
 
-        {/* ── Preview en vivo (desktop, solo al crear) ── */}
+        {/* ── Preview real (desktop, solo al crear) ── */}
         {!isEdit && (
-          <aside className="hidden shrink-0 items-center justify-center p-6 lg:flex" style={{ width: 380, borderLeft: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
-            <LandingPreview colorPrimary={values.colorPrimary} colorBg={values.colorBg} logoUrl={values.logoUrl} currencySymbol={values.currencySymbol} locale={values.locale} offers={previewOffers} />
+          <aside className="hidden shrink-0 items-center justify-center p-6 lg:flex" style={{ width: 400, borderLeft: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+            <PreviewFrame url={previewUrl} />
           </aside>
         )}
       </div>
@@ -748,7 +688,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
       {mobilePreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }} onClick={() => setMobilePreview(false)}>
           <div onClick={(e) => e.stopPropagation()}>
-            <LandingPreview colorPrimary={values.colorPrimary} colorBg={values.colorBg} logoUrl={values.logoUrl} currencySymbol={values.currencySymbol} locale={values.locale} offers={previewOffers} />
+            <PreviewFrame url={previewUrl} />
           </div>
         </div>
       )}
