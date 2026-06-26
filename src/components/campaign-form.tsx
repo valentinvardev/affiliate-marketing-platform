@@ -435,14 +435,14 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     style={{ background: s.done ? "var(--color-foreground)" : "transparent", color: s.done ? "var(--color-background)" : on ? "var(--color-foreground)" : "var(--color-subtle)", border: s.done ? "none" : `1px solid ${on ? "var(--color-foreground)" : "var(--color-border)"}` }}>
                     {s.done ? <Check className="h-2.5 w-2.5" /> : i + 1}
                   </span>
-                  {s.label}
+                  <span className="hidden sm:inline">{s.label}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Active section */}
-          <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8" key={active} style={{ animation: "lpFade .25s ease" }}>
+          <div className="flex-1 overflow-y-auto px-4 pt-6 pb-28 md:px-8 md:pb-24" key={active} style={{ animation: "lpStepIn .34s cubic-bezier(0.22,1,0.36,1)" }}>
             <div className="mx-auto max-w-xl space-y-5">
               {active === "identidad" && (
                 <>
@@ -655,14 +655,14 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
         {/* ── Preview real (desktop, solo al crear) ── */}
         {!isEdit && (
-          <aside className="hidden shrink-0 items-center justify-center p-6 lg:flex" style={{ width: 400, borderLeft: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+          <aside className="hidden shrink-0 justify-center p-6 lg:flex lg:sticky lg:top-0 lg:self-start" style={{ width: 400, borderLeft: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
             <PreviewFrame url={previewUrl} />
           </aside>
         )}
       </div>
 
-      {/* ── Action bar ── */}
-      <div className="flex shrink-0 items-center gap-3 px-4 py-3 md:px-8" style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+      {/* ── Action bar (fija al fondo del viewport) ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-3 md:left-60 md:px-8" style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
         {/* progreso */}
         <div className="hidden flex-1 items-center gap-2 sm:flex">
           <div className="h-1 w-32 overflow-hidden rounded-full" style={{ background: "var(--color-surface-overlay)" }}>
@@ -699,6 +699,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         @keyframes lpPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes lpRise { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes lpFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes lpStepIn { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: translateX(0); } }
         @media (prefers-reduced-motion: reduce) { [style*="animation"] { animation: none !important; } }
       `}</style>
     </div>
