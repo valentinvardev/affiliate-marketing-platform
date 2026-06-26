@@ -2,14 +2,16 @@
 
 import { useTransition, useRef, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
-import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers, Palette, Image as ImageIcon, Globe } from "lucide-react";
+import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers, Palette, Image as ImageIcon, Globe, Type } from "lucide-react";
 import { toggleOfferWhitelist, updateOfferImage } from "./actions";
 import { api } from "@/trpc/react";
+import { LANDING_FONTS } from "@/lib/fonts";
 import type { Offer } from "@/lib/taprain";
 
 type Config = {
   whitelisted: boolean; imageUrl: string | null; appStackId: string | null;
   colorPresetId: string | null; logoPresetId: string | null; domain: string | null;
+  fontTitle: string | null; fontBody: string | null;
 } | null;
 
 export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config }) {
@@ -21,6 +23,8 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
   const [colorId, setColorId]          = useState<string | null>(config?.colorPresetId ?? null);
   const [logoId, setLogoId]            = useState<string | null>(config?.logoPresetId ?? null);
   const [domain, setDomain]            = useState<string | null>(config?.domain ?? null);
+  const [fontTitle, setFontTitle]      = useState<string | null>(config?.fontTitle ?? null);
+  const [fontBody, setFontBody]        = useState<string | null>(config?.fontBody ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: stacks = [] } = api.stack.list.useQuery();
@@ -31,7 +35,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
     onSuccess: (data) => setStackId(data.appStackId),
   });
   const setPkg = api.stack.setOfferPackage.useMutation();
-  const savePkg = (patch: { colorPresetId?: string | null; logoPresetId?: string | null; domain?: string | null }) =>
+  const savePkg = (patch: { colorPresetId?: string | null; logoPresetId?: string | null; domain?: string | null; fontTitle?: string | null; fontBody?: string | null }) =>
     setPkg.mutate({ offerId: offer.id, offerName: offer.name, ...patch });
 
   const whitelisted = config?.whitelisted ?? false;
@@ -210,6 +214,36 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
             </select>
           </div>
         )}
+
+        {/* Fuente de títulos */}
+        <div className="flex items-center gap-1">
+          <Type className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
+          <select
+            value={fontTitle ?? ""}
+            onChange={(e) => { const v = e.target.value || null; setFontTitle(v); savePkg({ fontTitle: v }); }}
+            title="Fuente de títulos"
+            className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
+            style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: fontTitle ? "var(--color-foreground)" : "var(--color-subtle)" }}
+          >
+            <option value="">Títulos</option>
+            {LANDING_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+
+        {/* Fuente de párrafos */}
+        <div className="flex items-center gap-1">
+          <Type className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)", opacity: 0.6 }} />
+          <select
+            value={fontBody ?? ""}
+            onChange={(e) => { const v = e.target.value || null; setFontBody(v); savePkg({ fontBody: v }); }}
+            title="Fuente de párrafos"
+            className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
+            style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: fontBody ? "var(--color-foreground)" : "var(--color-subtle)" }}
+          >
+            <option value="">Párrafos</option>
+            {LANDING_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
 
         {/* Stack selector */}
         {stacks.length > 0 && (

@@ -34,6 +34,8 @@ const campaignInput = z.object({
   colorBg: cssColor.default("oklch(0.16 0.04 265)"),
   isActive: z.boolean().default(true),
   domain: z.string().max(120).optional().nullable(),
+  fontTitle: z.string().max(40).optional().nullable(),
+  fontBody: z.string().max(40).optional().nullable(),
 });
 
 export const campaignRouter = createTRPCRouter({

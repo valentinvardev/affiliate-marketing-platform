@@ -17,7 +17,7 @@ export const offerRouter = createTRPCRouter({
   packages: protectedProcedure.query(async ({ ctx }) => {
     const configs = await ctx.db.offerConfig.findMany({
       where: { whitelisted: true },
-      select: { offerId: true, offerName: true, appStackId: true, domain: true, colorPresetId: true, logoPresetId: true },
+      select: { offerId: true, offerName: true, appStackId: true, domain: true, colorPresetId: true, logoPresetId: true, fontTitle: true, fontBody: true },
       orderBy: { offerName: "asc" },
     });
     const colorIds = configs.map((c) => c.colorPresetId).filter(Boolean) as string[];
@@ -35,6 +35,8 @@ export const offerRouter = createTRPCRouter({
         offerName:    c.offerName,
         appStackId:   c.appStackId,
         domain:       c.domain,
+        fontTitle:    c.fontTitle,
+        fontBody:     c.fontBody,
         colorPrimary: col?.colorPrimary ?? null,
         colorBg:      col?.colorBg ?? null,
         logoUrl:      c.logoPresetId ? logoById.get(c.logoPresetId)?.imageUrl ?? null : null,

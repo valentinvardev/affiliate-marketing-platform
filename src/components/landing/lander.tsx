@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { LanderFaq } from "@/components/landing/lander-faq";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
+import { googleFontsHref, fontStack } from "@/lib/fonts";
 
 const FEATURE_ICONS = [UserPlus, Search, Zap, Wallet];
 
@@ -27,6 +28,8 @@ export type LanderCampaign = {
   ctaUrl: string;
   logoUrl: string | null;
   currencySymbol: string;
+  fontTitle: string | null;
+  fontBody: string | null;
   offers: {
     id: string;
     name: string;
@@ -55,7 +58,7 @@ function buildCascade(imageUrls: string[]) {
   });
 }
 
-function landerStyles(primary: string, bg: string) {
+function landerStyles(primary: string, bg: string, fontTitle: string, fontBody: string) {
   return `
 .lp {
   --lp: ${primary};
@@ -67,14 +70,14 @@ function landerStyles(primary: string, bg: string) {
   background: var(--lb);
   min-height: 100svh;
   overflow-x: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: ${fontBody};
   -webkit-font-smoothing: antialiased;
   color: var(--lfg);
 }
 .lp * { box-sizing: border-box; }
 .lp a { text-decoration: none; }
 .lp button { font-family: inherit; }
-.lp h1, .lp h2, .lp h3, .lp h4 { font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.02em; }
+.lp h1, .lp h2, .lp h3, .lp h4 { font-family: ${fontTitle}; letter-spacing: -0.02em; }
 
 /* Glass card */
 .lp .lg-card {
@@ -138,6 +141,9 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
   const t = getDict(locale);
   const primary = campaign.colorPrimary;
   const bg = campaign.colorBg;
+  const fontTitle = fontStack(campaign.fontTitle);
+  const fontBody = fontStack(campaign.fontBody);
+  const fontsHref = googleFontsHref([campaign.fontTitle ?? "Inter", campaign.fontBody ?? "Inter"]);
   const ctaUrl = campaign.ctaUrl;
   const logoUrl = campaign.logoUrl;
   const currencySymbol = campaign.currencySymbol;
@@ -153,8 +159,14 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
 
   return (
     <>
+      {/* Fuentes de la campaña (Google Fonts) */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href={fontsHref} />
+
       {/* Scoped styles injected per-page — prefixed with .lp to avoid collisions */}
-      <style dangerouslySetInnerHTML={{ __html: landerStyles(primary, bg) }} />
+      <style dangerouslySetInnerHTML={{ __html: landerStyles(primary, bg, fontTitle, fontBody) }} />
 
       <div className="lp">
         {/* ── Fixed background ── */}

@@ -8,6 +8,7 @@ import { api } from "@/trpc/react";
 import { CURRENCIES } from "@/lib/currencies";
 import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
+import { LANDING_FONTS } from "@/lib/fonts";
 import {
   Loader2, Upload, Check, X, ExternalLink, Smartphone, ChevronDown,
   ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
@@ -23,7 +24,7 @@ type FormValues = {
   locale: string; currencyCode: string; currencySymbol: string;
   ctaUrl: string; logoUrl: string;
   colorPrimary: string; colorBg: string; isActive: boolean;
-  domain: string;
+  domain: string; fontTitle: string; fontBody: string;
 };
 
 type Campaign = {
@@ -31,7 +32,7 @@ type Campaign = {
   locale: string; currencyCode: string; currencySymbol: string;
   ctaUrl: string; logoUrl: string | null;
   colorPrimary: string; colorBg: string; isActive: boolean;
-  domain?: string | null;
+  domain?: string | null; fontTitle?: string | null; fontBody?: string | null;
 };
 
 type PreviewOffer = { name: string; amount: number; badge: string; imageUrl?: string | null };
@@ -344,6 +345,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     if (pkg.colorBg) set("colorBg", pkg.colorBg);
     if (pkg.logoUrl) set("logoUrl", pkg.logoUrl);
     if (pkg.domain) set("domain", pkg.domain);
+    if (pkg.fontTitle) set("fontTitle", pkg.fontTitle);
+    if (pkg.fontBody) set("fontBody", pkg.fontBody);
     if (pkg.appStackId) setPendingStackId(pkg.appStackId);
     if (!values.name.trim()) handleNameChange(pkg.offerName);
   }
@@ -366,6 +369,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     colorBg: campaign?.colorBg ?? "oklch(0.16 0.04 265)",
     isActive: campaign?.isActive ?? true,
     domain: campaign?.domain ?? "",
+    fontTitle: campaign?.fontTitle ?? "",
+    fontBody: campaign?.fontBody ?? "",
   });
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
@@ -409,7 +414,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     startTransition(() => {
-      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null };
+      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null };
       if (campaign) update.mutate({ id: campaign.id, ...payload });
       else create.mutate(payload);
     });
@@ -637,6 +642,17 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                         <input type="color" className="h-9 w-10 cursor-pointer rounded-md p-0.5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }} value={toHex(values.colorBg)} onChange={(e) => set("colorBg", e.target.value)} />
                         <Input value={values.colorBg} onChange={(e) => set("colorBg", e.target.value)} placeholder="oklch(0.16 0.04 265)" style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }} />
                       </div>
+                    </Field>
+                  </div>
+                  {/* Fuentes */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Fuente de títulos">
+                      <Dropdown value={values.fontTitle} onChange={(v) => set("fontTitle", v)}
+                        options={[{ value: "", label: "Inter (default)" }, ...LANDING_FONTS.map((f) => ({ value: f, label: f }))]} />
+                    </Field>
+                    <Field label="Fuente de párrafos">
+                      <Dropdown value={values.fontBody} onChange={(v) => set("fontBody", v)}
+                        options={[{ value: "", label: "Inter (default)" }, ...LANDING_FONTS.map((f) => ({ value: f, label: f }))]} />
                     </Field>
                   </div>
                 </>

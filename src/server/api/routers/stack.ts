@@ -87,7 +87,7 @@ export const stackRouter = createTRPCRouter({
       }),
     ),
 
-  /** Setea el "paquete" de la oferta: color preset, logo preset y dominio. */
+  /** Setea el "paquete" de la oferta: color/logo/dominio + fuentes. */
   setOfferPackage: protectedProcedure
     .input(z.object({
       offerId:       z.string(),
@@ -95,6 +95,8 @@ export const stackRouter = createTRPCRouter({
       colorPresetId: z.string().nullable().optional(),
       logoPresetId:  z.string().nullable().optional(),
       domain:        z.string().nullable().optional(),
+      fontTitle:     z.string().nullable().optional(),
+      fontBody:      z.string().nullable().optional(),
     }))
     .mutation(({ ctx, input }) =>
       ctx.db.offerConfig.upsert({
@@ -104,11 +106,15 @@ export const stackRouter = createTRPCRouter({
           colorPresetId: input.colorPresetId ?? null,
           logoPresetId:  input.logoPresetId ?? null,
           domain:        input.domain ?? null,
+          fontTitle:     input.fontTitle ?? null,
+          fontBody:      input.fontBody ?? null,
         },
         update: {
           ...(input.colorPresetId !== undefined ? { colorPresetId: input.colorPresetId } : {}),
           ...(input.logoPresetId  !== undefined ? { logoPresetId:  input.logoPresetId  } : {}),
           ...(input.domain        !== undefined ? { domain:        input.domain        } : {}),
+          ...(input.fontTitle     !== undefined ? { fontTitle:     input.fontTitle     } : {}),
+          ...(input.fontBody      !== undefined ? { fontBody:      input.fontBody      } : {}),
         },
       }),
     ),
