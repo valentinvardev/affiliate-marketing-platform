@@ -174,7 +174,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
               </div>
             </section>
 
-            <SpendPanel campaignId={campaign.id} linked={linked} />
+            <SpendPanel campaignId={campaign.id} campaignName={campaign.name} linked={linked} />
           </div>
 
           {/* ── Stat tiles ── */}

@@ -3,14 +3,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
-import { CreditCard, Plus, Loader2, X, ChevronDown } from "lucide-react";
+import { CreditCard, Plus, Loader2, ChevronDown, Wallet } from "lucide-react";
+import { VccWallet } from "@/components/vcc-wallet";
 
 export type LinkedCard = { vccId: string; cardName: string; last4: string; currentSpend: number; spendLimit: number };
 
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
+const num = (n?: string) => { const m = /(\d+)\s*$/.exec(n ?? ""); return m ? parseInt(m[1]!) : 0; };
 
-export function SpendPanel({ campaignId, linked }: { campaignId: string; linked: LinkedCard[] }) {
+export function SpendPanel({ campaignId, campaignName, linked }: { campaignId: string; campaignName: string; linked: LinkedCard[] }) {
   const router = useRouter();
+  const [walletOpen, setWalletOpen] = useState(false);
   const cardsQ = api.cards.list.useQuery();
   const linkMut = api.cards.linkCampaign.useMutation({
     onSuccess: () => { void cardsQ.refetch(); router.refresh(); },
@@ -25,6 +28,10 @@ export function SpendPanel({ campaignId, linked }: { campaignId: string; linked:
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
+  const sorted = [...linked].sort((a, b) => num(b.cardName) - num(a.cardName));
+  const newest = sorted[0];
+  const totalSpend = linked.reduce((s, c) => s + c.currentSpend, 0);
+
   const linkedIds = new Set(linked.map((l) => l.vccId));
   const available = (cardsQ.data?.cards ?? []).filter((c) => c.status === "active" && !c.closedAt && !linkedIds.has(c.id));
   const connected = cardsQ.data?.connected ?? true;
@@ -34,38 +41,54 @@ export function SpendPanel({ campaignId, linked }: { campaignId: string; linked:
       <div className="mb-4 flex items-center gap-2">
         <CreditCard className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
         <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--color-subtle)" }}>Gasto rastreado</span>
+        {linked.length > 0 && (
+          <span className="ml-auto font-mono text-xs tabular-nums" style={{ color: "var(--color-error)" }}>{usd(totalSpend)}</span>
+        )}
       </div>
 
-      {/* Linked cards */}
-      <div className="space-y-2.5">
-        {linked.map((c) => {
-          const pct = c.spendLimit > 0 ? Math.min(100, (c.currentSpend / c.spendLimit) * 100) : 0;
-          return (
-            <div key={c.vccId} className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "linear-gradient(135deg, #1c1c1c, #0c0c0c)" }}>
-              <div className="flex items-center gap-2 px-3 py-2.5">
-                <span className="font-mono text-xs tracking-wider" style={{ color: "var(--color-foreground)" }}>•••• {c.last4}</span>
-                <span className="truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>{c.cardName}</span>
-                <span className="ml-auto font-mono text-xs tabular-nums" style={{ color: "var(--color-error)" }}>{usd(c.currentSpend)}</span>
-                <span className="font-mono text-[11px]" style={{ color: "var(--color-subtle)" }}>/ {usd(c.spendLimit)}</span>
-                <button type="button" onClick={() => linkMut.mutate({ vccId: c.vccId, campaignId: null })} disabled={linkMut.isPending} className="shrink-0 transition-opacity hover:opacity-70" style={{ color: "var(--color-subtle)" }} title="Desvincular">
-                  <X className="h-3.5 w-3.5" />
-                </button>
+      {/* Tarjeta más nueva */}
+      {newest ? (
+        <>
+          {(() => {
+            const pct = newest.spendLimit > 0 ? Math.min(100, (newest.currentSpend / newest.spendLimit) * 100) : 0;
+            return (
+              <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "linear-gradient(135deg, #1c1c1c, #0c0c0c)" }}>
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  <span className="font-mono text-xs tracking-wider" style={{ color: "var(--color-foreground)" }}>•••• {newest.last4}</span>
+                  <span className="truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>{newest.cardName}</span>
+                  <span className="ml-auto font-mono text-xs tabular-nums" style={{ color: "var(--color-error)" }}>{usd(newest.currentSpend)}</span>
+                  <span className="font-mono text-[11px]" style={{ color: "var(--color-subtle)" }}>/ {usd(newest.spendLimit)}</span>
+                </div>
+                <div className="h-1" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="h-full" style={{ width: `${pct}%`, background: pct > 85 ? "var(--color-error)" : "var(--color-muted-foreground)" }} />
+                </div>
               </div>
-              <div className="h-1" style={{ background: "rgba(255,255,255,0.06)" }}>
-                <div className="h-full" style={{ width: `${pct}%`, background: pct > 85 ? "var(--color-error)" : "var(--color-muted-foreground)" }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })()}
+          {sorted.length > 1 && (
+            <p className="mt-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>+{sorted.length - 1} tarjeta{sorted.length - 1 > 1 ? "s" : ""} más en la billetera</p>
+          )}
+        </>
+      ) : (
+        <p className="text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}>
+          Sin VCC todavía. Generá una desde la billetera para rastrear el gasto.
+        </p>
+      )}
 
-      {/* Link control */}
-      <div ref={ref} className="relative mt-3">
+      {/* Gestionar tarjetas (billetera) */}
+      <button type="button" onClick={() => setWalletOpen(true)}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+        style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+        <Wallet className="h-3.5 w-3.5" /> Gestionar tarjetas{linked.length ? ` (${linked.length})` : ""}
+      </button>
+
+      {/* Vincular existente (secundario) */}
+      <div ref={ref} className="relative mt-2">
         <button type="button" onClick={() => setOpen((o) => !o)}
           className="flex w-full items-center justify-center gap-1.5 rounded-md py-2 text-xs font-medium transition-colors"
           style={{ background: "var(--color-surface-overlay)", border: "1px dashed var(--color-border)", color: "var(--color-muted-foreground)" }}>
           {linkMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-          Vincular tarjeta
+          Vincular tarjeta existente
           <ChevronDown className="h-3 w-3" style={{ transform: open ? "rotate(180deg)" : "none" }} />
         </button>
         {open && (
@@ -93,11 +116,8 @@ export function SpendPanel({ campaignId, linked }: { campaignId: string; linked:
         )}
       </div>
 
-      {linked.length === 0 && (
-        <p className="mt-3 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}>
-          Vinculá una VCC para descontar su gasto del profit de este subid.
-        </p>
-      )}
+      <VccWallet campaignId={campaignId} campaignName={campaignName} open={walletOpen}
+        onClose={() => { setWalletOpen(false); void cardsQ.refetch(); router.refresh(); }} />
     </div>
   );
 }
