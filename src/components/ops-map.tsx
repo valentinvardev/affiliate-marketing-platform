@@ -25,17 +25,38 @@ function ortho(lon: number, lat: number, rot: Rot) {
   return { x: CX + x, y: CY - y, cosc };
 }
 
-function ringPath(ring: number[][], rot: Rot): string {
-  const pts = ring.map((p) => ortho(p[0]!, p[1]!, rot));
-  if (!pts.some((p) => p.cosc >= 0)) return ""; // anillo en la cara oculta
+/* Arco a lo largo del limbo (camino corto) entre dos ángulos. */
+function rimArc(a0: number, a1: number): string {
+  let delta = a1 - a0;
+  while (delta > Math.PI) delta -= 2 * Math.PI;
+  while (delta < -Math.PI) delta += 2 * Math.PI;
+  const steps = Math.max(1, Math.round(Math.abs(delta) / (Math.PI / 24)));
   let d = "";
-  for (let i = 0; i < pts.length; i++) {
-    let { x, y } = pts[i]!;
-    if (pts[i]!.cosc < 0) { // punto sobre el horizonte → pegarlo al limbo
-      const dx = x - CX, dy = y - CY, m = Math.hypot(dx, dy) || 1;
-      x = CX + (dx / m) * R; y = CY + (dy / m) * R;
+  for (let i = 1; i <= steps; i++) {
+    const a = a0 + (delta * i) / steps;
+    d += "L" + (CX + Math.cos(a) * R).toFixed(1) + "," + (CY + Math.sin(a) * R).toFixed(1);
+  }
+  return d;
+}
+
+function ringPath(ring: number[][], rot: Rot): string {
+  const P = ring.map((p) => ortho(p[0]!, p[1]!, rot));
+  const n = P.length;
+  if (!P.some((p) => p.cosc >= 0)) return ""; // anillo entero en la cara oculta
+  const ang = (p: { x: number; y: number }) => Math.atan2(p.y - CY, p.x - CX);
+  let s = 0; while (s < n && P[s]!.cosc < 0) s++; // arrancar en un vértice visible
+  let d = "", started = false, hidden = false, exitA = 0;
+  for (let k = 0; k <= n; k++) {
+    const cur = P[(s + k) % n]!;
+    if (cur.cosc >= 0) {
+      if (hidden) { d += rimArc(exitA, ang(cur)); hidden = false; } // volver siguiendo el limbo
+      d += (started ? "L" : "M") + cur.x.toFixed(1) + "," + cur.y.toFixed(1);
+      started = true;
+    } else if (!hidden) { // primer punto oculto: salir al limbo y dejar de dibujar el interior
+      exitA = ang(cur);
+      d += "L" + (CX + Math.cos(exitA) * R).toFixed(1) + "," + (CY + Math.sin(exitA) * R).toFixed(1);
+      hidden = true;
     }
-    d += (i === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1);
   }
   return d + "Z";
 }
@@ -94,7 +115,8 @@ export function OpsMap() {
     const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y;
     if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true;
     drag.current.x = e.clientX; drag.current.y = e.clientY;
-    setRot((r) => ({ lam: r.lam + dx * 0.4, phi: Math.max(-85, Math.min(85, r.phi - dy * 0.4)) }));
+    // La superficie sigue al cursor (arrastrar a la derecha → el globo gira a la derecha).
+    setRot((r) => ({ lam: r.lam - dx * 0.4, phi: Math.max(-85, Math.min(85, r.phi + dy * 0.4)) }));
   }
   function onUp() { drag.current = null; }
 
