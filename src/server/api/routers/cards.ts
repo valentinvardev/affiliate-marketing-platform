@@ -87,9 +87,9 @@ export const cardsRouter = createTRPCRouter({
       const owner = await ctx.db.cardOwner.findUnique({ where: { vccId: input.vccId } });
       if (!isAdmin && owner?.userId !== me) throw new Error("No es tu tarjeta");
       const { ok, data } = await suiteFetch(`vcc/${input.vccId}/increase-limit`, {
-        method: "POST", body: JSON.stringify({ spendLimit: input.spendLimit }),
+        method: "POST", body: JSON.stringify({ newLimit: input.spendLimit }), // TapRain espera "newLimit"
       });
-      if (!ok) throw new Error((data.message as string) ?? "No se pudo actualizar el límite");
+      if (!ok) throw new Error((data.message as string) ?? (data.error as string) ?? "No se pudo actualizar el límite");
       return data;
     }),
 

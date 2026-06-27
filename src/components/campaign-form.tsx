@@ -288,7 +288,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         fontTitle:    pkg.fontTitle ?? "",
         fontBody:     pkg.fontBody ?? "",
         name:         autoName ? pkg.offerName : p.name,
-        slug:         autoName ? slugify(pkg.offerName) : p.slug,
+        // el slug (subid) se define en "Buscar oferta", no acá
       };
     });
     // Apps sueltas tienen prioridad sobre el stack (ofertas tipo teststar/empfohlen).
@@ -354,7 +354,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   });
 
   function set<K extends keyof FormValues>(key: K, val: FormValues[K]) { setValues((p) => ({ ...p, [key]: val })); }
-  function handleNameChange(name: string) { set("name", name); if (!campaign) set("slug", slugify(name)); }
+  function handleNameChange(name: string) { set("name", name); }
   function handleLocaleChange(locale: string) {
     set("locale", locale);
     const loc = LOCALES.find((l) => l.code === locale);
@@ -570,9 +570,11 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                   {/* URL pública resultante (slug automático) */}
                   <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
                     style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-                    <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: values.domain ? "var(--color-success)" : "var(--color-subtle)" }} />
-                    <span className="truncate font-mono" style={{ color: values.domain ? "var(--color-foreground)" : "var(--color-subtle)" }}>
-                      {values.domain ? `https://${values.domain}/${values.slug || "…"}` : `s1 / slug: ${values.slug || "—"}`}
+                    <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: values.slug ? "var(--color-success)" : "var(--color-subtle)" }} />
+                    <span className="truncate font-mono" style={{ color: values.slug ? "var(--color-foreground)" : "var(--color-subtle)" }}>
+                      {values.slug
+                        ? (values.domain ? `https://${values.domain}/${values.slug}` : `s1 / slug: ${values.slug}`)
+                        : "El subid se define en 'Buscar oferta' (paso Oferta)"}
                     </span>
                   </div>
                 </>
