@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import ReactCountryFlag from "react-country-flag";
@@ -11,29 +11,54 @@ type Geometry = { type: "Polygon" | "MultiPolygon"; coordinates: number[][][] | 
 type Feature = { id: string; properties: { name: string }; geometry: Geometry };
 type FC = { features: Feature[] };
 
-/* Ventana de proyección: Norteamérica + Europa (plate carrée). */
-const LON0 = -130, LON1 = 32, LAT0 = 23, LAT1 = 72;
-const VW = 960;
-const VH = Math.round((VW * (LAT1 - LAT0)) / (LON1 - LON0)); // ≈ 290
+/* ── Globo: proyección ortográfica ── */
+const SIZE = 640, CX = SIZE / 2, CY = SIZE / 2, R = 300;
+const DEG = Math.PI / 180;
 
-function project(lon: number, lat: number): [number, number] {
-  return [((lon - LON0) / (LON1 - LON0)) * VW, ((LAT1 - lat) / (LAT1 - LAT0)) * VH];
+type Rot = { lam: number; phi: number };
+
+function ortho(lon: number, lat: number, rot: Rot) {
+  const λ = lon * DEG, φ = lat * DEG, λ0 = rot.lam * DEG, φ0 = rot.phi * DEG;
+  const cosc = Math.sin(φ0) * Math.sin(φ) + Math.cos(φ0) * Math.cos(φ) * Math.cos(λ - λ0);
+  const x = R * Math.cos(φ) * Math.sin(λ - λ0);
+  const y = R * (Math.cos(φ0) * Math.sin(φ) - Math.sin(φ0) * Math.cos(φ) * Math.cos(λ - λ0));
+  return { x: CX + x, y: CY - y, cosc };
 }
-function ringPath(ring: number[][]): string {
-  // Descartar anillos que cruzan el antimeridiano (evita rayas horizontales: Alaska/Rusia).
-  let minLon = Infinity, maxLon = -Infinity;
-  for (const p of ring) { const lon = p[0]!; if (lon < minLon) minLon = lon; if (lon > maxLon) maxLon = lon; }
-  if (maxLon - minLon > 200) return "";
+
+function ringPath(ring: number[][], rot: Rot): string {
+  const pts = ring.map((p) => ortho(p[0]!, p[1]!, rot));
+  if (!pts.some((p) => p.cosc >= 0)) return ""; // anillo en la cara oculta
   let d = "";
-  for (let i = 0; i < ring.length; i++) {
-    const [x, y] = project(ring[i]![0]!, ring[i]![1]!);
+  for (let i = 0; i < pts.length; i++) {
+    let { x, y } = pts[i]!;
+    if (pts[i]!.cosc < 0) { // punto sobre el horizonte → pegarlo al limbo
+      const dx = x - CX, dy = y - CY, m = Math.hypot(dx, dy) || 1;
+      x = CX + (dx / m) * R; y = CY + (dy / m) * R;
+    }
     d += (i === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1);
   }
   return d + "Z";
 }
-function geomPath(g: Geometry): string {
-  if (g.type === "Polygon") return (g.coordinates as number[][][]).map(ringPath).join("");
-  return (g.coordinates as number[][][][]).flatMap((p) => p.map(ringPath)).join("");
+function geomPath(g: Geometry, rot: Rot): string {
+  if (g.type === "Polygon") return (g.coordinates as number[][][]).map((r) => ringPath(r, rot)).join("");
+  return (g.coordinates as number[][][][]).flatMap((poly) => poly.map((r) => ringPath(r, rot))).join("");
+}
+
+/* Retícula (meridianos + paralelos), cortando en el horizonte. */
+function graticule(rot: Rot): string {
+  const seg: string[] = [];
+  const line = (pts: [number, number][]) => {
+    let d = "", pen = false;
+    for (const [lo, la] of pts) {
+      const p = ortho(lo, la, rot);
+      if (p.cosc < 0) { pen = false; continue; }
+      d += (pen ? "L" : "M") + p.x.toFixed(1) + "," + p.y.toFixed(1); pen = true;
+    }
+    if (d) seg.push(d);
+  };
+  for (let lo = -180; lo < 180; lo += 30) { const pts: [number, number][] = []; for (let la = -90; la <= 90; la += 4) pts.push([lo, la]); line(pts); }
+  for (let la = -60; la <= 60; la += 30) { const pts: [number, number][] = []; for (let lo = -180; lo <= 180; lo += 4) pts.push([lo, la]); line(pts); }
+  return seg.join("");
 }
 
 const TARGET_BY_ID = new Map(TARGET_COUNTRIES.map((c) => [c.id, c]));
@@ -42,6 +67,9 @@ export function OpsMap() {
   const [fc, setFc] = useState<FC | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [selected, setSelected] = useState<TargetCountry | null>(null);
+  const [rot, setRot] = useState<Rot>({ lam: -40, phi: 40 });
+
+  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -50,22 +78,29 @@ export function OpsMap() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
-  // Estado operable por país (recalcula cada tick).
-  const rows = useMemo(() => {
-    return TARGET_COUNTRIES.map((c) => {
-      const { minutes, label } = localClock(c.timezone, now);
-      return { c, label, open: isOperable(minutes) };
-    }).sort((a, b) => (a.open === b.open ? a.c.name.localeCompare(b.c.name) : a.open ? -1 : 1));
-  }, [now]);
+  const rows = useMemo(() => TARGET_COUNTRIES.map((c) => {
+    const { minutes, label } = localClock(c.timezone, now);
+    return { c, label, open: isOperable(minutes) };
+  }).sort((a, b) => (a.open === b.open ? a.c.name.localeCompare(b.c.name) : a.open ? -1 : 1)), [now]);
   const openById = useMemo(() => new Map(rows.map((r) => [r.c.id, r.open])), [rows]);
   const openCount = rows.filter((r) => r.open).length;
 
-  // Paths precomputados (no cambian con el reloj).
-  const paths = useMemo(() => fc?.features.map((f) => ({ id: f.id, d: geomPath(f.geometry) })) ?? [], [fc]);
+  const grat = useMemo(() => graticule(rot), [rot]);
+  const paths = useMemo(() => fc?.features.map((f) => ({ id: f.id, d: geomPath(f.geometry, rot) })).filter((p) => p.d) ?? [], [fc, rot]);
+
+  function onDown(e: React.PointerEvent) { drag.current = { x: e.clientX, y: e.clientY, moved: false }; (e.target as Element).setPointerCapture?.(e.pointerId); }
+  function onMove(e: React.PointerEvent) {
+    if (!drag.current) return;
+    const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true;
+    drag.current.x = e.clientX; drag.current.y = e.clientY;
+    setRot((r) => ({ lam: r.lam + dx * 0.4, phi: Math.max(-85, Math.min(85, r.phi - dy * 0.4)) }));
+  }
+  function onUp() { drag.current = null; }
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* ── Mapa ── */}
+      {/* ── Globo ── */}
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
           <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Mapa de operaciones</h1>
@@ -74,30 +109,55 @@ export function OpsMap() {
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-success)" }} />
             {openCount} operando
           </span>
-          <span className="ml-auto hidden text-[11px] sm:inline" style={{ color: "var(--color-subtle)" }}>Horario local {OP_LABEL}</span>
+          <span className="ml-auto hidden text-[11px] sm:inline" style={{ color: "var(--color-subtle)" }}>Arrastrá para rotar · operable {OP_LABEL} local</span>
         </header>
 
         <div className="flex flex-1 items-center justify-center p-4 md:p-8">
-          <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full" style={{ maxHeight: "72vh" }} role="img" aria-label="Mapa de países objetivo">
+          <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full select-none" style={{ maxHeight: "74vh", touchAction: "none", cursor: drag.current ? "grabbing" : "grab" }}
+            role="img" aria-label="Globo de países objetivo"
+            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
+            <defs>
+              <radialGradient id="ocean" cx="38%" cy="32%" r="75%">
+                <stop offset="0%" stopColor="#15171b" />
+                <stop offset="70%" stopColor="#0c0d10" />
+                <stop offset="100%" stopColor="#070708" />
+              </radialGradient>
+              <radialGradient id="atmo" cx="50%" cy="50%" r="50%">
+                <stop offset="92%" stopColor="rgba(120,160,220,0)" />
+                <stop offset="100%" stopColor="rgba(120,160,220,0.18)" />
+              </radialGradient>
+            </defs>
+
+            {/* atmósfera + océano */}
+            <circle cx={CX} cy={CY} r={R + 14} fill="url(#atmo)" />
+            <circle cx={CX} cy={CY} r={R} fill="url(#ocean)" stroke="var(--color-border)" strokeWidth={1} />
+
+            {/* retícula */}
+            <path d={grat} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={0.6} />
+
+            {/* países */}
             {paths.map((p) => {
               const target = TARGET_BY_ID.get(p.id);
               const open = target ? openById.get(p.id) : false;
-              const fill = !target ? "var(--color-surface)" : open ? "var(--color-success)" : "var(--color-surface-overlay)";
-              const stroke = !target ? "var(--color-border)" : open ? "rgba(255,255,255,0.45)" : "var(--color-subtle)";
+              const fill = !target ? "#23262c" : open ? "var(--color-success)" : "var(--color-surface-overlay)";
+              const stroke = !target ? "rgba(0,0,0,0.4)" : open ? "rgba(255,255,255,0.5)" : "var(--color-subtle)";
               return (
                 <path key={p.id} d={p.d}
                   className={open ? "ops-open" : undefined}
-                  onClick={target && open ? () => setSelected(target) : undefined}
+                  onClick={target && open ? () => { if (!drag.current?.moved) setSelected(target); } : undefined}
                   style={{
                     fill, stroke, strokeWidth: 0.5,
-                    fillOpacity: !target ? 1 : open ? 0.9 : 0.85,
-                    cursor: target && open ? "pointer" : "default",
+                    fillOpacity: !target ? 1 : open ? 0.92 : 0.9,
+                    cursor: target && open ? "pointer" : "inherit",
                     transition: "fill .3s ease, fill-opacity .3s ease",
                   }}>
-                  <title>{target ? `${target.name}${open ? " · operando" : " · cerrado"}` : p.id}</title>
+                  <title>{target ? `${target.name}${open ? " · operando" : " · cerrado"}` : ""}</title>
                 </path>
               );
             })}
+
+            {/* brillo del limbo */}
+            <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth={1.5} />
           </svg>
         </div>
       </main>
