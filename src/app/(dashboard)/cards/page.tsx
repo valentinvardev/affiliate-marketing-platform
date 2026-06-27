@@ -83,8 +83,9 @@ export default function CardsPage() {
   const [form, setForm] = useState({ name: "", limit: "", bin: "", campaign: "" });
 
   // Modales límite / cerrar
-  const [limitModal, setLimitModal] = useState<{ id: string; name: string } | null>(null);
+  const [limitModal, setLimitModal] = useState<{ id: string; name: string; currentLimit: number } | null>(null);
   const [limitValue, setLimitValue] = useState("");
+  const [limitStatus, setLimitStatus] = useState<"idle" | "success" | "error">("idle");
   const [closeModal, setCloseModal] = useState<{ id: string; name: string } | null>(null);
 
   // Conexión de sesión (cookie guardada en DB)
@@ -119,8 +120,12 @@ export default function CardsPage() {
   }
 
   const incMut = api.cards.increaseLimit.useMutation({
-    onSuccess: () => { setLimitModal(null); setLimitValue(""); void cardsQuery.refetch(); },
-    onError:   (e) => alert(e.message),
+    onSuccess: () => {
+      setLimitStatus("success");
+      void cardsQuery.refetch();
+      setTimeout(() => { setLimitModal(null); setLimitValue(""); setLimitStatus("idle"); }, 1300);
+    },
+    onError: () => setLimitStatus("error"),
   });
   const closeMut = api.cards.close.useMutation({
     onSuccess: () => { setCloseModal(null); void cardsQuery.refetch(); },
@@ -128,10 +133,15 @@ export default function CardsPage() {
   });
   const syncMut = api.cards.syncSpend.useMutation();
 
-  function openLimit(id: string, name: string) { setLimitValue(""); setLimitModal({ id, name }); }
+  function openLimit(id: string, name: string, currentLimit: number) {
+    setLimitValue(""); setLimitStatus("idle"); setLimitModal({ id, name, currentLimit });
+  }
   function confirmLimit() {
     if (!limitModal || !limitValue) return;
-    incMut.mutate({ vccId: limitModal.id, spendLimit: parseFloat(limitValue) });
+    setLimitStatus("idle");
+    const add = parseFloat(limitValue) || 0;
+    if (add <= 0) return;
+    incMut.mutate({ vccId: limitModal.id, spendLimit: limitModal.currentLimit + add });
   }
 
   async function syncSpend(id: string) {
@@ -309,7 +319,7 @@ export default function CardsPage() {
                               <Copy className="h-3 w-3" /> Copiar
                             </ActionBtn>
                           )}
-                          <ActionBtn onClick={() => openLimit(c.id, c.cardName ?? "tarjeta")}>
+                          <ActionBtn onClick={() => openLimit(c.id, c.cardName ?? "tarjeta", c.spendLimit ?? 0)}>
                             <ArrowUpCircle className="h-3 w-3" /> Límite
                           </ActionBtn>
                           <ActionBtn onClick={() => syncSpend(c.id)} disabled={busy === c.id}>
@@ -380,32 +390,72 @@ export default function CardsPage() {
       )}
 
       {/* Modal subir límite */}
-      {limitModal && (
+      {limitModal && (() => {
+        const add = parseFloat(limitValue) || 0;
+        const current = limitModal.currentLimit;
+        const newTotal = current + add;
+        return (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onMouseDown={(e) => { if (e.target === e.currentTarget && !incMut.isPending) setLimitModal(null); }}
         >
-          <div className="w-full max-w-xs rounded-2xl p-5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Nuevo límite</p>
-              <button type="button" onClick={() => setLimitModal(null)} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
-            </div>
-            <p className="mb-3 truncate text-xs" style={{ color: "var(--color-muted-foreground)" }}>{limitModal.name}</p>
-            <Input value={limitValue} onChange={setLimitValue} placeholder="Límite (USD)" type="number" />
-            <button
-              type="button"
-              onClick={confirmLimit}
-              disabled={incMut.isPending || !limitValue}
-              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-md py-2.5 text-sm font-semibold disabled:opacity-40"
-              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-            >
-              {incMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUpCircle className="h-3.5 w-3.5" />}
-              Actualizar límite
-            </button>
+          <style>{`
+            @keyframes cardPop { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+            @keyframes cardShake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+          `}</style>
+          <div className="w-full max-w-xs rounded-2xl p-5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", animation: limitStatus === "error" ? "cardShake .4s" : undefined }}>
+            {limitStatus === "success" ? (
+              <div className="flex flex-col items-center py-4 text-center">
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--color-success)", display: "flex", alignItems: "center", justifyContent: "center", animation: "cardPop .45s cubic-bezier(0.175,0.885,0.32,1.275)" }}>
+                  <Check className="h-7 w-7" style={{ color: "#000" }} />
+                </div>
+                <p className="mt-3 text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>¡Límite actualizado!</p>
+                <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Nuevo límite {usd(newTotal)}</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-1 flex items-center justify-between">
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Sumar al límite</p>
+                  <button type="button" onClick={() => setLimitModal(null)} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+                </div>
+                <p className="mb-4 truncate text-xs" style={{ color: "var(--color-muted-foreground)" }}>{limitModal.name}</p>
+
+                <label className="mb-1 block text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>¿Cuánto querés sumar? (USD)</label>
+                <Input value={limitValue} onChange={(v) => { setLimitValue(v); if (limitStatus === "error") setLimitStatus("idle"); }} placeholder="50" type="number" />
+
+                {/* Cálculo en vivo */}
+                <div className="mt-3 flex items-center justify-between rounded-lg px-3 py-2.5 text-sm" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+                  <span style={{ color: "var(--color-muted-foreground)" }}>
+                    {usd(current)} <span style={{ color: "var(--color-subtle)" }}>+</span> {usd(add)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-semibold tabular-nums" style={{ color: "var(--color-foreground)" }}>
+                    = {usd(newTotal)}
+                  </span>
+                </div>
+
+                {limitStatus === "error" && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}>
+                    <AlertTriangle className="h-3.5 w-3.5" /> {incMut.error?.message ?? "No se pudo actualizar el límite"}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={confirmLimit}
+                  disabled={incMut.isPending || add <= 0}
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-md py-2.5 text-sm font-semibold disabled:opacity-40"
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+                >
+                  {incMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUpCircle className="h-3.5 w-3.5" />}
+                  {add > 0 ? `Subir a ${usd(newTotal)}` : "Subir límite"}
+                </button>
+              </>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Modal cerrar tarjeta */}
       {closeModal && (
