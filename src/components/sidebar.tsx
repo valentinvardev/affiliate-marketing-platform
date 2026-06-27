@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 
@@ -46,9 +46,12 @@ export function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const nav = isAdmin
-    ? [...NAV_BASE, { href: "/admin", icon: ShieldCheck, label: "Admin" }]
-    : NAV_BASE;
+  const isEstrategista = session?.user?.role === "estrategista";
+  const nav = [
+    ...NAV_BASE,
+    ...(isEstrategista ? [{ href: "/equipo", icon: Users, label: "Mi equipo" }] : []),
+    ...(isAdmin ? [{ href: "/admin", icon: ShieldCheck, label: "Admin" }] : []),
+  ];
 
   return (
     <>
