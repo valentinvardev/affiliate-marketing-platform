@@ -7,9 +7,16 @@ import { SessionProvider } from "@/components/session-provider";
 import { LiveChatProvider } from "@/components/live-chat";
 
 export const metadata: Metadata = {
-  title: { default: "Aff CMS", template: "%s — Aff CMS" },
-  description: "Gestor de plantillas de afiliados",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  title: { default: "TapSur", template: "%s — TapSur" },
+  description: "TapSur — command center de marketing de afiliados",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export const viewport: Viewport = {
