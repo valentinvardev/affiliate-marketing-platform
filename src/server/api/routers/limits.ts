@@ -1,10 +1,33 @@
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/api/trpc";
 import { suiteFetch } from "@/lib/suite";
-import { MAX_CARDS_PER_USER, DAILY_SPEND_CAP_USD, todayKey } from "@/lib/limits";
+import { getLimits, todayKey, LIMIT_KEY_MAX_CARDS, LIMIT_KEY_DAILY_CAP } from "@/lib/limits";
 
 type RawVcc = { id: string; status?: string; currentSpend?: number; [k: string]: unknown };
 
 export const limitsRouter = createTRPCRouter({
+  /** Límites configurados (admin). */
+  config: adminProcedure.query(({ ctx }) => getLimits(ctx.db)),
+
+  /** Edita los límites de VCC (admin). */
+  setConfig: adminProcedure
+    .input(z.object({
+      maxCards: z.number().int().min(1).max(50),
+      dailyCap: z.number().min(1).max(100000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.appConfig.upsert({
+        where: { key: LIMIT_KEY_MAX_CARDS },
+        create: { key: LIMIT_KEY_MAX_CARDS, value: String(input.maxCards) },
+        update: { value: String(input.maxCards) },
+      });
+      await ctx.db.appConfig.upsert({
+        where: { key: LIMIT_KEY_DAILY_CAP },
+        create: { key: LIMIT_KEY_DAILY_CAP, value: String(input.dailyCap) },
+        update: { value: String(input.dailyCap) },
+      });
+      return { maxCards: input.maxCards, dailyCap: input.dailyCap };
+    }),
   /**
    * Estado del límite de tarjetas del usuario logueado. Calcula el gasto del día
    * (total acumulado − baseline al inicio del día) y, si cruza el cap, pausa sus
@@ -12,9 +35,10 @@ export const limitsRouter = createTRPCRouter({
    */
   status: protectedProcedure.query(async ({ ctx }) => {
     const me = ctx.session.user.id;
+    const { maxCards, dailyCap } = await getLimits(ctx.db);
     const out = {
-      cardCount: 0, maxCards: MAX_CARDS_PER_USER,
-      spentToday: 0, dailyCap: DAILY_SPEND_CAP_USD,
+      cardCount: 0, maxCards,
+      spentToday: 0, dailyCap,
       reached: false, connected: true,
     };
 
@@ -43,7 +67,7 @@ export const limitsRouter = createTRPCRouter({
 
     const spentToday = Math.max(0, currentTotal - guard.baseline);
     out.spentToday = spentToday;
-    out.reached = spentToday >= DAILY_SPEND_CAP_USD;
+    out.reached = spentToday >= dailyCap;
 
     // Auto-pausa al cruzar el cap (una sola vez por día).
     if (out.reached && !guard.pausedAt) {
