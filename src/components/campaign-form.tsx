@@ -400,21 +400,36 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
   /* ── Pasos ── */
   const hasStacks = stacks.length > 0;
-  const stepDefs = [
-    { key: "identidad", label: "Identidad", icon: Tag,    done: !!values.name },
-    { key: "mercado",   label: "Mercado",   icon: Globe,  done: !!values.locale && !!values.currencyCode },
-    { key: "oferta",    label: "Oferta",    icon: LinkIcon, done: ctaStatus === "valid" },
-    { key: "marca",     label: "Marca",     icon: Palette, done: !!values.colorPrimary && !!values.colorBg },
-    ...(hasStacks ? [{ key: "apps", label: "Apps", icon: Layers, done: true }] : []),
-    { key: "lanzar",    label: "Lanzar",    icon: Rocket, done: false },
-  ] as const;
-
   const [active, setActive] = useState<string>("identidad");
+  const [visited, setVisited] = useState<Set<string>>(() => new Set(["identidad"]));
+  useEffect(() => { setVisited((v) => (v.has(active) ? v : new Set(v).add(active))); }, [active]);
+
+  // Campos no opcionales de cada paso. Sólo cuando se cumplen el paso queda "hecho".
+  function stepValid(key: string): boolean {
+    switch (key) {
+      case "identidad": return !!values.name.trim();
+      case "mercado":   return !!values.locale && !!values.currencyCode;
+      case "oferta":    return ctaStatus === "valid";
+      case "marca":     return !!values.colorPrimary && !!values.colorBg;
+      default:          return true; // apps (opcional), lanzar
+    }
+  }
+
+  const stepDefs = [
+    { key: "identidad", label: "Identidad", icon: Tag },
+    { key: "mercado",   label: "Mercado",   icon: Globe },
+    { key: "oferta",    label: "Oferta",    icon: LinkIcon },
+    { key: "marca",     label: "Marca",     icon: Palette },
+    ...(hasStacks ? [{ key: "apps", label: "Apps", icon: Layers }] : []),
+    { key: "lanzar",    label: "Lanzar",    icon: Rocket },
+  ].map((s) => ({ ...s, done: s.key !== "lanzar" && visited.has(s.key) && stepValid(s.key) }));
+
   const contentSteps = stepDefs.filter((s) => s.key !== "lanzar");
   const progress = Math.round((contentSteps.filter((s) => s.done).length / contentSteps.length) * 100);
   const canSubmit = !isSaving && ctaStatus !== "invalid" && !!values.name && !!values.ctaUrl;
   const idx = stepDefs.findIndex((s) => s.key === active);
   const next = stepDefs[idx + 1];
+  const isLanzar = active === "lanzar";
 
   // Offers para el preview: apps sueltas > stack > default
   const previewOffers: PreviewOffer[] = pendingAppIds.length
@@ -579,16 +594,16 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     />
                   </Field>
 
-                  {/* URL pública resultante (slug automático) */}
-                  <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
-                    style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-                    <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: values.slug ? "var(--color-success)" : "var(--color-subtle)" }} />
-                    <span className="truncate font-mono" style={{ color: values.slug ? "var(--color-foreground)" : "var(--color-subtle)" }}>
-                      {values.slug
-                        ? (values.domain ? `https://${values.domain}/${values.slug}` : `s1 / slug: ${values.slug}`)
-                        : "El subid se define en 'Buscar oferta' (paso Oferta)"}
-                    </span>
-                  </div>
+                  {/* URL pública resultante — sólo cuando ya hay slug (lo trae "Buscar oferta") */}
+                  {values.slug && (
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
+                      style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                      <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
+                      <span className="truncate font-mono" style={{ color: "var(--color-foreground)" }}>
+                        {values.domain ? `https://${values.domain}/${values.slug}` : `slug: ${values.slug}`}
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -763,13 +778,6 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                   {error && <p className="rounded-md px-3 py-2 text-xs" style={{ color: "var(--color-error)", background: "var(--color-error-bg)" }}>{error}</p>}
                 </>
               )}
-
-              {/* Siguiente */}
-              {next && (
-                <button type="button" onClick={() => setActive(next.key)} className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>
-                  Siguiente: {next.label} <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -796,12 +804,20 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
             <Smartphone className="h-3.5 w-3.5" />Preview
           </button>
           <button type="button" onClick={() => router.back()} className="rounded-md px-3 py-2 text-sm transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
-          <button type="button" onClick={() => handleSubmit()} disabled={!canSubmit}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-40 sm:flex-none"
-            style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
-            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
-            {campaign ? "Guardar cambios" : "Crear campaña"}
-          </button>
+          {!isEdit && !isLanzar ? (
+            <button key="next" type="button" disabled={!stepValid(active)} onClick={() => next && setActive(next.key)}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-40 sm:flex-none"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+              Siguiente <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button key="submit" type="button" onClick={() => handleSubmit()} disabled={!canSubmit}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-40 sm:flex-none"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)", animation: !isEdit ? "lpPop .4s cubic-bezier(0.175,0.885,0.32,1.275)" : undefined }}>
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
+              {campaign ? "Guardar cambios" : "Crear campaña"}
+            </button>
+          )}
         </div>
       </div>
 

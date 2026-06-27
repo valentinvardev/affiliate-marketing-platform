@@ -29,7 +29,7 @@ export function VccWallet({
   const num = (n?: string) => { const m = /(\d+)\s*$/.exec(n ?? ""); return m ? parseInt(m[1]!) : 0; };
   const sorted = [...cards].sort((a, b) => num(b.cardName) - num(a.cardName));
 
-  const [active, setActive] = useState<string | null>(null);
+  const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [limitFor, setLimitFor] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -38,11 +38,9 @@ export function VccWallet({
   const sync = api.cards.syncSpend.useMutation({ onSettled: refresh });
   const inc = api.cards.increaseLimit.useMutation({ onSuccess: () => { setLimitFor(null); refresh(); } });
   const close = api.cards.close.useMutation({ onSuccess: refresh });
-  const createVcc = api.cards.createForCampaign.useMutation({ onSuccess: () => { setCreating(false); refresh(); } });
+  const createVcc = api.cards.createForCampaign.useMutation({ onSuccess: () => { setCreating(false); setIdx(0); refresh(); } });
 
   if (!open) return null;
-
-  const activeId = active ?? sorted[0]?.id ?? null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)" }}
@@ -77,7 +75,7 @@ export function VccWallet({
           )}
         </div>
 
-        {/* Solapitas */}
+        {/* Carrusel de tarjetas */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {cardsQ.isLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
@@ -85,68 +83,68 @@ export function VccWallet({
             <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Conectá la sesión de TapRain en Tarjetas.</p>
           ) : sorted.length === 0 ? (
             <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Esta campaña no tiene VCCs. Generá una arriba.</p>
-          ) : (
-            <div className="flex flex-col">
-              {sorted.map((c, i) => {
-                const isOpen = activeId === c.id;
-                const rv = !!revealed[c.id];
-                const spent = c.currentSpend ?? 0, lim = c.spendLimit ?? 0;
-                const pct = lim > 0 ? Math.min(100, (spent / lim) * 100) : 0;
-                return (
-                  <div key={c.id} style={{ marginTop: i === 0 ? 0 : isOpen ? 14 : -56, transition: "margin .3s cubic-bezier(0.22,1,0.36,1)", zIndex: isOpen ? 30 : i }}>
-                    {/* Card face */}
-                    <div role="button" tabIndex={0} onClick={() => setActive(isOpen ? null : c.id)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(isOpen ? null : c.id); } }}
-                      className="block w-full cursor-pointer text-left">
-                      <CardFace card={c} revealed={rv} dim={!isOpen} />
-                    </div>
+          ) : (() => {
+            const i = Math.min(idx, sorted.length - 1);
+            const c = sorted[i]!;
+            const rv = !!revealed[c.id];
+            const spent = c.currentSpend ?? 0, lim = c.spendLimit ?? 0;
+            const pct = lim > 0 ? Math.min(100, (spent / lim) * 100) : 0;
+            return (
+              <div>
+                <CardFace card={c} revealed={rv} />
 
-                    {/* Detalle + acciones (solo la activa) */}
-                    {isOpen && (
-                      <div className="mt-2 rounded-xl p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-                        {/* gasto */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span style={{ color: "var(--color-muted-foreground)" }}>Gasto</span>
-                          <span className="font-mono tabular-nums" style={{ color: "var(--color-foreground)" }}>{usd(spent)} / {usd(lim)}</span>
-                        </div>
-                        <div className="mt-1 h-1 overflow-hidden rounded-full" style={{ background: "var(--color-surface-raised)" }}>
-                          <div style={{ width: `${pct}%`, height: "100%", background: pct > 90 ? "var(--color-error)" : "var(--color-success)" }} />
-                        </div>
+                {/* Dots */}
+                {sorted.length > 1 && (
+                  <div className="mt-3.5 flex items-center justify-center gap-2">
+                    {sorted.map((card, j) => (
+                      <button key={card.id} type="button" onClick={() => setIdx(j)} aria-label={`Tarjeta ${j + 1}`}
+                        className="h-2 rounded-full transition-all" style={{ width: j === i ? 20 : 8, background: j === i ? "var(--color-foreground)" : "var(--color-border)" }} />
+                    ))}
+                  </div>
+                )}
 
-                        {/* acciones */}
-                        <div className="mt-3 flex items-center gap-1.5">
-                          <IconBtn title={rv ? "Ocultar datos" : "Revelar datos"} onClick={() => setRevealed((r) => ({ ...r, [c.id]: !rv }))}>
-                            {rv ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          </IconBtn>
-                          <ActionBtn onClick={() => setLimitFor(limitFor === c.id ? null : c.id)}>
-                            <ArrowUpCircle className="h-3.5 w-3.5" /> Subir límite
-                          </ActionBtn>
-                          <IconBtn title="Sincronizar gasto" disabled={sync.isPending} onClick={() => sync.mutate({ vccId: c.id })}>
-                            <RefreshCw className={`h-3.5 w-3.5 ${sync.isPending ? "animate-spin" : ""}`} />
-                          </IconBtn>
-                          {!c.closedAt && (
-                            <button type="button" disabled={close.isPending}
-                              onClick={() => { if (confirm(`¿Cerrar ${c.cardName}? Se pausa la tarjeta.`)) close.mutate({ vccId: c.id }); }}
-                              className="ml-auto inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
-                              style={{ border: "1px solid var(--color-border)", color: "var(--color-error)" }}>
-                              <XCircle className="h-3.5 w-3.5" /> Cerrar
-                            </button>
-                          )}
-                        </div>
+                {/* Detalle + acciones */}
+                <div className="mt-3.5 rounded-xl p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                  {/* gasto */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span style={{ color: "var(--color-muted-foreground)" }}>Gasto</span>
+                    <span className="font-mono tabular-nums" style={{ color: "var(--color-foreground)" }}>{usd(spent)} / {usd(lim)}</span>
+                  </div>
+                  <div className="mt-1 h-1 overflow-hidden rounded-full" style={{ background: "var(--color-surface-raised)" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: pct > 90 ? "var(--color-error)" : "var(--color-success)" }} />
+                  </div>
 
-                        {/* subir límite inline */}
-                        {limitFor === c.id && (
-                          <LimitForm current={lim} pending={inc.isPending} error={inc.error?.message ?? null}
-                            onCancel={() => setLimitFor(null)}
-                            onConfirm={(add) => inc.mutate({ vccId: c.id, spendLimit: lim + add })} />
-                        )}
-                      </div>
+                  {/* acciones */}
+                  <div className="mt-3 flex items-center gap-1.5">
+                    <IconBtn title={rv ? "Ocultar datos" : "Revelar datos"} onClick={() => setRevealed((r) => ({ ...r, [c.id]: !rv }))}>
+                      {rv ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </IconBtn>
+                    <ActionBtn onClick={() => setLimitFor(limitFor === c.id ? null : c.id)}>
+                      <ArrowUpCircle className="h-3.5 w-3.5" /> Subir límite
+                    </ActionBtn>
+                    <IconBtn title="Sincronizar gasto" disabled={sync.isPending} onClick={() => sync.mutate({ vccId: c.id })}>
+                      <RefreshCw className={`h-3.5 w-3.5 ${sync.isPending ? "animate-spin" : ""}`} />
+                    </IconBtn>
+                    {!c.closedAt && (
+                      <button type="button" disabled={close.isPending}
+                        onClick={() => { if (confirm(`¿Cerrar ${c.cardName}? Se pausa la tarjeta.`)) close.mutate({ vccId: c.id }); }}
+                        className="ml-auto inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+                        style={{ border: "1px solid var(--color-border)", color: "var(--color-error)" }}>
+                        <XCircle className="h-3.5 w-3.5" /> Cerrar
+                      </button>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+
+                  {/* subir límite inline */}
+                  {limitFor === c.id && (
+                    <LimitForm current={lim} pending={inc.isPending} error={inc.error?.message ?? null}
+                      onCancel={() => setLimitFor(null)}
+                      onConfirm={(add) => inc.mutate({ vccId: c.id, spendLimit: lim + add })} />
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
