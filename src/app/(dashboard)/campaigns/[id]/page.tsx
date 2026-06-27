@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ReactCountryFlag from "react-country-flag";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth";
@@ -189,7 +190,14 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
           <div>
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>Conversiones</span>
-              <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{loc?.flag ?? "🌐"} {campaign.currencyCode}</span>
+              <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+                {loc?.countryCode ? (
+                  <ReactCountryFlag countryCode={loc.countryCode} svg style={{ width: "1.15em", height: "0.85em", borderRadius: 2 }} title={loc.label} />
+                ) : (
+                  <span>🌐</span>
+                )}
+                {campaign.currencyCode}
+              </span>
             </div>
             <ConversionList conversions={convs} />
           </div>

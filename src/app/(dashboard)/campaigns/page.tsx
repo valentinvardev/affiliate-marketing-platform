@@ -1,9 +1,9 @@
 import Link from "next/link";
+import ReactCountryFlag from "react-country-flag";
 import { api } from "@/trpc/server";
 import type { RouterOutputs } from "@/trpc/react";
-import { Plus, AlertTriangle, ExternalLink, CreditCard, Pencil } from "lucide-react";
+import { Plus, AlertTriangle, ExternalLink, CreditCard, Pencil, Package, LineChart } from "lucide-react";
 import { getLocaleByCode } from "@/lib/locales";
-import { CampaignToggle } from "./_components/campaign-toggle";
 import { CampaignCopyUrl } from "./_components/campaign-copy-url";
 import { CampaignDelete } from "./_components/campaign-delete";
 
@@ -158,9 +158,11 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
           // eslint-disable-next-line @next/next/no-img-element
           <img src={c.offerImage} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
         ) : (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs" style={{ background: "var(--color-surface-raised)" }}>📦</span>
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded" style={{ background: "var(--color-surface-raised)" }}>
+            <Package className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />
+          </span>
         )}
-        <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: "var(--color-foreground)" }}>
+        <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: c.offerName ? "var(--color-foreground)" : "var(--color-subtle)" }}>
           {c.offerName ?? "Sin oferta"}
         </span>
         <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium" style={{ color: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }}>
@@ -174,23 +176,37 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
         <Link href={`/campaigns/${c.id}`} className="block truncate text-base font-semibold transition-opacity hover:opacity-70" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>
           {c.name}
         </Link>
-        <span className="mt-0.5 block truncate font-mono text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>{url}</span>
-        <div className="mt-1 flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
-          <span>{loc?.flag ?? "🌐"}</span><span>{c.currencyCode}</span>
+        {/* Link de la landing + copiar + abrir */}
+        <div className="mt-1 flex items-center gap-1">
+          <span className="min-w-0 flex-1 truncate font-mono text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>{url}</span>
+          <CampaignCopyUrl slug={c.slug} />
+          <a href={landingHref} target="_blank" rel="noopener noreferrer" title="Abrir landing"
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+          {loc?.countryCode ? (
+            <ReactCountryFlag countryCode={loc.countryCode} svg style={{ width: "1.15em", height: "0.85em", borderRadius: 2 }} title={loc.label} />
+          ) : (
+            <span>🌐</span>
+          )}
+          <span>{c.currencyCode}</span>
         </div>
 
         {/* Acciones */}
         <div className="mt-3 flex items-center gap-1.5">
-          <a href={landingHref} target="_blank" rel="noopener noreferrer" title="Ver landing"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-          <CampaignCopyUrl slug={c.slug} />
-          <CampaignToggle id={c.id} isActive={c.isActive} />
-          <Link href={`/campaigns/${c.id}/edit`} title="Editar" className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
+          <Link href={`/campaigns/${c.id}`}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
+            style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+            <LineChart className="h-3.5 w-3.5" /> Supervisar
+          </Link>
+          <Link href={`/campaigns/${c.id}/edit`} title="Editar"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors hover:opacity-70"
+            style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
             <Pencil className="h-3.5 w-3.5" />
           </Link>
-          <div className="ml-auto"><CampaignDelete id={c.id} name={c.name} /></div>
+          <CampaignDelete id={c.id} name={c.name} />
         </div>
       </div>
 

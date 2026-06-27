@@ -261,7 +261,11 @@ export default async function OverviewPage() {
                         <Link key={c.id} href={`/campaigns/${c.id}`} className="flex items-center gap-2.5 transition-opacity hover:opacity-70">
                           <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: c.colorPrimary }} />
                           <span className="flex-1 truncate text-sm" style={{ color: "var(--color-foreground)" }}>{c.name}</span>
-                          <span className="shrink-0 text-[11px]" style={{ color: "var(--color-subtle)" }}>{loc?.flag ?? "🌐"}</span>
+                          {loc?.countryCode ? (
+                            <ReactCountryFlag countryCode={loc.countryCode} svg style={{ width: "1.15em", height: "0.85em", borderRadius: 2 }} title={loc.label} />
+                          ) : (
+                            <span className="shrink-0 text-[11px]" style={{ color: "var(--color-subtle)" }}>🌐</span>
+                          )}
                           <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }} />
                         </Link>
                       );
