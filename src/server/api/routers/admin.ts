@@ -19,6 +19,15 @@ export const adminRouter = createTRPCRouter({
     });
   }),
 
+  /** Cambiar el rol de un usuario (user / estrategista / admin). */
+  setRole: adminProcedure
+    .input(z.object({ userId: z.string(), role: z.enum(["user", "estrategista", "admin"]) }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdmin(ctx);
+      await ctx.db.user.update({ where: { id: input.userId }, data: { role: input.role } });
+      return { role: input.role };
+    }),
+
   /** Asignar / desasignar una VCC a un usuario. */
   assignCard: adminProcedure
     .input(z.object({ vccId: z.string(), cardName: z.string().optional(), userId: z.string().nullable() }))

@@ -1,9 +1,15 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import { Loader2, CreditCard, LayoutGrid } from "lucide-react";
+import { Loader2, CreditCard, LayoutGrid, UserCog } from "lucide-react";
 
 type UserOpt = { id: string; username: string; role: string };
+
+const ROLES = [
+  { value: "user", label: "Usuario" },
+  { value: "estrategista", label: "Estrategista" },
+  { value: "admin", label: "Admin" },
+] as const;
 
 export function AdminAssignmentsTab() {
   const utils = api.useUtils();
@@ -17,11 +23,43 @@ export function AdminAssignmentsTab() {
   const assignCampaign = api.admin.assignCampaign.useMutation({
     onSuccess: () => void utils.campaign.list.invalidate(),
   });
+  const setRole = api.admin.setRole.useMutation({
+    onSuccess: () => void utils.admin.users.invalidate(),
+  });
 
   const users = usersQ.data ?? [];
 
   return (
     <div className="space-y-6">
+      {/* ── Roles ── */}
+      <Section title="Rol de cada usuario" icon={UserCog} count={users.length}>
+        {usersQ.isLoading ? (
+          <Spinner />
+        ) : users.length === 0 ? (
+          <Empty>Sin usuarios.</Empty>
+        ) : (
+          <div className="space-y-2">
+            {users.map((u) => (
+              <div key={u.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ background: "var(--color-surface-raised)", color: "var(--color-foreground)" }}>
+                  {u.username[0]?.toUpperCase()}
+                </div>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{u.username}</span>
+                <select
+                  value={u.role}
+                  disabled={setRole.isPending}
+                  onChange={(e) => setRole.mutate({ userId: u.id, role: e.target.value as "user" | "estrategista" | "admin" })}
+                  className="shrink-0 rounded-md px-2 py-1.5 text-xs outline-none"
+                  style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+                >
+                  {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
       {/* ── Tarjetas ── */}
       <Section title="Tarjetas → usuario" icon={CreditCard} count={cardsQ.data?.cards.length}>
         {cardsQ.isLoading ? (
