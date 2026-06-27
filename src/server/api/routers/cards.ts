@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { suiteFetch } from "@/lib/suite";
+import { MAX_CARDS_PER_USER } from "@/lib/limits";
 
 type RawVcc = {
   id: string;
@@ -64,6 +65,12 @@ export const cardsRouter = createTRPCRouter({
       });
       if (!campaign) throw new TRPCError({ code: "NOT_FOUND", message: "Campaña no encontrada" });
 
+      const ownerId = campaign.ownerId ?? me;
+      const activeCards = await ctx.db.cardOwner.count({ where: { userId: ownerId, closedAt: null } });
+      if (activeCards >= MAX_CARDS_PER_USER) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Límite de ${MAX_CARDS_PER_USER} tarjetas activas por usuario alcanzado. Cerrá una para generar otra.` });
+      }
+
       const n = await ctx.db.cardOwner.count({ where: { campaignId: input.campaignId } });
       const cardName = `${campaign.name} ${n + 1}`;
 
@@ -94,6 +101,11 @@ export const cardsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session?.user?.id;
       if (!me) throw new Error("No autenticado");
+
+      const activeCards = await ctx.db.cardOwner.count({ where: { userId: me, closedAt: null } });
+      if (activeCards >= MAX_CARDS_PER_USER) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Límite de ${MAX_CARDS_PER_USER} tarjetas activas por usuario alcanzado. Cerrá una para generar otra.` });
+      }
 
       const { ok, data } = await suiteFetch("vcc", { method: "POST", body: JSON.stringify(input) });
       if (!ok) throw new Error((data.message as string) ?? "No se pudo crear la tarjeta");

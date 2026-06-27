@@ -71,6 +71,14 @@ export default async function CampaignsPage() {
             {campaigns.length}
           </span>
         )}
+        <Link
+          href="/campaigns/new"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+          style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Nueva campaña
+        </Link>
       </header>
 
       {/* DB warning */}

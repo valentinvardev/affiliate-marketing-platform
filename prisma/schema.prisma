@@ -103,6 +103,16 @@ model CardOwner {
     @@index([campaignId])
 }
 
+// Guarda del gasto diario de VCC por usuario (baseline = total acumulado al inicio del día)
+model SpendGuard {
+    id        String    @id @default(cuid())
+    userId    String    @unique
+    day       String    // YYYY-MM-DD del baseline
+    baseline  Float     @default(0)
+    pausedAt  DateTime? // cuándo se auto-pausaron las tarjetas por superar el cap
+    updatedAt DateTime  @updatedAt
+}
+
 // Gasto atribuido a un usuario (vcc | interaction | engagement | bc | email | ...)
 model SpendLog {
     id        String   @id @default(cuid())

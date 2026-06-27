@@ -23,7 +23,9 @@ export function VccWallet({
 }: { campaignId: string; campaignName: string; open: boolean; onClose: () => void }) {
   const utils = api.useUtils();
   const cardsQ = api.cards.list.useQuery(undefined, { enabled: open, retry: false });
+  const limitsQ = api.limits.status.useQuery(undefined, { enabled: open, retry: false });
   const cards = ((cardsQ.data?.cards ?? []) as unknown as VCC[]).filter((c) => c.campaignId === campaignId);
+  const atCardLimit = !!limitsQ.data && limitsQ.data.cardCount >= limitsQ.data.maxCards;
 
   // newest first (por el número del nombre)
   const num = (n?: string) => { const m = /(\d+)\s*$/.exec(n ?? ""); return m ? parseInt(m[1]!) : 0; };
@@ -66,6 +68,11 @@ export function VccWallet({
               onCancel={() => setCreating(false)}
               onCreate={(limit) => createVcc.mutate({ campaignId, spendLimit: limit })}
             />
+          ) : atCardLimit ? (
+            <div className="flex items-center gap-2 text-[11px]" style={{ color: "var(--color-warning)" }}>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span>Llegaste al límite de {limitsQ.data!.maxCards} tarjetas activas. Cerrá una para generar otra.</span>
+            </div>
           ) : (
             <button type="button" onClick={() => setCreating(true)}
               className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium"
