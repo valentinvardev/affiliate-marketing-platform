@@ -9,6 +9,7 @@ import { adminRouter } from "@/server/api/routers/admin";
 import { accountingRouter } from "@/server/api/routers/accounting";
 import { domainsRouter } from "@/server/api/routers/domains";
 import { accountRouter } from "@/server/api/routers/account";
+import { appsRouter } from "@/server/api/routers/apps";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 export const appRouter = createTRPCRouter({
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
   accounting: accountingRouter,
   domains: domainsRouter,
   account: accountRouter,
+  apps: appsRouter,
 });
 
 export type AppRouter = typeof appRouter;

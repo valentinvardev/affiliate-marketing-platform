@@ -158,11 +158,24 @@ model OfferConfig {
     domain        String?   // root domain donde se publican las campañas de esta oferta
     fontTitle     String?   // fuente de títulos (ej. "Manrope")
     fontBody      String?   // fuente de párrafos (ej. "Inter")
+    appIds        String[]  @default([]) // apps sueltas del directorio (alternativa al stack)
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
 
     @@index([whitelisted])
     @@index([appStackId])
+}
+
+// Directorio/librería de apps sueltas (dedup de los stacks + agregadas a mano).
+// Se usan en ofertas que no van con un stack entero (ej. teststar, empfohlen).
+model App {
+    id        String   @id @default(cuid())
+    name      String
+    imageUrl  String?
+    tag       String   @default("1 hr")
+    badge     String   @default("TOP")
+    amount    Float    @default(0)
+    createdAt DateTime @default(now())
 }
 
 model AppStack {
