@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition, useRef, useState } from "react";
+import { useTransition, useRef, useState, useEffect } from "react";
 import ReactCountryFlag from "react-country-flag";
-import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers, Palette, Image as ImageIcon, Globe, Type } from "lucide-react";
+import { Check, Upload, Loader2, Monitor, Smartphone, AlertCircle, Layers, Palette, Image as ImageIcon, Globe, Type, Grid3x3 } from "lucide-react";
 import { toggleOfferWhitelist, updateOfferImage } from "./actions";
 import { api } from "@/trpc/react";
 import { LANDING_FONTS } from "@/lib/fonts";
@@ -11,7 +11,7 @@ import type { Offer } from "@/lib/taprain";
 type Config = {
   whitelisted: boolean; imageUrl: string | null; appStackId: string | null;
   colorPresetId: string | null; logoPresetId: string | null; domain: string | null;
-  fontTitle: string | null; fontBody: string | null;
+  fontTitle: string | null; fontBody: string | null; appIds: string[];
 } | null;
 
 export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config }) {
@@ -25,18 +25,34 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
   const [domain, setDomain]            = useState<string | null>(config?.domain ?? null);
   const [fontTitle, setFontTitle]      = useState<string | null>(config?.fontTitle ?? null);
   const [fontBody, setFontBody]        = useState<string | null>(config?.fontBody ?? null);
+  const [appIds, setAppIds]            = useState<string[]>(config?.appIds ?? []);
+  const [appsOpen, setAppsOpen]        = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const appsRef = useRef<HTMLDivElement>(null);
 
   const { data: stacks = [] } = api.stack.list.useQuery();
   const { data: colors = [] } = api.preset.colorList.useQuery();
   const { data: logos = []  } = api.preset.logoList.useQuery();
   const { data: hosts = []  } = api.domains.hosts.useQuery();
+  const { data: dirApps = [] } = api.apps.list.useQuery();
   const linkStack = api.stack.linkToOffer.useMutation({
     onSuccess: (data) => setStackId(data.appStackId),
   });
   const setPkg = api.stack.setOfferPackage.useMutation();
-  const savePkg = (patch: { colorPresetId?: string | null; logoPresetId?: string | null; domain?: string | null; fontTitle?: string | null; fontBody?: string | null }) =>
+  const savePkg = (patch: { colorPresetId?: string | null; logoPresetId?: string | null; domain?: string | null; fontTitle?: string | null; fontBody?: string | null; appIds?: string[] }) =>
     setPkg.mutate({ offerId: offer.id, offerName: offer.name, ...patch });
+
+  useEffect(() => {
+    function onMouse(e: MouseEvent) { if (appsRef.current && !appsRef.current.contains(e.target as Node)) setAppsOpen(false); }
+    if (appsOpen) document.addEventListener("mousedown", onMouse);
+    return () => document.removeEventListener("mousedown", onMouse);
+  }, [appsOpen]);
+
+  function toggleApp(id: string) {
+    const next = appIds.includes(id) ? appIds.filter((x) => x !== id) : [...appIds, id];
+    setAppIds(next);
+    savePkg({ appIds: next });
+  }
 
   const whitelisted = config?.whitelisted ?? false;
   const imageUrl    = localImageUrl ?? offer.image_url;
@@ -270,6 +286,39 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           </select>
         </div>
       )}
+
+        {/* Apps sueltas (directorio) */}
+        {dirApps.length > 0 && (
+          <div ref={appsRef} className="relative">
+            <button type="button" onClick={() => setAppsOpen((o) => !o)}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs"
+              style={{ background: appIds.length ? "rgba(167,139,250,0.15)" : "var(--color-surface-raised)", border: `1px solid ${appIds.length ? "rgba(167,139,250,0.3)" : "var(--color-border)"}`, color: appIds.length ? "#a78bfa" : "var(--color-subtle)" }}>
+              <Grid3x3 className="h-3.5 w-3.5" />
+              Apps{appIds.length ? ` (${appIds.length})` : ""}
+            </button>
+            {appsOpen && (
+              <div className="absolute right-0 z-30 mt-1 max-h-60 w-56 overflow-y-auto rounded-lg p-1"
+                style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+                <p className="px-2 py-1 text-[10px] uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Apps sueltas (sin stack)</p>
+                {dirApps.map((a) => {
+                  const on = appIds.includes(a.id);
+                  return (
+                    <button key={a.id} type="button" onClick={() => toggleApp(a.id)}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs"
+                      style={{ color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded" style={{ border: `1px solid ${on ? "#a78bfa" : "var(--color-border)"}`, background: on ? "#a78bfa" : "transparent" }}>
+                        {on && <Check className="h-3 w-3" style={{ color: "#000" }} />}
+                      </span>
+                      <span className="truncate">{a.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
       {/* Whitelist toggle */}
       <button

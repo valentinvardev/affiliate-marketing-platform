@@ -291,13 +291,24 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         slug:         autoName ? slugify(pkg.offerName) : p.slug,
       };
     });
-    setPendingStackId(pkg.appStackId ?? null);
+    // Apps sueltas tienen prioridad sobre el stack (ofertas tipo teststar/empfohlen).
+    if (pkg.appIds && pkg.appIds.length) {
+      setPendingAppIds(pkg.appIds);
+      setPendingAppsData(pkg.apps ?? []);
+      setPendingStackId(null);
+    } else {
+      setPendingStackId(pkg.appStackId ?? null);
+      setPendingAppIds([]);
+      setPendingAppsData([]);
+    }
   }
   const { items: savedUrls, saveUrl, deleteUrl } = useSavedUrls();
   const [savingUrl, setSavingUrl] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [pendingStackId, setPendingStackId] = useState<string | null>(null);
+  const [pendingAppIds, setPendingAppIds] = useState<string[]>([]);
+  const [pendingAppsData, setPendingAppsData] = useState<{ name: string; imageUrl: string | null; badge: string; amount: number }[]>([]);
   const [selectedOffer, setSelectedOffer] = useState("");
 
   const [values, setValues] = useState<FormValues>({
@@ -319,17 +330,24 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
   const applyStack = api.stack.applyToCampaign.useMutation();
+  const applyApps = api.stack.applyAppsToCampaign.useMutation();
+
+  async function applyAppsOrStack(campaignId: string) {
+    if (pendingAppIds.length) await applyApps.mutateAsync({ campaignId, appIds: pendingAppIds });
+    else if (pendingStackId) await applyStack.mutateAsync({ stackId: pendingStackId, campaignId });
+  }
 
   const create = api.campaign.create.useMutation({
     onSuccess: async (c) => {
-      if (pendingStackId) await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id });
+      await applyAppsOrStack(c.id);
       setCreated(true);
       setTimeout(() => router.push(`/campaigns/${c.id}`), 1600);
     },
   });
   const update = api.campaign.update.useMutation({
     onSuccess: async (c) => {
-      if (pendingStackId) { await applyStack.mutateAsync({ stackId: pendingStackId, campaignId: c.id }); setPendingStackId(null); }
+      await applyAppsOrStack(c.id);
+      setPendingStackId(null);
       router.refresh();
       setSavedInfo({ id: c.id, slug: c.slug, domain: c.domain ?? null });
     },
@@ -386,10 +404,12 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const idx = stepDefs.findIndex((s) => s.key === active);
   const next = stepDefs[idx + 1];
 
-  // Offers del stack seleccionado (para el preview)
-  const previewOffers: PreviewOffer[] = pendingStackId
-    ? (stacks.find((s) => s.id === pendingStackId)?.items.map((it) => ({ name: it.name, amount: it.amount, badge: it.badge, imageUrl: it.imageUrl })) ?? [])
-    : DEFAULT_OFFERS;
+  // Offers para el preview: apps sueltas > stack > default
+  const previewOffers: PreviewOffer[] = pendingAppIds.length
+    ? pendingAppsData.map((a) => ({ name: a.name, amount: a.amount, badge: a.badge, imageUrl: a.imageUrl }))
+    : pendingStackId
+      ? (stacks.find((s) => s.id === pendingStackId)?.items.map((it) => ({ name: it.name, amount: it.amount, badge: it.badge, imageUrl: it.imageUrl })) ?? [])
+      : DEFAULT_OFFERS;
 
   // URL del preview real (iframe a /landing-preview con la config codificada)
   const [previewUrl, setPreviewUrl] = useState("");

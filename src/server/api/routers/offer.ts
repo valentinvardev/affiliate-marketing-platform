@@ -17,17 +17,20 @@ export const offerRouter = createTRPCRouter({
   packages: protectedProcedure.query(async ({ ctx }) => {
     const configs = await ctx.db.offerConfig.findMany({
       where: { whitelisted: true },
-      select: { offerId: true, offerName: true, appStackId: true, domain: true, colorPresetId: true, logoPresetId: true, fontTitle: true, fontBody: true },
+      select: { offerId: true, offerName: true, appStackId: true, domain: true, colorPresetId: true, logoPresetId: true, fontTitle: true, fontBody: true, appIds: true },
       orderBy: { offerName: "asc" },
     });
     const colorIds = configs.map((c) => c.colorPresetId).filter(Boolean) as string[];
     const logoIds = configs.map((c) => c.logoPresetId).filter(Boolean) as string[];
-    const [colors, logos] = await Promise.all([
+    const allAppIds = [...new Set(configs.flatMap((c) => c.appIds))];
+    const [colors, logos, apps] = await Promise.all([
       colorIds.length ? ctx.db.colorPreset.findMany({ where: { id: { in: colorIds } } }) : [],
       logoIds.length ? ctx.db.logoPreset.findMany({ where: { id: { in: logoIds } } }) : [],
+      allAppIds.length ? ctx.db.app.findMany({ where: { id: { in: allAppIds } } }) : [],
     ]);
     const colorById = new Map(colors.map((c) => [c.id, c]));
     const logoById = new Map(logos.map((l) => [l.id, l]));
+    const appById = new Map(apps.map((a) => [a.id, a]));
     return configs.map((c) => {
       const col = c.colorPresetId ? colorById.get(c.colorPresetId) : null;
       return {
@@ -40,6 +43,8 @@ export const offerRouter = createTRPCRouter({
         colorPrimary: col?.colorPrimary ?? null,
         colorBg:      col?.colorBg ?? null,
         logoUrl:      c.logoPresetId ? logoById.get(c.logoPresetId)?.imageUrl ?? null : null,
+        appIds:       c.appIds,
+        apps:         c.appIds.map((id) => appById.get(id)).filter(Boolean).map((a) => ({ name: a!.name, imageUrl: a!.imageUrl, badge: a!.badge, amount: a!.amount })),
       };
     });
   }),

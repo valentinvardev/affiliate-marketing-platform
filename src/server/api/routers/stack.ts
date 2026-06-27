@@ -97,6 +97,7 @@ export const stackRouter = createTRPCRouter({
       domain:        z.string().nullable().optional(),
       fontTitle:     z.string().nullable().optional(),
       fontBody:      z.string().nullable().optional(),
+      appIds:        z.array(z.string()).optional(),
     }))
     .mutation(({ ctx, input }) =>
       ctx.db.offerConfig.upsert({
@@ -108,6 +109,7 @@ export const stackRouter = createTRPCRouter({
           domain:        input.domain ?? null,
           fontTitle:     input.fontTitle ?? null,
           fontBody:      input.fontBody ?? null,
+          appIds:        input.appIds ?? [],
         },
         update: {
           ...(input.colorPresetId !== undefined ? { colorPresetId: input.colorPresetId } : {}),
@@ -115,7 +117,27 @@ export const stackRouter = createTRPCRouter({
           ...(input.domain        !== undefined ? { domain:        input.domain        } : {}),
           ...(input.fontTitle     !== undefined ? { fontTitle:     input.fontTitle     } : {}),
           ...(input.fontBody      !== undefined ? { fontBody:      input.fontBody      } : {}),
+          ...(input.appIds        !== undefined ? { appIds:        input.appIds        } : {}),
         },
       }),
     ),
+
+  /** Copia apps sueltas del directorio como las offers de una campaña. */
+  applyAppsToCampaign: protectedProcedure
+    .input(z.object({ campaignId: z.string(), appIds: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.campaignOffer.deleteMany({ where: { campaignId: input.campaignId } });
+      if (!input.appIds.length) return { ok: true };
+      const apps = await ctx.db.app.findMany({ where: { id: { in: input.appIds } } });
+      // respeta el orden en que vienen los appIds
+      const byId = new Map(apps.map((a) => [a.id, a]));
+      const ordered = input.appIds.map((id) => byId.get(id)).filter(Boolean) as typeof apps;
+      await ctx.db.campaignOffer.createMany({
+        data: ordered.map((a, i) => ({
+          campaignId: input.campaignId, name: a.name, imageUrl: a.imageUrl,
+          tag: a.tag, badge: a.badge, amount: a.amount, position: i,
+        })),
+      });
+      return { ok: true };
+    }),
 });
