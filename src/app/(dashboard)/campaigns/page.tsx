@@ -179,7 +179,7 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
         {/* Link de la landing + copiar + abrir */}
         <div className="mt-1 flex items-center gap-1">
           <span className="min-w-0 flex-1 truncate font-mono text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>{url}</span>
-          <CampaignCopyUrl slug={c.slug} />
+          <CampaignCopyUrl slug={c.slug} domain={c.domain} />
           <a href={landingHref} target="_blank" rel="noopener noreferrer" title="Abrir landing"
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
             <ExternalLink className="h-3.5 w-3.5" />
