@@ -53,6 +53,36 @@ export const cardsRouter = createTRPCRouter({
     return { connected: true, cards };
   }),
 
+  /** Genera una VCC para una campaña, nombrada "{campaña} N" (N = siguiente). */
+  createForCampaign: protectedProcedure
+    .input(z.object({ campaignId: z.string(), spendLimit: z.number().min(0) }))
+    .mutation(async ({ ctx, input }) => {
+      const me = ctx.session.user.id;
+      const campaign = await ctx.db.campaign.findUnique({
+        where: { id: input.campaignId },
+        select: { name: true, ownerId: true },
+      });
+      if (!campaign) throw new TRPCError({ code: "NOT_FOUND", message: "Campaña no encontrada" });
+
+      const n = await ctx.db.cardOwner.count({ where: { campaignId: input.campaignId } });
+      const cardName = `${campaign.name} ${n + 1}`;
+
+      const { ok, data } = await suiteFetch("vcc", {
+        method: "POST",
+        body: JSON.stringify({ cardName, spendLimit: input.spendLimit }),
+      });
+      if (!ok) throw new TRPCError({ code: "BAD_REQUEST", message: (data.message as string) ?? (data.error as string) ?? "No se pudo crear la VCC" });
+
+      const created = (data.vcc as RawVcc) ?? (data.card as RawVcc) ?? (data as RawVcc);
+      const vccId = created?.id;
+      if (vccId) {
+        await ctx.db.cardOwner.create({
+          data: { vccId, userId: campaign.ownerId ?? me, cardName, campaignId: input.campaignId },
+        }).catch(() => { /* ya mapeada */ });
+      }
+      return { ok: true, vccId: vccId ?? null, cardName };
+    }),
+
   /** Crea una VCC en TapRain y la atribuye al usuario logueado. */
   create: protectedProcedure
     .input(z.object({

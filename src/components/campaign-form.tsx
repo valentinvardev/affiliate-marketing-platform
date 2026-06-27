@@ -12,7 +12,7 @@ import { LANDING_FONTS } from "@/lib/fonts";
 import {
   Loader2, Upload, Check, X, ExternalLink, Smartphone, ChevronDown,
   ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
-  Globe, Palette, Layers, Package, Copy,
+  Globe, Palette, Layers, Package, Copy, CreditCard,
 } from "lucide-react";
 import { OfferPickerModal } from "@/components/offer-picker-modal";
 
@@ -25,6 +25,7 @@ type FormValues = {
   ctaUrl: string; logoUrl: string;
   colorPrimary: string; colorBg: string; isActive: boolean;
   domain: string; fontTitle: string; fontBody: string;
+  vccLimit: string; // transitorio: límite inicial de la VCC auto-generada
 };
 
 type Campaign = {
@@ -326,11 +327,13 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     domain: campaign?.domain ?? "",
     fontTitle: campaign?.fontTitle ?? "",
     fontBody: campaign?.fontBody ?? "",
+    vccLimit: "",
   });
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
   const applyStack = api.stack.applyToCampaign.useMutation();
   const applyApps = api.stack.applyAppsToCampaign.useMutation();
+  const createVcc = api.cards.createForCampaign.useMutation();
 
   async function applyAppsOrStack(campaignId: string) {
     if (pendingAppIds.length) await applyApps.mutateAsync({ campaignId, appIds: pendingAppIds });
@@ -340,6 +343,9 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const create = api.campaign.create.useMutation({
     onSuccess: async (c) => {
       await applyAppsOrStack(c.id);
+      // VCC automática de la campaña ({campaña} 1) con el límite inicial.
+      const lim = parseFloat(values.vccLimit);
+      if (lim > 0) { try { await createVcc.mutateAsync({ campaignId: c.id, spendLimit: lim }); } catch { /* best-effort */ } }
       setCreated(true);
       setTimeout(() => router.push(`/campaigns/${c.id}`), 1600);
     },
@@ -730,6 +736,24 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                       <div className="mt-1.5 flex gap-1"><span className="h-4 w-4 rounded" style={{ background: values.colorPrimary }} /><span className="h-4 w-4 rounded" style={{ background: values.colorBg }} /></div>
                     </div>
                   </div>
+
+                  {/* Primera VCC de la campaña */}
+                  {!campaign && (
+                    <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
+                        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Primera tarjeta (VCC)</p>
+                      </div>
+                      <p className="mt-1 text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
+                        Al crear, se genera <span className="font-mono" style={{ color: "var(--color-foreground)" }}>{(values.name || "campaña")} 1</span> con este límite. Vacío = no crear ninguna.
+                      </p>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <span className="text-sm" style={{ color: "var(--color-subtle)" }}>$</span>
+                        <Input value={values.vccLimit} onChange={(e) => set("vccLimit", e.target.value)} placeholder="50" type="number" />
+                      </div>
+                    </div>
+                  )}
+
                   {error && <p className="rounded-md px-3 py-2 text-xs" style={{ color: "var(--color-error)", background: "var(--color-error-bg)" }}>{error}</p>}
                 </>
               )}
