@@ -25,6 +25,7 @@ type FormValues = {
   ctaUrl: string; logoUrl: string;
   colorPrimary: string; colorBg: string; isActive: boolean;
   domain: string; fontTitle: string; fontBody: string;
+  offerName: string; offerImage: string;
   vccLimit: string; // transitorio: límite inicial de la VCC auto-generada
 };
 
@@ -34,6 +35,7 @@ type Campaign = {
   ctaUrl: string; logoUrl: string | null;
   colorPrimary: string; colorBg: string; isActive: boolean;
   domain?: string | null; fontTitle?: string | null; fontBody?: string | null;
+  offerName?: string | null; offerImage?: string | null;
 };
 
 type PreviewOffer = { name: string; amount: number; badge: string; imageUrl?: string | null };
@@ -289,6 +291,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
         fontTitle:    pkg.fontTitle ?? "",
         fontBody:     pkg.fontBody ?? "",
         name:         autoName ? pkg.offerName : p.name,
+        offerName:    pkg.offerName,
+        offerImage:   pkg.offerImage ?? "",
         // el slug (subid) se define en "Buscar oferta", no acá
       };
     });
@@ -327,6 +331,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     domain: campaign?.domain ?? "",
     fontTitle: campaign?.fontTitle ?? "",
     fontBody: campaign?.fontBody ?? "",
+    offerName: campaign?.offerName ?? "",
+    offerImage: campaign?.offerImage ?? "",
     vccLimit: "",
   });
 
@@ -383,7 +389,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     startTransition(() => {
-      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null };
+      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null, offerName: values.offerName || null, offerImage: values.offerImage || null };
       if (campaign) update.mutate({ id: campaign.id, ...payload });
       else create.mutate(payload);
     });

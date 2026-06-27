@@ -36,6 +36,8 @@ const campaignInput = z.object({
   domain: z.string().max(120).optional().nullable(),
   fontTitle: z.string().max(40).optional().nullable(),
   fontBody: z.string().max(40).optional().nullable(),
+  offerName: z.string().max(120).optional().nullable(),
+  offerImage: z.string().url().optional().nullable(),
 });
 
 export const campaignRouter = createTRPCRouter({

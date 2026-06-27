@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { api } from "@/trpc/server";
 import type { RouterOutputs } from "@/trpc/react";
-import { Plus, AlertTriangle, ExternalLink } from "lucide-react";
+import { Plus, AlertTriangle, ExternalLink, CreditCard, Pencil } from "lucide-react";
 import { getLocaleByCode } from "@/lib/locales";
 import { CampaignToggle } from "./_components/campaign-toggle";
 import { CampaignCopyUrl } from "./_components/campaign-copy-url";
@@ -11,6 +11,10 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Campañas" };
 
 type Campaign = RouterOutputs["campaign"]["list"][number];
+type VccInfo = { cardName: string; last4: string; currentSpend: number; spendLimit: number; count: number };
+
+const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+const trailingNum = (name?: string) => { const m = /(\d+)\s*$/.exec(name ?? ""); return m ? parseInt(m[1]!) : 0; };
 
 export default async function CampaignsPage() {
   let campaigns: Campaign[] = [];
@@ -21,6 +25,29 @@ export default async function CampaignsPage() {
   } catch {
     dbError = true;
   }
+
+  // VCCs por campaña (la más nueva + cantidad)
+  const vccByCampaign = new Map<string, VccInfo>();
+  try {
+    const cardsRes = await api.cards.list();
+    if (cardsRes.connected) {
+      const cards = cardsRes.cards as unknown as Array<{ campaignId: string | null; cardName?: string; last4?: string; currentSpend?: number; spendLimit?: number }>;
+      const groups = new Map<string, typeof cards>();
+      for (const card of cards) {
+        if (!card.campaignId) continue;
+        const arr = groups.get(card.campaignId) ?? [];
+        arr.push(card);
+        groups.set(card.campaignId, arr);
+      }
+      for (const [cid, arr] of groups) {
+        const newest = [...arr].sort((a, b) => trailingNum(b.cardName) - trailingNum(a.cardName))[0]!;
+        vccByCampaign.set(cid, {
+          cardName: newest.cardName ?? "VCC", last4: newest.last4 ?? "????",
+          currentSpend: newest.currentSpend ?? 0, spendLimit: newest.spendLimit ?? 0, count: arr.length,
+        });
+      }
+    }
+  } catch { /* suite no conectada */ }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -73,7 +100,11 @@ export default async function CampaignsPage() {
         {campaigns.length === 0 && !dbError ? (
           <EmptyState />
         ) : (
-          <CampaignTable campaigns={campaigns} />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {campaigns.map((c) => (
+              <CampaignCard key={c.id} campaign={c} vcc={vccByCampaign.get(c.id) ?? null} />
+            ))}
+          </div>
         )}
       </main>
     </div>
@@ -110,145 +141,86 @@ function EmptyState() {
   );
 }
 
-function CampaignTable({ campaigns }: { campaigns: Campaign[] }) {
-  return (
-    <div
-      className="overflow-hidden rounded-xl"
-      style={{ border: "1px solid var(--color-border)" }}
-    >
-      {/* Table head (solo desktop) */}
-      <div
-        className="hidden items-center px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider md:grid"
-        style={{
-          color: "var(--color-muted-foreground)",
-          borderBottom: "1px solid var(--color-border)",
-          background: "var(--color-surface)",
-          gridTemplateColumns: "1fr 120px 120px 90px 130px",
-        }}
-      >
-        <span>Campaña</span>
-        <span>Idioma</span>
-        <span>Moneda</span>
-        <span>Estado</span>
-        <span className="text-right">Acciones</span>
-      </div>
-
-      {/* Rows */}
-      <div style={{ background: "var(--color-surface)" }}>
-        {campaigns.map((c, i) => (
-          <CampaignRow
-            key={c.id}
-            campaign={c}
-            last={i === campaigns.length - 1}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CampaignRow({ campaign: c, last }: { campaign: Campaign; last: boolean }) {
+function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo | null }) {
   const loc = getLocaleByCode(c.locale);
-  const border = last ? "none" : "1px solid var(--color-border)";
-
-  const actions = (
-    <>
-      <a
-        href={`/landing/${c.slug}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70"
-        style={{ color: "var(--color-muted-foreground)" }}
-        title="Ver landing"
-      >
-        <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-      <CampaignCopyUrl slug={c.slug} />
-      <CampaignToggle id={c.id} isActive={c.isActive} />
-      <Link
-        href={`/campaigns/${c.id}/edit`}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors"
-        style={{ color: "var(--color-muted-foreground)" }}
-        title="Editar"
-      >
-        ✎
-      </Link>
-      <CampaignDelete id={c.id} name={c.name} />
-    </>
-  );
+  const url = c.domain ? `${c.domain}/${c.slug}` : `/${c.slug}`;
+  const landingHref = c.domain ? `https://${c.domain}/${c.slug}` : `/landing/${c.slug}`;
+  const pct = vcc && vcc.spendLimit > 0 ? Math.min(100, (vcc.currentSpend / vcc.spendLimit) * 100) : 0;
 
   return (
-    <>
-      {/* ── Desktop: fila de tabla ── */}
-      <div
-        className="table-row-hover hidden items-center px-4 py-3.5 md:grid"
-        style={{ gridTemplateColumns: "1fr 120px 120px 90px 130px", borderBottom: border }}
-      >
-        {/* Name + slug */}
-        <div className="flex items-center gap-3 min-w-0 pr-4">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.colorPrimary }} />
-          <div className="min-w-0">
-            <Link
-              href={`/campaigns/${c.id}`}
-              className="block truncate text-sm font-medium transition-colors hover:opacity-70"
-              style={{ color: "var(--color-foreground)" }}
-            >
-              {c.name}
-            </Link>
-            <span className="block truncate font-mono text-[11px] mt-0.5" style={{ color: "var(--color-muted-foreground)" }}>
-              {c.slug}
-            </span>
-          </div>
-        </div>
+    <div className="flex flex-col overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+      {/* Acento de color de la campaña */}
+      <div style={{ height: 3, background: `linear-gradient(90deg, ${c.colorPrimary}, transparent 80%)` }} />
 
-        {/* Locale */}
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-          <span>{loc?.flag ?? "🌐"}</span>
-          <span className="truncate">{loc?.label?.split(" ")[0] ?? c.locale}</span>
-        </div>
-
-        {/* Currency */}
-        <div className="flex items-center gap-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-          <span className="font-mono font-medium" style={{ color: "var(--color-foreground)" }}>{c.currencySymbol}</span>
-          <span>{c.currencyCode}</span>
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center gap-2">
-          {c.isActive ? (
-            <><span className="status-dot-green" /><span className="text-xs" style={{ color: "var(--color-success)" }}>Activa</span></>
-          ) : (
-            <><span className="status-dot-gray" /><span className="text-xs" style={{ color: "var(--color-subtle)" }}>Pausada</span></>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-1">{actions}</div>
+      {/* Franja de oferta */}
+      <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+        {c.offerImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={c.offerImage} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+        ) : (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs" style={{ background: "var(--color-surface-raised)" }}>📦</span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: "var(--color-foreground)" }}>
+          {c.offerName ?? "Sin oferta"}
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium" style={{ color: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }}>
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }} />
+          {c.isActive ? "Activa" : "Pausada"}
+        </span>
       </div>
 
-      {/* ── Móvil: una fila compacta ── */}
-      <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ borderBottom: border }}>
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.colorPrimary }} />
-        <div className="min-w-0 flex-1">
-          <Link
-            href={`/campaigns/${c.id}`}
-            className="block truncate text-sm font-medium"
-            style={{ color: "var(--color-foreground)" }}
-          >
-            {c.name}
+      {/* Cuerpo */}
+      <div className="flex flex-1 flex-col px-4 py-3.5">
+        <Link href={`/campaigns/${c.id}`} className="block truncate text-base font-semibold transition-opacity hover:opacity-70" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>
+          {c.name}
+        </Link>
+        <span className="mt-0.5 block truncate font-mono text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>{url}</span>
+        <div className="mt-1 flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+          <span>{loc?.flag ?? "🌐"}</span><span>{c.currencyCode}</span>
+        </div>
+
+        {/* Acciones */}
+        <div className="mt-3 flex items-center gap-1.5">
+          <a href={landingHref} target="_blank" rel="noopener noreferrer" title="Ver landing"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          <CampaignCopyUrl slug={c.slug} />
+          <CampaignToggle id={c.id} isActive={c.isActive} />
+          <Link href={`/campaigns/${c.id}/edit`} title="Editar" className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
+            <Pencil className="h-3.5 w-3.5" />
           </Link>
-          <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
-            <span className="truncate font-mono">{c.slug}</span>
-            <span>·</span>
-            <span className="shrink-0">{loc?.flag ?? "🌐"} {c.currencyCode}</span>
-            <span>·</span>
-            <span className="shrink-0" style={{ color: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }}>
-              {c.isActive ? "Activa" : "Pausada"}
-            </span>
-          </div>
+          <div className="ml-auto"><CampaignDelete id={c.id} name={c.name} /></div>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">{actions}</div>
       </div>
-    </>
+
+      {/* Franja de VCC */}
+      <Link href={`/campaigns/${c.id}`} className="block px-4 py-2.5 transition-opacity hover:opacity-80" style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+        {vcc ? (
+          <>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="inline-flex min-w-0 items-center gap-1.5" style={{ color: "var(--color-foreground)" }}>
+                <CreditCard className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-muted-foreground)" }} />
+                <span className="truncate">{vcc.cardName}</span>
+                <span className="shrink-0 font-mono" style={{ color: "var(--color-subtle)" }}>·· {vcc.last4}</span>
+              </span>
+              <span className="shrink-0 font-mono tabular-nums" style={{ color: "var(--color-muted-foreground)" }}>
+                {usd(vcc.currentSpend)} / {usd(vcc.spendLimit)}
+              </span>
+            </div>
+            <div className="mt-1.5 h-1 overflow-hidden rounded-full" style={{ background: "var(--color-surface-raised)" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: c.colorPrimary }} />
+            </div>
+            {vcc.count > 1 && (
+              <span className="mt-1 block text-[10px]" style={{ color: "var(--color-subtle)" }}>+{vcc.count - 1} tarjeta{vcc.count - 1 > 1 ? "s" : ""} más</span>
+            )}
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+            <CreditCard className="h-3.5 w-3.5" /> Sin tarjeta asignada
+          </span>
+        )}
+      </Link>
+    </div>
   );
 }

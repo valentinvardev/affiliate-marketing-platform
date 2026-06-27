@@ -25,6 +25,8 @@ model Campaign {
     domain         String?         // root domain en el que se sirve (path-based: <domain>/<slug>)
     fontTitle      String?         // fuente de títulos (Google Font, ej. "Manrope")
     fontBody       String?         // fuente de párrafos (ej. "Inter")
+    offerName      String?         // oferta de la que se creó (para la franja de la card)
+    offerImage     String?         // logo de la oferta
     ownerId        String?
     owner          User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
     createdAt      DateTime        @default(now())
