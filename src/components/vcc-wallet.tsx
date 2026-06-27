@@ -4,7 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import {
   X, Eye, EyeOff, RefreshCw, ArrowUpCircle, XCircle, Plus, Loader2, Check,
-  MoreHorizontal, AlertTriangle, Copy,
+  AlertTriangle, Copy,
 } from "lucide-react";
 
 type VCC = {
@@ -31,7 +31,6 @@ export function VccWallet({
 
   const [active, setActive] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
-  const [menu, setMenu] = useState<string | null>(null);
   const [limitFor, setLimitFor] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -96,9 +95,11 @@ export function VccWallet({
                 return (
                   <div key={c.id} style={{ marginTop: i === 0 ? 0 : isOpen ? 14 : -56, transition: "margin .3s cubic-bezier(0.22,1,0.36,1)", zIndex: isOpen ? 30 : i }}>
                     {/* Card face */}
-                    <button type="button" onClick={() => setActive(isOpen ? null : c.id)} className="block w-full text-left">
+                    <div role="button" tabIndex={0} onClick={() => setActive(isOpen ? null : c.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(isOpen ? null : c.id); } }}
+                      className="block w-full cursor-pointer text-left">
                       <CardFace card={c} revealed={rv} dim={!isOpen} />
-                    </button>
+                    </div>
 
                     {/* Detalle + acciones (solo la activa) */}
                     {isOpen && (
@@ -114,36 +115,23 @@ export function VccWallet({
 
                         {/* acciones */}
                         <div className="mt-3 flex items-center gap-1.5">
-                          <ActionBtn onClick={() => setRevealed((r) => ({ ...r, [c.id]: !rv }))}>
-                            {rv ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} {rv ? "Ocultar" : "Revelar"}
+                          <IconBtn title={rv ? "Ocultar datos" : "Revelar datos"} onClick={() => setRevealed((r) => ({ ...r, [c.id]: !rv }))}>
+                            {rv ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </IconBtn>
+                          <ActionBtn onClick={() => setLimitFor(limitFor === c.id ? null : c.id)}>
+                            <ArrowUpCircle className="h-3.5 w-3.5" /> Subir límite
                           </ActionBtn>
-                          {rv && c.cardNumber && (
-                            <ActionBtn onClick={() => navigator.clipboard.writeText(c.cardNumber!).catch(() => {})}>
-                              <Copy className="h-3.5 w-3.5" /> Copiar
-                            </ActionBtn>
-                          )}
-                          <div className="relative ml-auto">
-                            <button type="button" onClick={() => setMenu(menu === c.id ? null : c.id)}
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
-                              <MoreHorizontal className="h-4 w-4" />
+                          <IconBtn title="Sincronizar gasto" disabled={sync.isPending} onClick={() => sync.mutate({ vccId: c.id })}>
+                            <RefreshCw className={`h-3.5 w-3.5 ${sync.isPending ? "animate-spin" : ""}`} />
+                          </IconBtn>
+                          {!c.closedAt && (
+                            <button type="button" disabled={close.isPending}
+                              onClick={() => { if (confirm(`¿Cerrar ${c.cardName}? Se pausa la tarjeta.`)) close.mutate({ vccId: c.id }); }}
+                              className="ml-auto inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+                              style={{ border: "1px solid var(--color-border)", color: "var(--color-error)" }}>
+                              <XCircle className="h-3.5 w-3.5" /> Cerrar
                             </button>
-                            {menu === c.id && (
-                              <div className="absolute right-0 z-40 mt-1 w-44 overflow-hidden rounded-lg py-1" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}
-                                onMouseLeave={() => setMenu(null)}>
-                                <MenuItem onClick={() => { setMenu(null); sync.mutate({ vccId: c.id }); }} disabled={sync.isPending}>
-                                  <RefreshCw className={`h-3.5 w-3.5 ${sync.isPending ? "animate-spin" : ""}`} /> Sincronizar gasto
-                                </MenuItem>
-                                <MenuItem onClick={() => { setMenu(null); setLimitFor(c.id); }}>
-                                  <ArrowUpCircle className="h-3.5 w-3.5" /> Subir límite
-                                </MenuItem>
-                                {!c.closedAt && (
-                                  <MenuItem danger onClick={() => { setMenu(null); if (confirm(`¿Cerrar ${c.cardName}? Se pausa la tarjeta.`)) close.mutate({ vccId: c.id }); }}>
-                                    <XCircle className="h-3.5 w-3.5" /> Cerrar tarjeta
-                                  </MenuItem>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
 
                         {/* subir límite inline */}
@@ -167,6 +155,7 @@ export function VccWallet({
 
 /* ── Card face (visual de tarjeta) ── */
 function CardFace({ card, revealed, dim }: { card: VCC; revealed?: boolean; dim?: boolean }) {
+  const [copied, setCopied] = useState(false);
   const last4 = card.last4 ?? card.cardNumber?.slice(-4) ?? "0000";
   const full = card.cardNumber ? card.cardNumber.replace(/(.{4})/g, "$1 ").trim() : "";
   const number = revealed && full ? full : `•••• •••• •••• ${last4}`;
@@ -182,7 +171,17 @@ function CardFace({ card, revealed, dim }: { card: VCC; revealed?: boolean; dim?
       </div>
       <div className="relative mt-1 h-6 w-9 rounded-md" style={{ background: "linear-gradient(135deg, #caa15a, #8c6a2f)" }} />
       <div className="relative">
-        <p className="tabular-nums" style={{ fontFamily: "var(--font-mono)", fontSize: 15, letterSpacing: 1.5, color: "#ededed" }}>{number}</p>
+        <div className="flex items-center gap-2">
+          <p className="tabular-nums" style={{ fontFamily: "var(--font-mono)", fontSize: 15, letterSpacing: 1.5, color: "#ededed" }}>{number}</p>
+          {revealed && card.cardNumber && (
+            <button type="button" title="Copiar número"
+              onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(card.cardNumber!).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors"
+              style={{ background: "rgba(255,255,255,0.08)", color: copied ? "var(--color-success)" : "#ededed" }}>
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            </button>
+          )}
+        </div>
         <div className="mt-1.5 flex items-end justify-between">
           <span className="truncate pr-2 text-[11px] uppercase tracking-wide" style={{ color: "var(--color-muted-foreground)" }}>{card.cardName ?? "VCC"}</span>
           <span className="shrink-0 text-[11px] tabular-nums" style={{ fontFamily: "var(--font-mono)", color: "var(--color-muted-foreground)" }}>
@@ -246,13 +245,11 @@ function ActionBtn({ onClick, children }: { onClick: () => void; children: React
   );
 }
 
-function MenuItem({ onClick, children, danger, disabled }: { onClick: () => void; children: React.ReactNode; danger?: boolean; disabled?: boolean }) {
+function IconBtn({ onClick, title, disabled, children }: { onClick: () => void; title: string; disabled?: boolean; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled}
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors disabled:opacity-50"
-      style={{ color: danger ? "var(--color-error)" : "var(--color-muted-foreground)" }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+    <button type="button" onClick={onClick} title={title} disabled={disabled}
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-50"
+      style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
       {children}
     </button>
   );
