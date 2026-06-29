@@ -35,10 +35,17 @@ export async function resolveRedirect(rawHost: string | null | undefined, rawPat
   const path = normalizePath(rawPath);
   const r = await db.redirect.findUnique({ where: { domain_path: { domain: host, path } } });
   if (!r) return null;
+
+  let target: string | null;
   if (r.cloakOn) {
     const pages = r.whitepages.map((p) => p.trim()).filter(Boolean);
-    if (!pages.length) return null;
-    return pages[Math.floor(Math.random() * pages.length)] ?? null;
+    target = pages.length ? (pages[Math.floor(Math.random() * pages.length)] ?? null) : null;
+  } else {
+    target = r.targetUrl?.trim() || null;
   }
-  return r.targetUrl?.trim() || null;
+  if (!target) return null;
+
+  // Guard anti-loop: nunca redirigir a su propio host.
+  try { if (normalizeHost(new URL(target).host) === host) return null; } catch { /* relativo: lo dejamos pasar */ }
+  return target;
 }
