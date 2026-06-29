@@ -21,6 +21,9 @@ export const TARGET_COUNTRIES: TargetCountry[] = [
   { id: "040", code: "AT", name: "Austria",        timezone: "Europe/Vienna" },
   { id: "756", code: "CH", name: "Suiza",          timezone: "Europe/Zurich" },
   { id: "752", code: "SE", name: "Suecia",         timezone: "Europe/Stockholm" },
+  { id: "372", code: "IE", name: "Irlanda",        timezone: "Europe/Dublin" },
+  { id: "036", code: "AU", name: "Australia",      timezone: "Australia/Sydney" },
+  { id: "554", code: "NZ", name: "Nueva Zelanda",  timezone: "Pacific/Auckland" },
 ];
 
 /** Horario operable: 07:30 → 22:00 hora local. */
