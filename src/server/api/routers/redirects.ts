@@ -28,10 +28,14 @@ export const redirectsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /* ── Redirectores (cualquier usuario) ── */
-  list: protectedProcedure.query(({ ctx }) =>
-    ctx.db.redirect.findMany({ orderBy: [{ domain: "asc" }, { path: "asc" }] }),
-  ),
+  /* ── Redirectores (cada usuario ve los suyos; admin ve todos) ── */
+  list: protectedProcedure.query(({ ctx }) => {
+    const isAdmin = ctx.session.user.role === "admin";
+    return ctx.db.redirect.findMany({
+      where: isAdmin ? {} : { createdById: ctx.session.user.id },
+      orderBy: [{ domain: "asc" }, { path: "asc" }],
+    });
+  }),
 
   create: protectedProcedure
     .input(z.object({ domain: z.string().min(1), path: z.string() }))
@@ -55,24 +59,41 @@ export const redirectsRouter = createTRPCRouter({
       targetUrl: z.string().nullable(),
       campaignId: z.string().nullable(),
     }))
-    .mutation(({ ctx, input }) =>
-      ctx.db.redirect.update({
+    .mutation(async ({ ctx, input }) => {
+      await assertOwner(ctx, input.id);
+      return ctx.db.redirect.update({
         where: { id: input.id },
         data: {
           whitepages: input.whitepages.map((s) => s.trim()).filter(Boolean),
           targetUrl: input.targetUrl?.trim() || null,
           campaignId: input.campaignId,
         },
-      }),
-    ),
+      });
+    }),
 
   setCloak: protectedProcedure
     .input(z.object({ id: z.string(), cloakOn: z.boolean() }))
-    .mutation(({ ctx, input }) =>
-      ctx.db.redirect.update({ where: { id: input.id }, data: { cloakOn: input.cloakOn } }),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      await assertOwner(ctx, input.id);
+      return ctx.db.redirect.update({ where: { id: input.id }, data: { cloakOn: input.cloakOn } });
+    }),
 
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ ctx, input }) => ctx.db.redirect.delete({ where: { id: input.id } })),
+    .mutation(async ({ ctx, input }) => {
+      await assertOwner(ctx, input.id);
+      return ctx.db.redirect.delete({ where: { id: input.id } });
+    }),
 });
+
+/** Sólo el dueño (o admin) puede tocar un redirector. */
+async function assertOwner(
+  ctx: { db: typeof import("@/server/db").db; session: { user: { id: string; role?: string | null } } },
+  id: string,
+) {
+  const r = await ctx.db.redirect.findUnique({ where: { id }, select: { createdById: true } });
+  if (!r) throw new TRPCError({ code: "NOT_FOUND", message: "No existe" });
+  if (ctx.session.user.role !== "admin" && r.createdById !== ctx.session.user.id) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "No es tu redirector" });
+  }
+}
