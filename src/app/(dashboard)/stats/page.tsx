@@ -232,7 +232,7 @@ export default async function StatsPage({
               {localCount}
             </span>
           </div>
-          <ConversionList conversions={convList} />
+          <ConversionList conversions={convList} isAdmin={isAdmin} />
         </div>
 
         {/* Postback URL helper */}

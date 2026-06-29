@@ -1,3 +1,5 @@
+import { ConversionReassign } from "./conversion-reassign";
+
 type Conversion = {
   id: string;
   price: number;
@@ -11,7 +13,8 @@ type Conversion = {
   receivedAt: Date;
 };
 
-export function ConversionList({ conversions }: { conversions: Conversion[] }) {
+export function ConversionList({ conversions, isAdmin = false }: { conversions: Conversion[]; isAdmin?: boolean }) {
+  const cols = isAdmin ? "1fr 80px 60px 100px 120px 40px" : "1fr 80px 60px 100px 120px";
   if (conversions.length === 0) {
     return (
       <div
@@ -37,7 +40,7 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
           color: "var(--color-muted-foreground)",
           borderBottom: "1px solid var(--color-border)",
           background: "var(--color-surface-raised)",
-          gridTemplateColumns: "1fr 80px 60px 100px 120px",
+          gridTemplateColumns: cols,
         }}
       >
         <span>Oferta</span>
@@ -45,6 +48,7 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
         <span>País</span>
         <span>Campaña (s1)</span>
         <span className="text-right">Recibido</span>
+        {isAdmin && <span />}
       </div>
 
       {/* Rows */}
@@ -56,7 +60,7 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
               {/* Desktop: fila de tabla */}
               <div
                 className="hidden items-center px-4 py-3 text-sm md:grid"
-                style={{ gridTemplateColumns: "1fr 80px 60px 100px 120px", borderBottom: border }}
+                style={{ gridTemplateColumns: cols, borderBottom: border }}
               >
                 <span className="truncate font-medium pr-4" style={{ color: "var(--color-foreground)" }}>
                   {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>—</span>}
@@ -73,6 +77,11 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
                 <span className="text-right text-xs" style={{ color: "var(--color-subtle)" }}>
                   {relativeTime(c.receivedAt)}
                 </span>
+                {isAdmin && (
+                  <span className="flex justify-end">
+                    <ConversionReassign id={c.id} currentS1={c.s1} offerName={c.offerName} />
+                  </span>
+                )}
               </div>
 
               {/* Móvil: card */}
@@ -81,9 +90,12 @@ export function ConversionList({ conversions }: { conversions: Conversion[] }) {
                   <span className="truncate text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
                     {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>Sin oferta</span>}
                   </span>
-                  <span className="shrink-0 tabular-nums text-sm font-semibold" style={{ color: "#a78bfa" }}>
-                    ${c.price.toFixed(2)}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="tabular-nums text-sm font-semibold" style={{ color: "#a78bfa" }}>
+                      ${c.price.toFixed(2)}
+                    </span>
+                    {isAdmin && <ConversionReassign id={c.id} currentS1={c.s1} offerName={c.offerName} />}
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs" style={{ color: "var(--color-subtle)" }}>
                   <span>{c.country ?? "—"}</span>
