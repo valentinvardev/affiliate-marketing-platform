@@ -108,7 +108,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
   const count = convs.length;
   const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
   const todayRevenue = convs.filter((c) => new Date(c.receivedAt) >= startToday).reduce((s, c) => s + c.price, 0);
-  const avg = count > 0 ? revenue / count : 0;
+  const clicks = await db.click.count({ where: { s1: campaign.slug } });
 
   // Tarjetas vinculadas + gasto (live de la suite)
   const linkOwners = await db.cardOwner.findMany({ where: { campaignId: id } });
@@ -182,7 +182,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Tile label="Ingresos" value={usd(revenue)} />
             <Tile label="Conversiones" value={String(count)} />
-            <Tile label="Ticket prom." value={usd(avg)} />
+            <Tile label="Clicks" value={String(clicks)} />
             <Tile label="Hoy" value={usd(todayRevenue)} accent={todayRevenue > 0} />
           </div>
 
@@ -211,7 +211,7 @@ function Tile({ label, value, accent }: { label: string; value: string; accent?:
   return (
     <div className="rounded-2xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>{label}</p>
-      <p className="mt-1.5 tabular-nums text-xl font-bold" style={{ fontFamily: "var(--font-mono)", color: accent ? "var(--color-success)" : "var(--color-foreground)" }}>{value}</p>
+      <p className="mt-1.5 tabular-nums text-2xl" style={{ fontFamily: "var(--font-brand)", fontWeight: 800, letterSpacing: "-0.02em", color: accent ? "var(--color-success)" : "var(--color-foreground)" }}>{value}</p>
     </div>
   );
 }

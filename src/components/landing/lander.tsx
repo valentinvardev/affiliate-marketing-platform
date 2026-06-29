@@ -22,6 +22,7 @@ const FEATURE_ICONS = [UserPlus, Search, Zap, Wallet];
 /** Forma mínima de campaña que necesita el lander (slug o dominio la resuelven). */
 export type LanderCampaign = {
   name: string;
+  slug?: string | null;
   locale: string | null;
   colorPrimary: string;
   colorBg: string;
@@ -145,6 +146,10 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
   const fontBody = fontStack(campaign.fontBody);
   const fontsHref = googleFontsHref([campaign.fontTitle ?? "Inter", campaign.fontBody ?? "Inter"]);
   const ctaUrl = campaign.ctaUrl;
+  // Si hay slug, el CTA pasa por /api/click para registrar el click y redirigir a la oferta.
+  const ctaHref = campaign.slug
+    ? `/api/click?s1=${encodeURIComponent(campaign.slug)}&to=${encodeURIComponent(ctaUrl)}`
+    : ctaUrl;
   const logoUrl = campaign.logoUrl;
   const currencySymbol = campaign.currencySymbol;
 
@@ -326,7 +331,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
 
             {/* Main CTA button */}
             <a
-              href={ctaUrl}
+              href={ctaHref}
               className="l-cta-zoom"
               style={{
                 display: "block",
@@ -440,7 +445,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
                 {offers.map((offer) => (
                   <a
                     key={offer.id}
-                    href={ctaUrl}
+                    href={ctaHref}
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -595,7 +600,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
               return (
                 <a
                   key={f.title}
-                  href={ctaUrl}
+                  href={ctaHref}
                   className="lg-card"
                   style={{
                     display: "flex",
@@ -858,7 +863,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
 
         {/* ── Sticky bottom CTA ── */}
         <a
-          href={ctaUrl}
+          href={ctaHref}
           style={{
             position: "fixed",
             insetInline: 0,

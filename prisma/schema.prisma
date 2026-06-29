@@ -270,3 +270,14 @@ model Conversion {
     @@index([receivedAt])
     @@index([s1])
 }
+
+// Click al CTA de una landing (s1 = slug de la campaña), para métricas por campaña.
+model Click {
+    id        String   @id @default(cuid())
+    s1        String
+    ip        String?
+    createdAt DateTime @default(now())
+
+    @@index([s1])
+    @@index([createdAt])
+}
