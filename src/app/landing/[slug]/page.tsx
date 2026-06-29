@@ -1,9 +1,11 @@
 import { db } from "@/server/db";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Lander } from "@/components/landing/lander";
 import { LanderGate } from "@/components/landing/lander-gate";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
+import { resolveRedirect } from "@/server/redirect-resolver";
 
 export async function generateMetadata({
   params,
@@ -23,6 +25,10 @@ export default async function LandingPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  // Redirector de cloaking en dominio/ruta (ej. dealdrop.lat/1): redirigir antes de servir.
+  const to = await resolveRedirect((await headers()).get("host"), slug);
+  if (to) redirect(to);
 
   const campaign = await db.campaign.findUnique({
     where: { slug },

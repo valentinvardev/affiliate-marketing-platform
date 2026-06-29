@@ -52,16 +52,29 @@ model LandingDomain {
     @@index([campaignId])
 }
 
-// Dominio de redirección (cloaking): ON → rota whitepages, OFF → landing de campaña.
+// Dominios de redirección disponibles (sólo el admin los agrega; ej. "dealdrop.lat").
+model RedirectDomain {
+    id        String   @id @default(cuid())
+    domain    String   @unique // apex en minúsculas, sin www
+    createdAt DateTime @default(now())
+}
+
+// Redirector (cloaking) en dominio/ruta: ON → rota whitepages, OFF → landing de campaña.
+// Varios por dominio vía la ruta (ej. dealdrop.lat/1, dealdrop.lat/caca).
 model Redirect {
-    id         String   @id @default(cuid())
-    domain     String   @unique // apex en minúsculas, sin www (ej. "dealdrop.lat")
-    cloakOn    Boolean  @default(false)
-    whitepages String[] @default([]) // destinos cuando el cloak está prendido
-    targetUrl  String?  // landing de la campaña cuando está apagado
-    campaignId String?  // campaña elegida (referencia para autofill)
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+    id          String   @id @default(cuid())
+    domain      String   // uno de RedirectDomain
+    path        String   @default("") // ruta tras el dominio: "1", "caca" ("" = raíz)
+    createdById String?  // quién lo creó
+    cloakOn     Boolean  @default(false)
+    whitepages  String[] @default([]) // destinos cuando el cloak está prendido
+    targetUrl   String?  // landing de la campaña cuando está apagado
+    campaignId  String?  // campaña elegida (referencia para autofill)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@unique([domain, path])
+    @@index([domain])
 }
 
 model CampaignOffer {

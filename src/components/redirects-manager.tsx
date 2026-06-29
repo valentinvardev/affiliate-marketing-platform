@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import {
   Shuffle, Globe, Plus, Trash2, Loader2, Check, ExternalLink, Search, X, Target, ListPlus, AlertTriangle,
@@ -11,16 +12,27 @@ import type { RouterOutputs } from "@/trpc/react";
 type Redirect = RouterOutputs["redirects"]["list"][number];
 
 export function RedirectsManager() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+
   const utils = api.useUtils();
+  const domainsQ = api.redirects.domains.useQuery();
   const listQ = api.redirects.list.useQuery();
+
   const create = api.redirects.create.useMutation({
-    onSuccess: () => { setNewDomain(""); void utils.redirects.list.invalidate(); },
+    onSuccess: () => { setPath(""); void utils.redirects.list.invalidate(); },
     onError: (e) => setErr(e.message),
   });
-  const [newDomain, setNewDomain] = useState("");
+
+  const domains = domainsQ.data ?? [];
+  const items = listQ.data ?? [];
+
+  const [domain, setDomain] = useState("");
+  const [path, setPath] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
-  const items = listQ.data ?? [];
+  // dominio por defecto cuando cargan
+  useEffect(() => { if (!domain && domains[0]) setDomain(domains[0].domain); }, [domains, domain]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -34,42 +46,54 @@ export function RedirectsManager() {
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 md:px-8">
         <p className="mb-5 text-xs leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
-          Un dominio (ej. <span className="font-mono" style={{ color: "var(--color-foreground)" }}>dealdrop.lat</span>) con dos
-          destinos manejados por un switch: <strong>cloaking</strong> prendido rota una lista de páginas; apagado manda a la
-          landing de una campaña.
+          Cada redirector vive en un <strong>dominio/ruta</strong> (ej. <span className="font-mono" style={{ color: "var(--color-foreground)" }}>dealdrop.lat/1</span>)
+          con un switch: <strong>cloaking</strong> prendido rota una lista de páginas; apagado manda a la landing de una campaña.
         </p>
 
-        {/* Agregar dominio */}
-        <div className="mb-6 flex items-center gap-2">
-          <div className="flex flex-1 items-center rounded-md" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-            <Globe className="ml-3 h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
-            <input
-              value={newDomain}
-              onChange={(e) => { setNewDomain(e.target.value); setErr(null); }}
-              onKeyDown={(e) => { if (e.key === "Enter" && newDomain.trim()) create.mutate({ domain: newDomain }); }}
-              placeholder="dealdrop.lat"
-              className="flex-1 bg-transparent px-2.5 py-2 text-sm outline-none"
-              style={{ color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }}
-            />
-          </div>
-          <button type="button" disabled={!newDomain.trim() || create.isPending}
-            onClick={() => create.mutate({ domain: newDomain })}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
-            style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
-            {create.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-            Agregar
-          </button>
-        </div>
-        {err && <p className="-mt-4 mb-5 inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
+        {/* Dominios (solo admin) */}
+        {isAdmin && <DomainsAdmin />}
 
-        {/* Lista */}
+        {/* Nuevo redirector */}
+        <div className="mb-6 rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+          <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Nuevo redirector</p>
+          {domains.length === 0 ? (
+            <p className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+              {isAdmin ? "Agregá un dominio arriba para empezar." : "Todavía no hay dominios. Pedile al admin que agregue uno."}
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center rounded-md" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+                  <select value={domain} onChange={(e) => setDomain(e.target.value)}
+                    className="bg-transparent py-2 pl-3 pr-2 text-sm outline-none" style={{ color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }}>
+                    {domains.map((d) => <option key={d.id} value={d.domain} style={{ background: "var(--color-surface-raised)" }}>{d.domain}</option>)}
+                  </select>
+                  <span className="text-sm" style={{ color: "var(--color-subtle)" }}>/</span>
+                  <input value={path} onChange={(e) => { setPath(e.target.value); setErr(null); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && domain) create.mutate({ domain, path }); }}
+                    placeholder="1, caca, pis…"
+                    className="w-32 bg-transparent py-2 pl-1 pr-3 text-sm outline-none" style={{ color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }} />
+                </div>
+                <button type="button" disabled={!domain || create.isPending} onClick={() => create.mutate({ domain, path })}
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+                  {create.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                  Crear
+                </button>
+              </div>
+              {err && <p className="mt-2 inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
+            </>
+          )}
+        </div>
+
+        {/* Lista de redirectores */}
         {listQ.isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
         ) : items.length === 0 ? (
           <div className="rounded-xl py-16 text-center" style={{ border: "1px dashed var(--color-border)" }}>
             <Shuffle className="mx-auto h-6 w-6" style={{ color: "var(--color-subtle)" }} />
-            <p className="mt-3 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Sin redirecciones</p>
-            <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Agregá un dominio arriba para empezar.</p>
+            <p className="mt-3 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Sin redirectores</p>
+            <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Creá uno arriba eligiendo dominio y ruta.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -77,6 +101,52 @@ export function RedirectsManager() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+/* ── Admin: dominios disponibles ── */
+function DomainsAdmin() {
+  const utils = api.useUtils();
+  const domainsQ = api.redirects.domains.useQuery();
+  const add = api.redirects.addDomain.useMutation({ onSuccess: () => { setVal(""); void utils.redirects.domains.invalidate(); }, onError: (e) => setErr(e.message) });
+  const remove = api.redirects.removeDomain.useMutation({ onSuccess: () => { void utils.redirects.domains.invalidate(); void utils.redirects.list.invalidate(); } });
+  const [val, setVal] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const domains = domainsQ.data ?? [];
+
+  return (
+    <div className="mb-6 rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
+      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Dominios disponibles · admin</p>
+      {domains.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {domains.map((d) => (
+            <span key={d.id} className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono"
+              style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+              {d.domain}
+              <button type="button" title="Eliminar dominio y sus redirectores"
+                onClick={() => { if (confirm(`¿Eliminar ${d.domain} y todos sus redirectores?`)) remove.mutate({ id: d.id }); }}
+                style={{ color: "var(--color-subtle)" }}><X className="h-3 w-3" /></button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center rounded-md" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
+          <Globe className="ml-3 h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
+          <input value={val} onChange={(e) => { setVal(e.target.value); setErr(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && val.trim()) add.mutate({ domain: val }); }}
+            placeholder="dealdrop.lat"
+            className="flex-1 bg-transparent px-2.5 py-2 text-sm outline-none" style={{ color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }} />
+        </div>
+        <button type="button" disabled={!val.trim() || add.isPending} onClick={() => add.mutate({ domain: val })}
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
+          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+          {add.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+          Agregar dominio
+        </button>
+      </div>
+      {err && <p className="mt-2 inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
     </div>
   );
 }
@@ -97,6 +167,7 @@ function RedirectCard({ redirect: r }: { redirect: Redirect }) {
 
   useEffect(() => { setCloakOn(r.cloakOn); }, [r.cloakOn]);
 
+  const fullPath = r.path ? `${r.domain}/${r.path}` : r.domain;
   const pagesArr = pages.split("\n").map((s) => s.trim()).filter(Boolean);
   const dirty =
     JSON.stringify(pagesArr) !== JSON.stringify(r.whitepages ?? []) ||
@@ -107,14 +178,14 @@ function RedirectCard({ redirect: r }: { redirect: Redirect }) {
     <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
       {/* Cabecera */}
       <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-        <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-muted-foreground)" }} />
-        <span className="min-w-0 flex-1 truncate font-mono text-sm" style={{ color: "var(--color-foreground)" }}>{r.domain}</span>
-        <a href={`https://${r.domain}`} target="_blank" rel="noopener noreferrer" title="Abrir"
+        <Shuffle className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-muted-foreground)" }} />
+        <span className="min-w-0 flex-1 truncate font-mono text-sm" style={{ color: "var(--color-foreground)" }}>{fullPath}</span>
+        <a href={`https://${fullPath}`} target="_blank" rel="noopener noreferrer" title="Abrir"
           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
         <button type="button" title="Eliminar" disabled={remove.isPending}
-          onClick={() => { if (confirm(`¿Eliminar la redirección de ${r.domain}?`)) remove.mutate({ id: r.id }); }}
+          onClick={() => { if (confirm(`¿Eliminar el redirector ${fullPath}?`)) remove.mutate({ id: r.id }); }}
           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
           {remove.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
         </button>

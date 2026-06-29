@@ -13,6 +13,7 @@ const NAV_BASE = [
   { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
   { href: "/campaigns/new", icon: BookOpen,   label: "Nueva campaña" },
   { href: "/offers",        icon: Package,    label: "Ofertas" },
+  { href: "/redirecciones", icon: Shuffle,    label: "Redirecciones" },
   { href: "/mapa",          icon: Globe,      label: "Mapa" },
   { href: "/stats",         icon: BarChart2,  label: "Estadísticas" },
   { href: "/leaderboard",  icon: Trophy,     label: "Leaderboard" },
@@ -51,7 +52,6 @@ export function Sidebar() {
   const nav = [
     ...NAV_BASE,
     ...(isEstrategista ? [{ href: "/equipo", icon: Users, label: "Mi equipo" }] : []),
-    ...(isAdmin ? [{ href: "/redirecciones", icon: Shuffle, label: "Redirecciones" }] : []),
     ...(isAdmin ? [{ href: "/admin", icon: ShieldCheck, label: "Admin" }] : []),
   ];
 

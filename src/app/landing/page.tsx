@@ -40,8 +40,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingByHostPage() {
-  // Dominio de cloaking (ej. dealdrop.lat): redirigir antes de resolver la landing.
-  const to = await resolveRedirect((await headers()).get("host"));
+  // Dominio de cloaking (raíz, ej. dealdrop.lat/): redirigir antes de resolver la landing.
+  const to = await resolveRedirect((await headers()).get("host"), "");
   if (to) redirect(to);
 
   const campaign = await campaignForHost();
