@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { IntroSequence } from "@/components/intro-sequence";
 
 function LoginForm() {
   const router = useRouter();
@@ -17,7 +16,6 @@ function LoginForm() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [intro, setIntro] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,20 +32,10 @@ function LoginForm() {
       setLoading(false);
       setError("Credenciales incorrectas o cuenta pendiente de aprobación.");
     } else {
-      // Auth OK → reproducir intro estilo GTA, luego entrar al panel
-      setIntro(true);
+      // Auth OK → directo al panel (intro desactivada)
+      router.push("/overview");
+      router.refresh();
     }
-  }
-
-  if (intro) {
-    return (
-      <IntroSequence
-        onComplete={() => {
-          router.push("/overview");
-          router.refresh();
-        }}
-      />
-    );
   }
 
   return (
