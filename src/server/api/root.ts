@@ -11,6 +11,7 @@ import { domainsRouter } from "@/server/api/routers/domains";
 import { accountRouter } from "@/server/api/routers/account";
 import { appsRouter } from "@/server/api/routers/apps";
 import { limitsRouter } from "@/server/api/routers/limits";
+import { redirectsRouter } from "@/server/api/routers/redirects";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 export const appRouter = createTRPCRouter({
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   account: accountRouter,
   apps: appsRouter,
   limits: limitsRouter,
+  redirects: redirectsRouter,
 });
 
 export type AppRouter = typeof appRouter;

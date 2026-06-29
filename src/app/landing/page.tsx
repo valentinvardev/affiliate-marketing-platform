@@ -1,10 +1,11 @@
 import { db } from "@/server/db";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Lander } from "@/components/landing/lander";
 import { LanderGate } from "@/components/landing/lander-gate";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
+import { resolveRedirect } from "@/server/redirect-resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingByHostPage() {
+  // Dominio de cloaking (ej. dealdrop.lat): redirigir antes de resolver la landing.
+  const to = await resolveRedirect((await headers()).get("host"));
+  if (to) redirect(to);
+
   const campaign = await campaignForHost();
   if (!campaign?.isActive) notFound();
 
