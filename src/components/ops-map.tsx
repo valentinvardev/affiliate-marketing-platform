@@ -39,24 +39,48 @@ function rimArc(a0: number, a1: number): string {
   return d;
 }
 
+/** Punto del cruce con el horizonte (cosc=0) entre A y B, interpolando en lon/lat. */
+function crossing(a: number[], b: number[], aVisible: boolean, rot: Rot): { x: number; y: number; ang: number } {
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 24; i++) {
+    const m = (lo + hi) / 2;
+    const c = ortho(a[0]! + (b[0]! - a[0]!) * m, a[1]! + (b[1]! - a[1]!) * m, rot).cosc;
+    if ((c >= 0) === aVisible) lo = m; else hi = m;
+  }
+  const m = (lo + hi) / 2;
+  const p = ortho(a[0]! + (b[0]! - a[0]!) * m, a[1]! + (b[1]! - a[1]!) * m, rot);
+  return { x: p.x, y: p.y, ang: Math.atan2(p.y - CY, p.x - CX) };
+}
+
 function ringPath(ring: number[][], rot: Rot): string {
-  const P = ring.map((p) => ortho(p[0]!, p[1]!, rot));
-  const n = P.length;
-  if (!P.some((p) => p.cosc >= 0)) return ""; // anillo entero en la cara oculta
-  const ang = (p: { x: number; y: number }) => Math.atan2(p.y - CY, p.x - CX);
-  let s = 0; while (s < n && P[s]!.cosc < 0) s++; // arrancar en un vértice visible
-  let d = "", started = false, hidden = false, exitA = 0;
+  const n = ring.length;
+  if (n < 3) return "";
+  const vis = ring.map((p) => ortho(p[0]!, p[1]!, rot).cosc >= 0);
+  if (!vis.some(Boolean)) return ""; // anillo entero en la cara oculta
+  let s = 0; while (!vis[s]) s++;    // arrancar en un vértice visible
+
+  let d = "", exitA: number | null = null;
   for (let k = 0; k <= n; k++) {
-    const cur = P[(s + k) % n]!;
-    if (cur.cosc >= 0) {
-      if (hidden) { d += rimArc(exitA, ang(cur)); hidden = false; } // volver siguiendo el limbo
-      d += (started ? "L" : "M") + cur.x.toFixed(1) + "," + cur.y.toFixed(1);
-      started = true;
-    } else if (!hidden) { // primer punto oculto: salir al limbo y dejar de dibujar el interior
-      exitA = ang(cur);
-      d += "L" + (CX + Math.cos(exitA) * R).toFixed(1) + "," + (CY + Math.sin(exitA) * R).toFixed(1);
-      hidden = true;
+    const i = (s + k) % n, j = (s + k - 1 + n) % n;
+    const cur = ring[i]!, prev = ring[j]!;
+    if (k === 0) {
+      const o = ortho(cur[0]!, cur[1]!, rot);
+      d += "M" + o.x.toFixed(1) + "," + o.y.toFixed(1);
+    } else if (vis[j] && vis[i]) {
+      const o = ortho(cur[0]!, cur[1]!, rot);
+      d += "L" + o.x.toFixed(1) + "," + o.y.toFixed(1);
+    } else if (vis[j] && !vis[i]) { // sale: línea al cruce en el limbo
+      const c = crossing(prev, cur, true, rot);
+      d += "L" + c.x.toFixed(1) + "," + c.y.toFixed(1);
+      exitA = c.ang;
+    } else if (!vis[j] && vis[i]) { // entra: arco por el limbo hasta el cruce, luego al interior
+      const c = crossing(cur, prev, true, rot);
+      if (exitA !== null) d += rimArc(exitA, c.ang);
+      const o = ortho(cur[0]!, cur[1]!, rot);
+      d += "L" + o.x.toFixed(1) + "," + o.y.toFixed(1);
+      exitA = null;
     }
+    // oculto→oculto: no se dibuja
   }
   return d + "Z";
 }
