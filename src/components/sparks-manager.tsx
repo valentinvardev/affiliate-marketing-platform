@@ -10,7 +10,7 @@ import { LOCALES, getLocaleByCode } from "@/lib/locales";
 import { tiktokEmbedSrc } from "@/lib/tiktok";
 import {
   Sparkles, Plus, Play, Star, Copy, Check, Loader2, X, Lock, Trash2, Pencil,
-  Zap, MessageSquare, Package, AlertTriangle, EyeOff,
+  Zap, MessageSquare, Package, AlertTriangle, EyeOff, Flag,
 } from "lucide-react";
 
 type Available = RouterOutputs["sparks"]["list"][number];
@@ -20,9 +20,10 @@ type AnySpark = { tiktokUrl: string; title: string };
 
 export function SparksManager() {
   const { data: session } = useSession();
-  const isStrat = session?.user?.role === "estrategista" || session?.user?.role === "admin";
+  const isAdmin = session?.user?.role === "admin";
 
   const [tab, setTab] = useState<"available" | "library" | "manage">("available");
+  const [kind, setKind] = useState<"WH" | "BH">("WH");
   const [player, setPlayer] = useState<AnySpark | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [claimedCode, setClaimedCode] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export function SparksManager() {
   const tabs: { key: typeof tab; label: string }[] = [
     { key: "available", label: "Disponibles" },
     { key: "library", label: "Mi biblioteca" },
-    ...(isStrat ? [{ key: "manage" as const, label: "Gestión" }] : []),
+    ...(isAdmin ? [{ key: "manage" as const, label: "Gestión" }] : []),
   ];
 
   return (
@@ -47,7 +48,7 @@ export function SparksManager() {
             </button>
           ))}
         </nav>
-        {isStrat && (
+        {isAdmin && (
           <button type="button" onClick={() => setUploadOpen(true)}
             className="ml-auto inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
             style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
@@ -57,13 +58,14 @@ export function SparksManager() {
       </header>
 
       <main className="flex-1 px-4 py-6 md:px-8">
-        {tab === "available" && <AvailableGrid onPlay={setPlayer} onClaimed={setClaimedCode} />}
-        {tab === "library" && <LibraryGrid onPlay={setPlayer} />}
-        {tab === "manage" && isStrat && <ManageGrid onPlay={setPlayer} />}
+        <KindToggle kind={kind} onChange={setKind} />
+        {tab === "available" && <AvailableGrid kind={kind} onPlay={setPlayer} onClaimed={setClaimedCode} />}
+        {tab === "library" && <LibraryGrid kind={kind} onPlay={setPlayer} />}
+        {tab === "manage" && isAdmin && <ManageGrid kind={kind} onPlay={setPlayer} />}
       </main>
 
       {player && <PlayerModal spark={player} onClose={() => setPlayer(null)} />}
-      {uploadOpen && <SparkFormModal onClose={() => setUploadOpen(false)} />}
+      {uploadOpen && <SparkFormModal defaultKind={kind} onClose={() => setUploadOpen(false)} />}
       {claimedCode !== null && <ClaimedModal code={claimedCode} onClose={() => setClaimedCode(null)} />}
     </div>
   );
@@ -71,9 +73,9 @@ export function SparksManager() {
 
 /* ───────── Grids ───────── */
 
-function AvailableGrid({ onPlay, onClaimed }: { onPlay: (s: AnySpark) => void; onClaimed: (code: string) => void }) {
+function AvailableGrid({ kind, onPlay, onClaimed }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void; onClaimed: (code: string) => void }) {
   const utils = api.useUtils();
-  const q = api.sparks.list.useQuery();
+  const q = api.sparks.list.useQuery({ kind });
   const claim = api.sparks.claim.useMutation({
     onSuccess: (r) => { onClaimed(r.sparkCode); void utils.sparks.list.invalidate(); void utils.sparks.library.invalidate(); void utils.sparks.manage.invalidate(); },
     onError: (e) => alert(e.message),
@@ -107,14 +109,14 @@ function AvailableGrid({ onPlay, onClaimed }: { onPlay: (s: AnySpark) => void; o
   );
 }
 
-function LibraryGrid({ onPlay }: { onPlay: (s: AnySpark) => void }) {
+function LibraryGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void }) {
   const utils = api.useUtils();
   const q = api.sparks.library.useQuery();
   const rate = api.sparks.rate.useMutation({ onSuccess: () => void utils.sparks.library.invalidate() });
 
   if (q.isLoading) return <Spinner />;
-  const items = q.data ?? [];
-  if (!items.length) return <Empty msg="Todavía no reclamaste ningún spark." />;
+  const items = (q.data ?? []).filter((s) => s.kind === kind);
+  if (!items.length) return <Empty msg="No reclamaste ningún spark de este tipo." />;
 
   return (
     <Grid>
@@ -125,6 +127,7 @@ function LibraryGrid({ onPlay }: { onPlay: (s: AnySpark) => void }) {
 
 function LibraryCard({ s, onPlay, onRate, rating }: { s: LibItem; onPlay: () => void; onRate: (n: number) => void; rating: boolean }) {
   const [copied, setCopied] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   return (
     <Card>
       <Thumb spark={s} onPlay={onPlay} />
@@ -147,13 +150,17 @@ function LibraryCard({ s, onPlay, onRate, rating }: { s: LibItem; onPlay: () => 
           <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Tu rating</span>
           <Stars value={s.myStars} onChange={onRate} />
           {rating && <Loader2 className="h-3 w-3 animate-spin" style={{ color: "var(--color-subtle)" }} />}
+          <button type="button" onClick={() => setReportOpen(true)} className="ml-auto inline-flex items-center gap-1 text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
+            <Flag className="h-3 w-3" /> Reportar
+          </button>
         </div>
       </div>
+      {reportOpen && <ReportModal sparkId={s.id} title={s.title} onClose={() => setReportOpen(false)} />}
     </Card>
   );
 }
 
-function ManageGrid({ onPlay }: { onPlay: (s: AnySpark) => void }) {
+function ManageGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void }) {
   const utils = api.useUtils();
   const q = api.sparks.manage.useQuery();
   const setUsable = api.sparks.setUsable.useMutation({ onSuccess: () => { void utils.sparks.manage.invalidate(); void utils.sparks.list.invalidate(); }, onError: (e) => alert(e.message) });
@@ -162,10 +169,11 @@ function ManageGrid({ onPlay }: { onPlay: (s: AnySpark) => void }) {
   const [editing, setEditing] = useState<ManageItem | null>(null);
   const [boosting, setBoosting] = useState<ManageItem | null>(null);
   const [feedback, setFeedback] = useState<ManageItem | null>(null);
+  const [reports, setReports] = useState<ManageItem | null>(null);
 
   if (q.isLoading) return <Spinner />;
-  const items = q.data ?? [];
-  if (!items.length) return <Empty msg="No subiste ningún spark todavía." />;
+  const items = (q.data ?? []).filter((s) => s.kind === kind);
+  if (!items.length) return <Empty msg="No hay sparks de este tipo." />;
 
   const statusStyle: Record<string, { label: string; color: string }> = {
     available: { label: "Disponible", color: "var(--color-success)" },
@@ -189,15 +197,17 @@ function ManageGrid({ onPlay }: { onPlay: (s: AnySpark) => void }) {
                   </span>
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{s.title}</p>
-                <div className="mt-1 flex items-center gap-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>
                   <Stars value={Math.round(s.avgRating)} readOnly />
                   <span>{s.ratingsCount || 0}</span>
                   {s.claimedBy && <span>· por {s.claimedBy}</span>}
+                  {s.reportsCount > 0 && <span style={{ color: "var(--color-error)" }}>· {s.reportsCount} reporte{s.reportsCount > 1 ? "s" : ""}</span>}
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
                   <Act onClick={() => setBoosting(s)} icon={<Zap className="h-3.5 w-3.5" />} label="Botear" />
                   <Act onClick={() => setFeedback(s)} icon={<MessageSquare className="h-3.5 w-3.5" />} label="Feedback" />
+                  <Act onClick={() => setReports(s)} icon={<Flag className="h-3.5 w-3.5" />} label={s.reportsCount ? `Reportes (${s.reportsCount})` : "Reportes"} />
                   {s.status !== "claimed" && (
                     <Act onClick={() => setUsable.mutate({ id: s.id, usable: s.status === "disabled" })}
                       icon={s.status === "disabled" ? <Check className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -214,11 +224,30 @@ function ManageGrid({ onPlay }: { onPlay: (s: AnySpark) => void }) {
       {editing && <SparkFormModal edit={editing} onClose={() => setEditing(null)} />}
       {boosting && <BoostModal spark={boosting} onClose={() => setBoosting(null)} />}
       {feedback && <FeedbackModal spark={feedback} onClose={() => setFeedback(null)} />}
+      {reports && <ReportsModal spark={reports} onClose={() => setReports(null)} />}
     </>
   );
 }
 
 /* ───────── Cards / bits ───────── */
+
+function KindToggle({ kind, onChange }: { kind: "WH" | "BH"; onChange: (k: "WH" | "BH") => void }) {
+  const opts: { k: "WH" | "BH"; sub: string }[] = [{ k: "WH", sub: "White hat" }, { k: "BH", sub: "Black hat" }];
+  return (
+    <div className="mb-5 inline-flex gap-1 rounded-lg p-1" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
+      {opts.map((o) => {
+        const on = kind === o.k;
+        return (
+          <button key={o.k} type="button" onClick={() => onChange(o.k)}
+            className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
+            style={{ background: on ? "var(--color-foreground)" : "transparent", color: on ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
+            {o.k} <span className="font-normal opacity-70">· {o.sub}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
@@ -338,7 +367,7 @@ function PlayerModal({ spark, onClose }: { spark: AnySpark; onClose: () => void 
 }
 
 /* ───────── Subir / editar ───────── */
-function SparkFormModal({ onClose, edit }: { onClose: () => void; edit?: ManageItem }) {
+function SparkFormModal({ onClose, edit, defaultKind = "WH" }: { onClose: () => void; edit?: ManageItem; defaultKind?: "WH" | "BH" }) {
   const utils = api.useUtils();
   const refresh = () => { void utils.sparks.list.invalidate(); void utils.sparks.manage.invalidate(); };
   const create = api.sparks.create.useMutation({ onSuccess: () => { refresh(); onClose(); }, onError: (e) => setErr(e.message) });
@@ -349,6 +378,7 @@ function SparkFormModal({ onClose, edit }: { onClose: () => void; edit?: ManageI
   const [tiktokUrl, setTiktokUrl] = useState(edit?.tiktokUrl ?? "");
   const [sparkCode, setSparkCode] = useState(edit?.sparkCode ?? "");
   const [language, setLanguage] = useState(edit?.language ?? "en");
+  const [kind, setKind] = useState<"WH" | "BH">(edit?.kind === "BH" ? "BH" : edit?.kind === "WH" ? "WH" : defaultKind);
   const [err, setErr] = useState<string | null>(null);
 
   const pending = create.isPending || update.isPending;
@@ -356,14 +386,25 @@ function SparkFormModal({ onClose, edit }: { onClose: () => void; edit?: ManageI
 
   function submit() {
     setErr(null);
-    if (edit) update.mutate({ id: edit.id, title, description, sparkCode, language });
-    else create.mutate({ title, description, tiktokUrl, sparkCode, language });
+    if (edit) update.mutate({ id: edit.id, title, description, sparkCode, language, kind });
+    else create.mutate({ title, description, tiktokUrl, sparkCode, language, kind });
   }
 
   return (
     <Modal onClose={onClose}>
       <ModalHead title={edit ? "Editar spark" : "Subir spark"} onClose={onClose} />
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+        <Field label="Tipo">
+          <div className="inline-flex gap-1 rounded-md p-0.5" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+            {(["WH", "BH"] as const).map((k) => (
+              <button key={k} type="button" onClick={() => setKind(k)}
+                className="rounded px-4 py-1.5 text-xs font-semibold transition-colors"
+                style={{ background: kind === k ? "var(--color-foreground)" : "transparent", color: kind === k ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
+                {k} <span className="font-normal opacity-70">· {k === "WH" ? "White hat" : "Black hat"}</span>
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Título"><Inp value={title} onChange={setTitle} placeholder="Hook de Martina" /></Field>
         <Field label="Descripción (opcional)"><Inp value={description} onChange={setDescription} placeholder="Notas para el usuario" /></Field>
         {!edit && <Field label="URL del TikTok"><Inp value={tiktokUrl} onChange={setTiktokUrl} placeholder="https://www.tiktok.com/@user/video/123…" mono /></Field>}
@@ -460,6 +501,86 @@ function FeedbackModal({ spark, onClose }: { spark: ManageItem; onClose: () => v
                   <span className="ml-auto"><Stars value={r.stars} readOnly /></span>
                 </div>
                 {r.comment && <p className="mt-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{r.comment}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/* ───────── Reportes ───────── */
+const REASONS: { value: "no_interactions" | "review_not_approved" | "other"; label: string }[] = [
+  { value: "no_interactions", label: "Falta de interacciones" },
+  { value: "review_not_approved", label: "Review no aprobada" },
+  { value: "other", label: "Otro" },
+];
+const REASON_LABEL: Record<string, string> = Object.fromEntries(REASONS.map((r) => [r.value, r.label]));
+
+function ReportModal({ sparkId, title, onClose }: { sparkId: string; title: string; onClose: () => void }) {
+  const [reason, setReason] = useState<"no_interactions" | "review_not_approved" | "other">("no_interactions");
+  const [note, setNote] = useState("");
+  const [done, setDone] = useState(false);
+  const report = api.sparks.report.useMutation({ onSuccess: () => { setDone(true); setTimeout(onClose, 900); } });
+  return (
+    <Modal onClose={onClose} maxW="max-w-sm">
+      <ModalHead title={`Reportar · ${title}`} onClose={onClose} />
+      <div className="space-y-3 px-5 py-4">
+        {done ? (
+          <p className="py-6 text-center text-sm font-medium" style={{ color: "var(--color-success)" }}>Reporte enviado ✓</p>
+        ) : (
+          <>
+            <Field label="Motivo">
+              <div className="flex flex-col gap-1.5">
+                {REASONS.map((r) => (
+                  <button key={r.value} type="button" onClick={() => setReason(r.value)}
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors"
+                    style={{ border: `1px solid ${reason === r.value ? "var(--color-border-focus)" : "var(--color-border)"}`, background: reason === r.value ? "var(--color-surface-overlay)" : "transparent", color: "var(--color-foreground)" }}>
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ border: "1px solid var(--color-subtle)", background: reason === r.value ? "var(--color-foreground)" : "transparent" }} />
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Detalle (opcional)"><Inp value={note} onChange={setNote} placeholder="Qué pasó…" /></Field>
+            <button type="button" disabled={report.isPending} onClick={() => report.mutate({ sparkId, reason, note })}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-opacity disabled:opacity-40"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+              {report.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Flag className="h-3.5 w-3.5" />} Enviar reporte
+            </button>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function ReportsModal({ spark, onClose }: { spark: ManageItem; onClose: () => void }) {
+  const utils = api.useUtils();
+  const q = api.sparks.reports.useQuery({ sparkId: spark.id });
+  const resolve = api.sparks.resolveReport.useMutation({ onSuccess: () => { void utils.sparks.reports.invalidate({ sparkId: spark.id }); void utils.sparks.manage.invalidate(); } });
+  const items = q.data ?? [];
+  return (
+    <Modal onClose={onClose}>
+      <ModalHead title={`Reportes · ${spark.title}`} onClose={onClose} />
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        {q.isLoading ? <Spinner /> : items.length === 0 ? (
+          <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Sin reportes.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {items.map((r) => (
+              <li key={r.id} className="rounded-lg p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)", opacity: r.status === "resolved" ? 0.6 : 1 }}>
+                <div className="flex items-center gap-2">
+                  <Flag className="h-3.5 w-3.5 shrink-0" style={{ color: r.status === "resolved" ? "var(--color-subtle)" : "var(--color-error)" }} />
+                  <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{REASON_LABEL[r.reason] ?? r.reason}</span>
+                  <span className="truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>· {r.username}</span>
+                  <button type="button" onClick={() => resolve.mutate({ id: r.id, resolved: r.status !== "resolved" })}
+                    className="ml-auto shrink-0 text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
+                    {r.status === "resolved" ? "Reabrir" : "Resolver"}
+                  </button>
+                </div>
+                {r.note && <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{r.note}</p>}
               </li>
             ))}
           </ul>

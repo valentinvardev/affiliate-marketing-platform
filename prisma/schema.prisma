@@ -253,6 +253,7 @@ model Spark {
     description  String?
     tiktokUrl    String
     sparkCode    String   // sensible: sólo se revela al que lo reclamó
+    kind         String   @default("WH") // WH (white hat) | BH (black hat)
     countryCode  String   // ISO-2 objetivo
     language     String   // locale (en, fr, de…)
     thumbnailUrl String?  // cache de oEmbed
@@ -265,8 +266,10 @@ model Spark {
     claim   SparkClaim?
     ratings SparkRating[]
     boosts  SparkBoost[]
+    reports SparkReport[]
 
     @@index([status])
+    @@index([kind])
 }
 
 model SparkClaim {
@@ -305,6 +308,21 @@ model SparkBoost {
     status       String   @default("pending") // pending | running | done | failed
     providerRef  String?
     createdAt    DateTime @default(now())
+
+    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+
+    @@index([sparkId])
+}
+
+// Reporte de un usuario sobre un spark (falta de interacciones, review no aprobada…)
+model SparkReport {
+    id        String   @id @default(cuid())
+    sparkId   String
+    userId    String
+    reason    String   // no_interactions | review_not_approved | other
+    note      String?
+    status    String   @default("open") // open | resolved
+    createdAt DateTime @default(now())
 
     spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
 

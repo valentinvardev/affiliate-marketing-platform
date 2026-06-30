@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure, estrategistaProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/api/trpc";
 import { fetchTiktokOembed, isTiktokCarousel } from "@/lib/tiktok";
 import { commentsForLanguage } from "@/lib/spark-comments";
 import { LOCALES } from "@/lib/locales";
@@ -22,11 +22,12 @@ function publicSpark(s: SparkRow) {
 export const sparksRouter = createTRPCRouter({
   /* ── Usuario ── */
   list: protectedProcedure
-    .input(z.object({ country: z.string().optional(), language: z.string().optional() }).optional())
+    .input(z.object({ country: z.string().optional(), language: z.string().optional(), kind: z.enum(["WH", "BH"]).optional() }).optional())
     .query(async ({ ctx, input }) => {
       const sparks = await ctx.db.spark.findMany({
         where: {
           status: "available",
+          ...(input?.kind ? { kind: input.kind } : {}),
           ...(input?.language ? { language: input.language } : {}),
           ...(input?.country ? { countryCode: input.country } : {}),
         },
@@ -82,8 +83,11 @@ export const sparksRouter = createTRPCRouter({
     }),
 
   /* ── Estrategista / admin ── */
-  manage: estrategistaProcedure.query(async ({ ctx }) => {
-    const sparks = await ctx.db.spark.findMany({ orderBy: { createdAt: "desc" }, include: { claim: true } });
+  manage: adminProcedure.query(async ({ ctx }) => {
+    const sparks = await ctx.db.spark.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { claim: true, _count: { select: { reports: true } } },
+    });
     const agg = await ratingsAgg(ctx.db, sparks.map((s) => s.id));
     const uids = [...new Set(sparks.map((s) => s.claim?.userId).filter(Boolean) as string[])];
     const users = uids.length ? await ctx.db.user.findMany({ where: { id: { in: uids } }, select: { id: true, username: true } }) : [];
@@ -93,16 +97,18 @@ export const sparksRouter = createTRPCRouter({
       claimedBy: s.claim ? uname.get(s.claim.userId) ?? null : null,
       avgRating: agg.get(s.id)?.avg ?? 0,
       ratingsCount: agg.get(s.id)?.count ?? 0,
+      reportsCount: s._count.reports,
     }));
   }),
 
-  create: estrategistaProcedure
+  create: adminProcedure
     .input(z.object({
       title: z.string().min(1),
       description: z.string().optional(),
       tiktokUrl: z.string().url(),
       sparkCode: z.string().min(1),
       language: z.string().min(1),
+      kind: z.enum(["WH", "BH"]),
     }))
     .mutation(async ({ ctx, input }) => {
       const { thumbnailUrl, authorName } = await fetchTiktokOembed(input.tiktokUrl);
@@ -114,6 +120,7 @@ export const sparksRouter = createTRPCRouter({
           description: input.description?.trim() || null,
           tiktokUrl: input.tiktokUrl.trim(),
           sparkCode: input.sparkCode.trim(),
+          kind: input.kind,
           language: input.language,
           countryCode: loc?.countryCode ?? input.language.slice(0, 2).toUpperCase(),
           thumbnailUrl, authorName,
@@ -122,8 +129,8 @@ export const sparksRouter = createTRPCRouter({
       });
     }),
 
-  update: estrategistaProcedure
-    .input(z.object({ id: z.string(), title: z.string().min(1), description: z.string().optional(), sparkCode: z.string().min(1), language: z.string().min(1) }))
+  update: adminProcedure
+    .input(z.object({ id: z.string(), title: z.string().min(1), description: z.string().optional(), sparkCode: z.string().min(1), language: z.string().min(1), kind: z.enum(["WH", "BH"]) }))
     .mutation(async ({ ctx, input }) => {
       const loc = LOCALES.find((l) => l.code === input.language);
       return ctx.db.spark.update({
@@ -132,13 +139,14 @@ export const sparksRouter = createTRPCRouter({
           title: input.title.trim(),
           description: input.description?.trim() || null,
           sparkCode: input.sparkCode.trim(),
+          kind: input.kind,
           language: input.language,
           countryCode: loc?.countryCode ?? input.language.slice(0, 2).toUpperCase(),
         },
       });
     }),
 
-  setUsable: estrategistaProcedure
+  setUsable: adminProcedure
     .input(z.object({ id: z.string(), usable: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const spark = await ctx.db.spark.findUnique({ where: { id: input.id } });
@@ -147,15 +155,15 @@ export const sparksRouter = createTRPCRouter({
       return ctx.db.spark.update({ where: { id: input.id }, data: { status: input.usable ? "available" : "disabled" } });
     }),
 
-  remove: estrategistaProcedure
+  remove: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ ctx, input }) => ctx.db.spark.delete({ where: { id: input.id } })),
 
-  commentBank: estrategistaProcedure
+  commentBank: adminProcedure
     .input(z.object({ language: z.string() }))
     .query(({ input }) => commentsForLanguage(input.language)),
 
-  boost: estrategistaProcedure
+  boost: adminProcedure
     .input(z.object({ sparkId: z.string(), interactions: z.record(z.number()), comments: z.array(z.string()) }))
     .mutation(({ ctx, input }) =>
       ctx.db.sparkBoost.create({
@@ -168,7 +176,7 @@ export const sparksRouter = createTRPCRouter({
       }),
     ),
 
-  feedback: estrategistaProcedure
+  feedback: adminProcedure
     .input(z.object({ sparkId: z.string() }))
     .query(async ({ ctx, input }) => {
       const rs = await ctx.db.sparkRating.findMany({ where: { sparkId: input.sparkId }, orderBy: { createdAt: "desc" } });
@@ -177,6 +185,27 @@ export const sparksRouter = createTRPCRouter({
       const uname = new Map(users.map((u) => [u.id, u.username]));
       return rs.map((r) => ({ id: r.id, stars: r.stars, comment: r.comment, username: uname.get(r.userId) ?? "—", createdAt: r.createdAt }));
     }),
+
+  /* ── Reportes ── */
+  report: protectedProcedure
+    .input(z.object({ sparkId: z.string(), reason: z.enum(["no_interactions", "review_not_approved", "other"]), note: z.string().optional() }))
+    .mutation(({ ctx, input }) =>
+      ctx.db.sparkReport.create({ data: { sparkId: input.sparkId, userId: ctx.session.user.id, reason: input.reason, note: input.note?.trim() || null } }),
+    ),
+
+  reports: adminProcedure
+    .input(z.object({ sparkId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const rs = await ctx.db.sparkReport.findMany({ where: { sparkId: input.sparkId }, orderBy: { createdAt: "desc" } });
+      const uids = [...new Set(rs.map((r) => r.userId))];
+      const users = uids.length ? await ctx.db.user.findMany({ where: { id: { in: uids } }, select: { id: true, username: true } }) : [];
+      const uname = new Map(users.map((u) => [u.id, u.username]));
+      return rs.map((r) => ({ id: r.id, reason: r.reason, note: r.note, status: r.status, username: uname.get(r.userId) ?? "—", createdAt: r.createdAt }));
+    }),
+
+  resolveReport: adminProcedure
+    .input(z.object({ id: z.string(), resolved: z.boolean() }))
+    .mutation(({ ctx, input }) => ctx.db.sparkReport.update({ where: { id: input.id }, data: { status: input.resolved ? "resolved" : "open" } })),
 });
 
 /* ── helpers ── */
