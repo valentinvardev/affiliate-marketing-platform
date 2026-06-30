@@ -1,6 +1,7 @@
 import { db } from "@/server/db";
 import { getScope, convWhere } from "@/lib/scope";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { CompareSection } from "./_components/compare-section";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Leaderboard" };
@@ -169,6 +170,9 @@ export default async function LeaderboardPage() {
             </div>
           )}
         </div>
+
+        {/* Comparar (leaderboard real, opt-in) */}
+        <CompareSection />
 
         {/* Motivational quote */}
         <div
