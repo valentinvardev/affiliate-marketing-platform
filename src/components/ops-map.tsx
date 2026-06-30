@@ -25,62 +25,28 @@ function ortho(lon: number, lat: number, rot: Rot) {
   return { x: CX + x, y: CY - y, cosc };
 }
 
-/* Arco a lo largo del limbo (camino corto) entre dos ángulos. */
-function rimArc(a0: number, a1: number): string {
-  let delta = a1 - a0;
-  while (delta > Math.PI) delta -= 2 * Math.PI;
-  while (delta < -Math.PI) delta += 2 * Math.PI;
-  const steps = Math.max(1, Math.round(Math.abs(delta) / (Math.PI / 24)));
-  let d = "";
-  for (let i = 1; i <= steps; i++) {
-    const a = a0 + (delta * i) / steps;
-    d += "L" + (CX + Math.cos(a) * R).toFixed(1) + "," + (CY + Math.sin(a) * R).toFixed(1);
-  }
-  return d;
-}
-
-/** Punto del cruce con el horizonte (cosc=0) entre A y B, interpolando en lon/lat. */
-function crossing(a: number[], b: number[], aVisible: boolean, rot: Rot): { x: number; y: number; ang: number } {
-  let lo = 0, hi = 1;
-  for (let i = 0; i < 24; i++) {
-    const m = (lo + hi) / 2;
-    const c = ortho(a[0]! + (b[0]! - a[0]!) * m, a[1]! + (b[1]! - a[1]!) * m, rot).cosc;
-    if ((c >= 0) === aVisible) lo = m; else hi = m;
-  }
-  const m = (lo + hi) / 2;
-  const p = ortho(a[0]! + (b[0]! - a[0]!) * m, a[1]! + (b[1]! - a[1]!) * m, rot);
-  return { x: p.x, y: p.y, ang: Math.atan2(p.y - CY, p.x - CX) };
-}
-
+/**
+ * Dibuja un anillo SOLO si su centroide (en 3D) cae en la cara visible del globo.
+ * Así los anillos de la cara oculta (y los que apenas rozan el terminador) se
+ * descartan enteros — nada de slivers ni rayas. Para un anillo centroide-visible,
+ * todos sus vértices proyectan dentro del disco (radio ≤ R), así que el polígono
+ * plano queda contenido y limpio.
+ */
 function ringPath(ring: number[][], rot: Rot): string {
   const n = ring.length;
   if (n < 3) return "";
-  const vis = ring.map((p) => ortho(p[0]!, p[1]!, rot).cosc >= 0);
-  if (!vis.some(Boolean)) return ""; // anillo entero en la cara oculta
-  let s = 0; while (!vis[s]) s++;    // arrancar en un vértice visible
-
-  let d = "", exitA: number | null = null;
-  for (let k = 0; k <= n; k++) {
-    const i = (s + k) % n, j = (s + k - 1 + n) % n;
-    const cur = ring[i]!, prev = ring[j]!;
-    if (k === 0) {
-      const o = ortho(cur[0]!, cur[1]!, rot);
-      d += "M" + o.x.toFixed(1) + "," + o.y.toFixed(1);
-    } else if (vis[j] && vis[i]) {
-      const o = ortho(cur[0]!, cur[1]!, rot);
-      d += "L" + o.x.toFixed(1) + "," + o.y.toFixed(1);
-    } else if (vis[j] && !vis[i]) { // sale: línea al cruce en el limbo
-      const c = crossing(prev, cur, true, rot);
-      d += "L" + c.x.toFixed(1) + "," + c.y.toFixed(1);
-      exitA = c.ang;
-    } else if (!vis[j] && vis[i]) { // entra: arco por el limbo hasta el cruce, luego al interior
-      const c = crossing(cur, prev, true, rot);
-      if (exitA !== null) d += rimArc(exitA, c.ang);
-      const o = ortho(cur[0]!, cur[1]!, rot);
-      d += "L" + o.x.toFixed(1) + "," + o.y.toFixed(1);
-      exitA = null;
-    }
-    // oculto→oculto: no se dibuja
+  const λ0 = rot.lam * DEG, φ0 = rot.phi * DEG;
+  const v0x = Math.cos(φ0) * Math.cos(λ0), v0y = Math.cos(φ0) * Math.sin(λ0), v0z = Math.sin(φ0);
+  let cx = 0, cy = 0, cz = 0;
+  for (const p of ring) {
+    const λ = p[0]! * DEG, φ = p[1]! * DEG, cphi = Math.cos(φ);
+    cx += cphi * Math.cos(λ); cy += cphi * Math.sin(λ); cz += Math.sin(φ);
+  }
+  if (cx * v0x + cy * v0y + cz * v0z <= 0) return ""; // centroide en la cara oculta
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const o = ortho(ring[i]![0]!, ring[i]![1]!, rot);
+    d += (i === 0 ? "M" : "L") + o.x.toFixed(1) + "," + o.y.toFixed(1);
   }
   return d + "Z";
 }
