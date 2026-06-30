@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { db } from "@/server/db";
-import { getScope, convWhere } from "@/lib/scope";
+import { getScope, convWhere, campaignWhere } from "@/lib/scope";
 import { fetchStats, type StatsRange } from "@/lib/taprain";
 import { DollarSign, Repeat2, MousePointerClick, Zap, AlertTriangle } from "lucide-react";
 import { StatsChart, type ChartPoint } from "./_components/stats-chart";
@@ -93,9 +93,9 @@ function buildChartData(
 export default async function StatsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; c?: string }>;
 }) {
-  const { range: rawRange = "today" } = await searchParams;
+  const { range: rawRange = "today", c: rawC } = await searchParams;
   const range = (RANGES.some((r) => r.key === rawRange) ? rawRange : "today") as StatsRange;
   const window = getWindow(range);
 
@@ -104,31 +104,48 @@ export default async function StatsPage({
   const proto = host.includes("localhost") ? "http" : "https";
   const baseUrl = `${proto}://${host}`;
 
-  const { slugs, isAdmin } = await getScope();
+  const { slugs, isAdmin, userId } = await getScope();
 
-  // Fetch TapRain summary stats + local conversions in parallel
-  const [statsResult, conversions] = await Promise.allSettled([
+  // Campañas del usuario (admin → todas) para el selector.
+  const campaigns = await db.campaign.findMany({
+    where: campaignWhere(isAdmin, userId),
+    select: { id: true, name: true, slug: true, colorPrimary: true },
+    orderBy: { name: "asc" },
+  });
+  // Sólo se permite filtrar por una campaña visible para el usuario.
+  const selected = rawC && campaigns.some((cm) => cm.slug === rawC) ? rawC : null;
+  const selectedCampaign = selected ? campaigns.find((cm) => cm.slug === selected)! : null;
+
+  const convScope = selected ? { s1: selected } : convWhere(slugs);
+  const clickWhere = selected
+    ? { s1: selected }
+    : slugs === null ? {} : { s1: { in: slugs.length ? slugs : ["__no-match__"] } };
+
+  // Fetch TapRain summary stats + conversiones/clicks locales en paralelo
+  const [statsResult, conversions, clicksRes] = await Promise.allSettled([
     fetchStats(range),
     db.conversion.findMany({
-      where: { ...convWhere(slugs), receivedAt: { gte: window.from, lte: window.to } },
+      where: { ...convScope, receivedAt: { gte: window.from, lte: window.to } },
       orderBy: { receivedAt: "desc" },
     }),
+    db.click.count({ where: { ...clickWhere, createdAt: { gte: window.from, lte: window.to } } }),
   ]);
 
   const data    = statsResult.status === "fulfilled" ? statsResult.value : null;
-  // El summary de TapRain es global de la cuenta → solo para admin. El usuario ve sus números locales.
-  const apiError = isAdmin && statsResult.status === "rejected"
+  // El summary de TapRain es global de la cuenta → solo admin y vista "Todas".
+  const apiError = isAdmin && !selected && statsResult.status === "rejected"
     ? (statsResult.reason instanceof Error ? statsResult.reason.message : "Error desconocido")
     : null;
 
   const convList = conversions.status === "fulfilled" ? conversions.value : [];
+  const clicks   = clicksRes.status === "fulfilled" ? clicksRes.value : 0;
   const chartData = buildChartData(convList, range, window);
 
   // Local summary (fallback / supplement when API has no clicks data)
   const localRevenue = convList.reduce((s, c) => s + c.price, 0);
   const localCount   = convList.length;
 
-  const summary = isAdmin ? data?.summary : undefined;
+  const summary = selected ? undefined : (isAdmin ? data?.summary : undefined);
   const rangeLabel = RANGES.find((r) => r.key === range)?.label ?? range;
 
   return (
@@ -150,7 +167,7 @@ export default async function StatsPage({
           {RANGES.map(({ key, label }) => (
             <Link
               key={key}
-              href={`/stats?range=${key}`}
+              href={`/stats?range=${key}${selected ? `&c=${selected}` : ""}`}
               className="shrink-0 rounded-lg px-4 py-1.5 text-xs font-medium transition-colors"
               style={{
                 background: range === key ? "var(--color-surface-overlay)" : "transparent",
@@ -161,6 +178,28 @@ export default async function StatsPage({
             </Link>
           ))}
         </nav>
+
+        {/* Selector de campañas (cada usuario ve solo las suyas) */}
+        {campaigns.length > 0 && (
+          <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-1">
+            <Link href={`/stats?range=${range}`}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{ background: !selected ? "var(--color-surface-overlay)" : "transparent", border: `1px solid ${!selected ? "var(--color-border-focus)" : "var(--color-border)"}`, color: !selected ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}>
+              Todas
+            </Link>
+            {campaigns.map((cm) => {
+              const on = selected === cm.slug;
+              return (
+                <Link key={cm.id} href={`/stats?range=${range}&c=${cm.slug}`}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{ background: on ? "var(--color-surface-overlay)" : "transparent", border: `1px solid ${on ? "var(--color-border-focus)" : "var(--color-border)"}`, color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}>
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cm.colorPrimary }} />
+                  {cm.name}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {/* API error */}
         {apiError && (
@@ -199,8 +238,9 @@ export default async function StatsPage({
           <MetricCard
             icon={MousePointerClick}
             label="Clicks"
-            value={summary?.clicks != null ? fmt.int(summary.clicks) : "—"}
-            loaded={!!summary}
+            value={summary?.clicks != null ? fmt.int(summary.clicks) : fmt.int(clicks)}
+            sub={summary?.clicks == null ? "local" : undefined}
+            loaded
           />
           <MetricCard
             icon={Zap}
@@ -208,16 +248,17 @@ export default async function StatsPage({
             value={
               summary?.epc != null
                 ? fmt.usd(summary.epc)
-                : summary?.clicks && summary.revenue
-                ? fmt.usd(summary.revenue / summary.clicks)
+                : clicks > 0
+                ? fmt.usd(localRevenue / clicks)
                 : "—"
             }
-            loaded={!!summary}
+            sub={summary?.epc == null && clicks > 0 ? "local" : undefined}
+            loaded
           />
         </div>
 
         {/* Chart — always rendered, built from local conversions */}
-        <StatsChart data={chartData} label={`Revenue · ${rangeLabel}`} />
+        <StatsChart data={chartData} label={`Revenue · ${selectedCampaign ? selectedCampaign.name : rangeLabel}`} />
 
         {/* Conversions list */}
         <div>
