@@ -53,3 +53,12 @@ export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+/** Requiere rol estrategista o admin. */
+export const estrategistaProcedure = protectedProcedure.use(({ ctx, next }) => {
+  const role = ctx.session.user.role;
+  if (role !== "estrategista" && role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Solo estrategista o admin." });
+  }
+  return next({ ctx });
+});

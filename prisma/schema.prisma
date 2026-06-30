@@ -245,6 +245,72 @@ model AppConfig {
     updatedAt DateTime @updatedAt
 }
 
+// ─── Sparks (creativos de TikTok que el estrategista sube y los usuarios reclaman) ───
+model Spark {
+    id           String   @id @default(cuid())
+    createdById  String   // estrategista que lo subió
+    title        String
+    description  String?
+    tiktokUrl    String
+    sparkCode    String   // sensible: sólo se revela al que lo reclamó
+    countryCode  String   // ISO-2 objetivo
+    language     String   // locale (en, fr, de…)
+    thumbnailUrl String?  // cache de oEmbed
+    authorName   String?
+    isCarousel   Boolean  @default(false)
+    status       String   @default("available") // available | claimed | disabled
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    claim   SparkClaim?
+    ratings SparkRating[]
+    boosts  SparkBoost[]
+
+    @@index([status])
+}
+
+model SparkClaim {
+    id        String   @id @default(cuid())
+    sparkId   String   @unique // un solo reclamo por spark → se retira del pool
+    userId    String
+    claimedAt DateTime @default(now())
+
+    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+}
+
+model SparkRating {
+    id        String   @id @default(cuid())
+    sparkId   String
+    userId    String
+    stars     Int
+    comment   String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+
+    @@unique([sparkId, userId])
+    @@index([sparkId])
+}
+
+model SparkBoost {
+    id           String   @id @default(cuid())
+    sparkId      String
+    createdById  String
+    provider     String   @default("smm")
+    interactions Json
+    comments     String[] @default([])
+    status       String   @default("pending") // pending | running | done | failed
+    providerRef  String?
+    createdAt    DateTime @default(now())
+
+    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+
+    @@index([sparkId])
+}
+
 model ChatMessage {
     id        String   @id @default(cuid())
     userId    String
