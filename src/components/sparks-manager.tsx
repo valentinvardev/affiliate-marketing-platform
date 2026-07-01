@@ -9,45 +9,39 @@ import type { RouterOutputs } from "@/trpc/react";
 import { LOCALES, getLocaleByCode } from "@/lib/locales";
 import { tiktokEmbedSrc } from "@/lib/tiktok";
 import {
-  Sparkles, Plus, Play, Star, Copy, Check, Loader2, X, Lock, Trash2, Pencil,
+  Sparkles, Plus, Play, Star, Check, Loader2, X, Trash2, Pencil,
   Zap, MessageSquare, Package, AlertTriangle, EyeOff, Flag,
 } from "lucide-react";
 
-type Available = RouterOutputs["sparks"]["list"][number];
-type LibItem = RouterOutputs["sparks"]["library"][number];
+type CatalogItem = RouterOutputs["sparks"]["list"][number];
 type ManageItem = RouterOutputs["sparks"]["manage"][number];
-type AnySpark = { tiktokUrl: string; title: string };
+type AnySpark = { tiktokUrl: string | null; title: string };
 
 export function SparksManager() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
 
-  const [tab, setTab] = useState<"available" | "library" | "manage">("available");
+  const [tab, setTab] = useState<"catalog" | "manage">("catalog");
   const [kind, setKind] = useState<"WH" | "BH">("WH");
   const [player, setPlayer] = useState<AnySpark | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [claimedCode, setClaimedCode] = useState<string | null>(null);
-
-  const tabs: { key: typeof tab; label: string }[] = [
-    { key: "available", label: "Disponibles" },
-    { key: "library", label: "Mi biblioteca" },
-    ...(isAdmin ? [{ key: "manage" as const, label: "Gestión" }] : []),
-  ];
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Sparkles className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
         <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Sparks</h1>
-        <nav className="ml-2 flex gap-1 rounded-lg p-0.5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
-          {tabs.map((t) => (
-            <button key={t.key} type="button" onClick={() => setTab(t.key)}
-              className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
-              style={{ background: tab === t.key ? "var(--color-surface-overlay)" : "transparent", color: tab === t.key ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}>
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        {isAdmin && (
+          <nav className="ml-2 flex gap-1 rounded-lg p-0.5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
+            {([["catalog", "Catálogo"], ["manage", "Gestión"]] as const).map(([k, label]) => (
+              <button key={k} type="button" onClick={() => setTab(k)}
+                className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
+                style={{ background: tab === k ? "var(--color-surface-overlay)" : "transparent", color: tab === k ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}>
+                {label}
+              </button>
+            ))}
+          </nav>
+        )}
         {isAdmin && (
           <button type="button" onClick={() => setUploadOpen(true)}
             className="ml-auto inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
@@ -59,107 +53,70 @@ export function SparksManager() {
 
       <main className="flex-1 px-4 py-6 md:px-8">
         <KindToggle kind={kind} onChange={setKind} />
-        {tab === "available" && <AvailableGrid kind={kind} onPlay={setPlayer} onClaimed={setClaimedCode} />}
-        {tab === "library" && <LibraryGrid kind={kind} onPlay={setPlayer} />}
+        {tab === "catalog" && <CatalogGrid kind={kind} onPlay={setPlayer} />}
         {tab === "manage" && isAdmin && <ManageGrid kind={kind} onPlay={setPlayer} />}
       </main>
 
       {player && <PlayerModal spark={player} onClose={() => setPlayer(null)} />}
       {uploadOpen && <SparkFormModal defaultKind={kind} onClose={() => setUploadOpen(false)} />}
-      {claimedCode !== null && <ClaimedModal code={claimedCode} onClose={() => setClaimedCode(null)} />}
     </div>
   );
 }
 
-/* ───────── Grids ───────── */
-
-function AvailableGrid({ kind, onPlay, onClaimed }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void; onClaimed: (code: string) => void }) {
+/* ───────── Catálogo ───────── */
+function CatalogGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void }) {
   const utils = api.useUtils();
   const q = api.sparks.list.useQuery({ kind });
-  const claim = api.sparks.claim.useMutation({
-    onSuccess: (r) => { onClaimed(r.sparkCode); void utils.sparks.list.invalidate(); void utils.sparks.library.invalidate(); void utils.sparks.manage.invalidate(); },
-    onError: (e) => alert(e.message),
-  });
+  const rate = api.sparks.rate.useMutation({ onSuccess: () => void utils.sparks.list.invalidate() });
 
   if (q.isLoading) return <Spinner />;
   const items = q.data ?? [];
-  if (!items.length) return <Empty msg="No hay sparks disponibles por ahora." />;
+  if (!items.length) return <Empty msg="No hay sparks de este tipo todavía." />;
 
   return (
     <Grid>
-      {items.map((s) => (
-        <Card key={s.id}>
-          <Thumb spark={s} onPlay={() => onPlay(s)} />
-          <div className="flex flex-1 flex-col p-3">
-            <Meta s={s} />
-            <p className="mt-1 line-clamp-2 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{s.title}</p>
-            <div className="mt-1.5 flex items-center gap-2">
-              <Stars value={Math.round(s.avgRating)} readOnly />
-              <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{s.ratingsCount ? s.avgRating.toFixed(1) : "—"}</span>
-            </div>
-            <button type="button" disabled={claim.isPending} onClick={() => claim.mutate({ sparkId: s.id })}
-              className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
-              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
-              {claim.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Reclamar
-            </button>
-          </div>
-        </Card>
-      ))}
+      {items.map((s) => <CatalogCard key={s.id} s={s} onPlay={() => onPlay(s)} onRate={(stars) => rate.mutate({ sparkId: s.id, stars })} />)}
     </Grid>
   );
 }
 
-function LibraryGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void }) {
-  const utils = api.useUtils();
-  const q = api.sparks.library.useQuery();
-  const rate = api.sparks.rate.useMutation({ onSuccess: () => void utils.sparks.library.invalidate() });
-
-  if (q.isLoading) return <Spinner />;
-  const items = (q.data ?? []).filter((s) => s.kind === kind);
-  if (!items.length) return <Empty msg="No reclamaste ningún spark de este tipo." />;
-
-  return (
-    <Grid>
-      {items.map((s) => <LibraryCard key={s.id} s={s} onPlay={() => onPlay(s)} onRate={(stars) => rate.mutate({ sparkId: s.id, stars })} rating={rate.isPending} />)}
-    </Grid>
-  );
-}
-
-function LibraryCard({ s, onPlay, onRate, rating }: { s: LibItem; onPlay: () => void; onRate: (n: number) => void; rating: boolean }) {
+function CatalogCard({ s, onPlay, onRate }: { s: CatalogItem; onPlay: () => void; onRate: (n: number) => void }) {
   const [copied, setCopied] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+
   return (
     <Card>
-      <Thumb spark={s} onPlay={onPlay} />
+      <Thumb spark={s} onPlay={s.tiktokUrl ? onPlay : undefined} />
       <div className="flex flex-1 flex-col p-3">
         <Meta s={s} />
         <p className="mt-1 line-clamp-2 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{s.title}</p>
+        {s.description && <p className="mt-0.5 line-clamp-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>{s.description}</p>}
 
-        {/* Spark code revelado */}
-        <div className="mt-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
-          <Lock className="h-3 w-3 shrink-0" style={{ color: "var(--color-subtle)" }} />
-          <span className="min-w-0 flex-1 truncate font-mono text-[11px]" style={{ color: "var(--color-foreground)" }}>{s.sparkCode}</span>
-          <button type="button" title="Copiar code" onClick={() => { navigator.clipboard.writeText(s.sparkCode).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-            style={{ color: copied ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
-        </div>
-
-        {/* Rating editable */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Tu rating</span>
+        <div className="mt-1.5 flex items-center gap-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>
           <Stars value={s.myStars} onChange={onRate} />
-          {rating && <Loader2 className="h-3 w-3 animate-spin" style={{ color: "var(--color-subtle)" }} />}
-          <button type="button" onClick={() => setReportOpen(true)} className="ml-auto inline-flex items-center gap-1 text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
-            <Flag className="h-3 w-3" /> Reportar
-          </button>
+          <span>{s.ratingsCount ? `${s.avgRating.toFixed(1)} (${s.ratingsCount})` : "sin ratings"}</span>
         </div>
+
+        {/* Copiar spark code — un click */}
+        <button type="button"
+          onClick={() => { navigator.clipboard.writeText(s.sparkCode).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+          className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold transition-colors"
+          style={{ background: copied ? "var(--color-success)" : "var(--color-foreground)", color: "var(--color-background)" }}>
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {copied ? "¡Copiado!" : "Copiar spark code"}
+        </button>
+
+        <button type="button" onClick={() => setReportOpen(true)}
+          className="mt-2 inline-flex items-center justify-center gap-1 text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
+          <Flag className="h-3 w-3" /> Reportar
+        </button>
       </div>
       {reportOpen && <ReportModal sparkId={s.id} title={s.title} onClose={() => setReportOpen(false)} />}
     </Card>
   );
 }
 
+/* ───────── Gestión (admin) ───────── */
 function ManageGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark) => void }) {
   const utils = api.useUtils();
   const q = api.sparks.manage.useQuery();
@@ -175,32 +132,25 @@ function ManageGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark)
   const items = (q.data ?? []).filter((s) => s.kind === kind);
   if (!items.length) return <Empty msg="No hay sparks de este tipo." />;
 
-  const statusStyle: Record<string, { label: string; color: string }> = {
-    available: { label: "Disponible", color: "var(--color-success)" },
-    claimed: { label: "Reclamado", color: "var(--color-warning)" },
-    disabled: { label: "No usable", color: "var(--color-subtle)" },
-  };
-
   return (
     <>
       <Grid>
         {items.map((s) => {
-          const st = statusStyle[s.status] ?? statusStyle.available!;
+          const disabled = s.status === "disabled";
           return (
             <Card key={s.id}>
-              <Thumb spark={s} onPlay={() => onPlay(s)} />
+              <Thumb spark={s} onPlay={s.tiktokUrl ? () => onPlay(s) : undefined} />
               <div className="flex flex-1 flex-col p-3">
                 <div className="flex items-center gap-2">
                   <Meta s={s} />
-                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium" style={{ color: st.color }}>
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: st.color }} />{st.label}
+                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium" style={{ color: disabled ? "var(--color-subtle)" : "var(--color-success)" }}>
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: disabled ? "var(--color-subtle)" : "var(--color-success)" }} />{disabled ? "No usable" : "Activo"}
                   </span>
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{s.title}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>
                   <Stars value={Math.round(s.avgRating)} readOnly />
                   <span>{s.ratingsCount || 0}</span>
-                  {s.claimedBy && <span>· por {s.claimedBy}</span>}
                   {s.reportsCount > 0 && <span style={{ color: "var(--color-error)" }}>· {s.reportsCount} reporte{s.reportsCount > 1 ? "s" : ""}</span>}
                 </div>
 
@@ -208,11 +158,9 @@ function ManageGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark)
                   <Act onClick={() => setBoosting(s)} icon={<Zap className="h-3.5 w-3.5" />} label="Botear" />
                   <Act onClick={() => setFeedback(s)} icon={<MessageSquare className="h-3.5 w-3.5" />} label="Feedback" />
                   <Act onClick={() => setReports(s)} icon={<Flag className="h-3.5 w-3.5" />} label={s.reportsCount ? `Reportes (${s.reportsCount})` : "Reportes"} />
-                  {s.status !== "claimed" && (
-                    <Act onClick={() => setUsable.mutate({ id: s.id, usable: s.status === "disabled" })}
-                      icon={s.status === "disabled" ? <Check className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      label={s.status === "disabled" ? "Reactivar" : "No usable"} />
-                  )}
+                  <Act onClick={() => setUsable.mutate({ id: s.id, usable: disabled })}
+                    icon={disabled ? <Check className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    label={disabled ? "Reactivar" : "No usable"} />
                   <button type="button" title="Editar" onClick={() => setEditing(s)} className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}><Pencil className="h-3.5 w-3.5" /></button>
                   <button type="button" title="Borrar" onClick={() => { if (confirm(`¿Borrar "${s.title}"?`)) remove.mutate({ id: s.id }); }} className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
@@ -229,8 +177,7 @@ function ManageGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark)
   );
 }
 
-/* ───────── Cards / bits ───────── */
-
+/* ───────── bits ───────── */
 function KindToggle({ kind, onChange }: { kind: "WH" | "BH"; onChange: (k: "WH" | "BH") => void }) {
   const opts: { k: "WH" | "BH"; sub: string }[] = [{ k: "WH", sub: "White hat" }, { k: "BH", sub: "Black hat" }];
   return (
@@ -238,8 +185,7 @@ function KindToggle({ kind, onChange }: { kind: "WH" | "BH"; onChange: (k: "WH" 
       {opts.map((o) => {
         const on = kind === o.k;
         return (
-          <button key={o.k} type="button" onClick={() => onChange(o.k)}
-            className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
+          <button key={o.k} type="button" onClick={() => onChange(o.k)} className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
             style={{ background: on ? "var(--color-foreground)" : "transparent", color: on ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
             {o.k} <span className="font-normal opacity-70">· {o.sub}</span>
           </button>
@@ -248,7 +194,6 @@ function KindToggle({ kind, onChange }: { kind: "WH" | "BH"; onChange: (k: "WH" 
     </div>
   );
 }
-
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
 }
@@ -264,20 +209,24 @@ function Meta({ s }: { s: { countryCode: string; language: string } }) {
     </span>
   );
 }
-function Thumb({ spark, onPlay }: { spark: { thumbnailUrl?: string | null; authorName?: string | null; isCarousel?: boolean }; onPlay: () => void }) {
+function Thumb({ spark, onPlay }: { spark: { thumbnailUrl?: string | null; authorName?: string | null; isCarousel?: boolean; tiktokUrl?: string | null }; onPlay?: () => void }) {
+  const playable = !!spark.tiktokUrl && !!onPlay;
   return (
-    <button type="button" onClick={onPlay} className="group relative block h-44 w-full overflow-hidden" style={{ background: "var(--color-surface-overlay)" }}>
+    <button type="button" onClick={playable ? onPlay : undefined} disabled={!playable}
+      className="group relative block h-44 w-full overflow-hidden" style={{ background: "var(--color-surface-overlay)", cursor: playable ? "pointer" : "default" }}>
       {spark.thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={spark.thumbnailUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
       ) : (
-        <span className="flex h-full w-full items-center justify-center"><Package className="h-7 w-7" style={{ color: "var(--color-subtle)" }} /></span>
+        <span className="flex h-full w-full items-center justify-center"><Sparkles className="h-7 w-7" style={{ color: "var(--color-subtle)" }} /></span>
       )}
-      <span className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.25)" }}>
-        <span className="flex h-11 w-11 items-center justify-center rounded-full" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)" }}>
-          <Play className="h-5 w-5" style={{ color: "#fff", fill: "#fff" }} />
+      {playable && (
+        <span className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.25)" }}>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full" style={{ background: "rgba(0,0,0,0.55)" }}>
+            <Play className="h-5 w-5" style={{ color: "#fff", fill: "#fff" }} />
+          </span>
         </span>
-      </span>
+      )}
       {spark.isCarousel && <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase" style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}>carrusel</span>}
       {spark.authorName && <span className="absolute bottom-1.5 left-2 truncate text-[10px]" style={{ color: "rgba(255,255,255,0.85)", maxWidth: "80%" }}>@{spark.authorName}</span>}
     </button>
@@ -303,9 +252,7 @@ function Stars({ value, onChange, readOnly }: { value: number; onChange?: (n: nu
 function Act({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button type="button" onClick={onClick} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors"
-      style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
-      {icon} {label}
-    </button>
+      style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>{icon} {label}</button>
   );
 }
 function Spinner() { return <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>; }
@@ -350,7 +297,7 @@ function ModalHead({ title, onClose }: { title: string; onClose: () => void }) {
 
 /* ───────── Player ───────── */
 function PlayerModal({ spark, onClose }: { spark: AnySpark; onClose: () => void }) {
-  const src = tiktokEmbedSrc(spark.tiktokUrl);
+  const src = spark.tiktokUrl ? tiktokEmbedSrc(spark.tiktokUrl) : null;
   return (
     <Modal onClose={onClose} maxW="max-w-sm">
       <ModalHead title={spark.title} onClose={onClose} />
@@ -359,7 +306,7 @@ function PlayerModal({ spark, onClose }: { spark: AnySpark; onClose: () => void 
           <iframe src={src} title={spark.title} allow="encrypted-media; fullscreen" allowFullScreen
             style={{ width: "100%", height: "72vh", border: "none", borderRadius: 12, background: "#000" }} />
         ) : (
-          <a href={spark.tiktokUrl} target="_blank" rel="noopener noreferrer" className="block py-10 text-center text-sm underline" style={{ color: "var(--color-foreground)" }}>Abrir en TikTok</a>
+          <p className="py-10 text-center text-sm" style={{ color: "var(--color-subtle)" }}>Este spark no tiene link de TikTok.</p>
         )}
       </div>
     </Modal>
@@ -378,11 +325,11 @@ function SparkFormModal({ onClose, edit, defaultKind = "WH" }: { onClose: () => 
   const [tiktokUrl, setTiktokUrl] = useState(edit?.tiktokUrl ?? "");
   const [sparkCode, setSparkCode] = useState(edit?.sparkCode ?? "");
   const [language, setLanguage] = useState(edit?.language ?? "en");
-  const [kind, setKind] = useState<"WH" | "BH">(edit?.kind === "BH" ? "BH" : edit?.kind === "WH" ? "WH" : defaultKind);
+  const [kind, setKind] = useState<"WH" | "BH">(edit?.kind === "BH" ? "BH" : defaultKind);
   const [err, setErr] = useState<string | null>(null);
 
   const pending = create.isPending || update.isPending;
-  const valid = title.trim() && sparkCode.trim() && (edit ? true : /^https?:\/\/.+tiktok/.test(tiktokUrl));
+  const valid = title.trim() && sparkCode.trim();
 
   function submit() {
     setErr(null);
@@ -397,8 +344,7 @@ function SparkFormModal({ onClose, edit, defaultKind = "WH" }: { onClose: () => 
         <Field label="Tipo">
           <div className="inline-flex gap-1 rounded-md p-0.5" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
             {(["WH", "BH"] as const).map((k) => (
-              <button key={k} type="button" onClick={() => setKind(k)}
-                className="rounded px-4 py-1.5 text-xs font-semibold transition-colors"
+              <button key={k} type="button" onClick={() => setKind(k)} className="rounded px-4 py-1.5 text-xs font-semibold transition-colors"
                 style={{ background: kind === k ? "var(--color-foreground)" : "transparent", color: kind === k ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
                 {k} <span className="font-normal opacity-70">· {k === "WH" ? "White hat" : "Black hat"}</span>
               </button>
@@ -407,7 +353,7 @@ function SparkFormModal({ onClose, edit, defaultKind = "WH" }: { onClose: () => 
         </Field>
         <Field label="Título"><Inp value={title} onChange={setTitle} placeholder="Hook de Martina" /></Field>
         <Field label="Descripción (opcional)"><Inp value={description} onChange={setDescription} placeholder="Notas para el usuario" /></Field>
-        {!edit && <Field label="URL del TikTok"><Inp value={tiktokUrl} onChange={setTiktokUrl} placeholder="https://www.tiktok.com/@user/video/123…" mono /></Field>}
+        {!edit && <Field label="URL del TikTok (opcional)"><Inp value={tiktokUrl} onChange={setTiktokUrl} placeholder="Dejar vacío si no aplica" mono /></Field>}
         <Field label="Spark code"><Inp value={sparkCode} onChange={setSparkCode} placeholder="#TT..." mono /></Field>
         <Field label="Mercado (idioma / país)">
           <select value={language} onChange={(e) => setLanguage(e.target.value)}
@@ -585,28 +531,6 @@ function ReportsModal({ spark, onClose }: { spark: ManageItem; onClose: () => vo
             ))}
           </ul>
         )}
-      </div>
-    </Modal>
-  );
-}
-
-/* ───────── Reclamado (muestra el code) ───────── */
-function ClaimedModal({ code, onClose }: { code: string; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Modal onClose={onClose} maxW="max-w-sm">
-      <div className="p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full" style={{ background: "var(--color-success-bg, rgba(80,227,194,0.12))" }}>
-          <Sparkles className="h-6 w-6" style={{ color: "var(--color-success)" }} />
-        </div>
-        <p className="text-base font-semibold" style={{ color: "var(--color-foreground)" }}>¡Spark reclamado!</p>
-        <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Ya está en tu biblioteca. Tu spark code:</p>
-        <div className="mt-3 flex items-center gap-1.5 rounded-md px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
-          <span className="min-w-0 flex-1 truncate font-mono text-sm" style={{ color: "var(--color-foreground)" }}>{code}</span>
-          <button type="button" onClick={() => { navigator.clipboard.writeText(code).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-            style={{ color: copied ? "var(--color-success)" : "var(--color-muted-foreground)" }}>{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</button>
-        </div>
-        <button type="button" onClick={onClose} className="mt-5 w-full rounded-md py-2 text-sm font-semibold" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Listo</button>
       </div>
     </Modal>
   );
