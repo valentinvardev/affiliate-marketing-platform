@@ -49,16 +49,21 @@ export function LanderGate({
     let touchStartY = 0;
     const onTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0]?.clientY ?? 0; };
     const onTouchMove = (e: TouchEvent) => {
-      if (touchStartY - (e.touches[0]?.clientY ?? 0) > 28) go();
+      if (Math.abs(touchStartY - (e.touches[0]?.clientY ?? touchStartY)) > 24) go();
     };
-    const onWheel = (e: WheelEvent) => { if (e.deltaY > 0) go(); };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (Math.abs(touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)) > 24) go();
+    };
+    // Cualquier scroll/gesto sirve (en desktop "swipe up" es deltaY < 0).
+    const onWheel = (e: WheelEvent) => { if (Math.abs(e.deltaY) > 4) go(); };
     const onKey = (e: KeyboardEvent) => {
-      if (["ArrowDown", "ArrowUp", " ", "Enter", "PageDown"].includes(e.key)) go();
+      if (["ArrowDown", "ArrowUp", " ", "Enter", "PageDown", "PageUp"].includes(e.key)) go();
     };
     const onClick = () => go();
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("keydown", onKey);
     window.addEventListener("click", onClick);
@@ -66,6 +71,7 @@ export function LanderGate({
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("click", onClick);
