@@ -41,7 +41,9 @@ export function LiveChatProvider() {
   const bottomRef         = useRef<HTMLDivElement>(null);
 
   const utils = api.useUtils();
-  const listQuery = api.chat.list.useQuery(undefined, { refetchInterval: 6000 });
+  // Sólo el panel (con sesión) usa el chat. En landings públicas no hay sesión →
+  // no dispara chat.list ni la suscripción realtime.
+  const listQuery = api.chat.list.useQuery(undefined, { refetchInterval: 6000, enabled: !!me });
   const sendMut   = api.chat.send.useMutation();
 
   /* Merge incoming rows, dedupe by id, sort by time */
@@ -60,8 +62,9 @@ export function LiveChatProvider() {
     if (listQuery.data) merge(listQuery.data.map(toMsg));
   }, [listQuery.data, merge]);
 
-  /* Realtime subscription */
+  /* Realtime subscription (solo con sesión) */
   useEffect(() => {
+    if (!me) return;
     const channel = supabaseBrowser
       .channel("chat-room")
       .on(
@@ -74,7 +77,7 @@ export function LiveChatProvider() {
       )
       .subscribe();
     return () => { void supabaseBrowser.removeChannel(channel); };
-  }, [merge, utils]);
+  }, [me, merge, utils]);
 
   /* Open via header button */
   const openChat = useCallback(() => setOpen(true), []);
@@ -97,6 +100,9 @@ export function LiveChatProvider() {
       { onSuccess: (row) => merge([toMsg(row)]) },
     );
   }
+
+  // Sin sesión (ej. landing pública) no renderiza el chat.
+  if (!me) return null;
 
   return (
     <>
