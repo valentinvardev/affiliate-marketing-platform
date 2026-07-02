@@ -39,8 +39,8 @@ export async function fetchIproyalProxies(token?: string): Promise<{ ok: boolean
   const t = token ?? (await getIproyalToken());
   if (!t) return { ok: false, proxies: [], error: "Falta el token de IPRoyal (Admin → Proxies)" };
 
-  const list = await iproyalFetch("/orders", t);
-  if (!list.ok) return { ok: false, proxies: [], error: `IPRoyal /orders devolvió ${list.status}` };
+  const list = await iproyalFetch("/orders?page=1&per_page=100", t);
+  if (!list.ok) return { ok: false, proxies: [], error: `IPRoyal /orders ${list.status}: ${JSON.stringify(list.data).slice(0, 400)}` };
 
   const orders = (pick(list.data, ["data"]) as Record<string, unknown>[]) ?? [];
   const out: ProxyRow[] = [];
