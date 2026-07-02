@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import ReactCountryFlag from "react-country-flag";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
 import {
-  Network, Plus, Copy, Check, Loader2, Trash2, RefreshCw, KeyRound, AlertTriangle, Server,
+  Network, Plus, Copy, Check, Loader2, Trash2, RefreshCw, KeyRound, AlertTriangle, Server, Globe,
 } from "lucide-react";
 
 export function ProxiesManager() {
@@ -82,8 +81,8 @@ function ProxyCard({ p }: { p: MineItem }) {
   return (
     <div className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
       <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
-        {p.country && <ReactCountryFlag countryCode={p.country} svg style={{ width: "1.15em", height: "0.85em", borderRadius: 2 }} />}
         <span className="font-mono text-sm" style={{ color: "var(--color-foreground)" }}>{p.host}</span>
+        {p.country && <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--color-subtle)" }}><Globe className="h-3 w-3" />{p.country}</span>}
         {p.label && <span className="truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>· {p.label}</span>}
         <button type="button" title="Soltar" disabled={release.isPending}
           onClick={() => { if (confirm("¿Soltar este proxy? Vuelve al pool.")) release.mutate({ proxyId: p.id }); }}

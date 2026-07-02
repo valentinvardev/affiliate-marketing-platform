@@ -35,60 +35,60 @@ export type ProxyRow = {
 };
 
 /** Trae órdenes → proxies desde IPRoyal, normalizados y listos para upsert. */
+const DEAD_STATUS = /refund|expire|cancel|fail|pending/i;
+
 export async function fetchIproyalProxies(token?: string): Promise<{ ok: boolean; proxies: ProxyRow[]; error?: string }> {
   const t = token ?? (await getIproyalToken());
   if (!t) return { ok: false, proxies: [], error: "Falta el token de IPRoyal (Admin → Proxies)" };
 
-  const list = await iproyalFetch("/orders?page=1&per_page=100", t);
-  if (!list.ok) return { ok: false, proxies: [], error: `IPRoyal /orders ${list.status}: ${JSON.stringify(list.data).slice(0, 400)}` };
+  // 1) Productos (GET /orders exige product_id).
+  const prod = await iproyalFetch("/products", t);
+  if (!prod.ok) return { ok: false, proxies: [], error: `IPRoyal /products ${prod.status}: ${JSON.stringify(prod.data).slice(0, 300)}` };
+  const products = (pick(prod.data, ["data"]) as Record<string, unknown>[]) ?? [];
+  const productIds = products.map((p) => pick(p, ["id"])).filter((x) => x != null);
 
-  const orders = (pick(list.data, ["data"]) as Record<string, unknown>[]) ?? [];
   const out: ProxyRow[] = [];
+  const now = Date.now();
 
-  for (const ord of orders) {
-    const orderId = String(pick(ord, ["id"]) ?? "");
-    if (!orderId) continue;
-    const status = String(pick(ord, ["status"]) ?? "");
-    if (/expire|cancel|refund/i.test(status)) continue;
-    const label = (pick(ord, ["product_name", "productName", "product"]) as string) ?? null;
-    const expRaw = pick(ord, ["expire_date", "expireDate", "expires_at"]);
-    const expiresAt = expRaw ? new Date(expRaw as string) : null;
+  // 2) Órdenes por producto (la lista ya trae proxy_data inline).
+  for (const pid of productIds) {
+    let page = 1, lastPage = 1;
+    do {
+      const list = await iproyalFetch(`/orders?product_id=${pid}&page=${page}&per_page=100`, t);
+      if (!list.ok) break;
+      const orders = (pick(list.data, ["data"]) as Record<string, unknown>[]) ?? [];
+      lastPage = Number(pick(obj(pick(list.data, ["meta"])), ["last_page"]) ?? 1) || 1;
 
-    const det = await iproyalFetch(`/orders/${orderId}`, t);
-    const od = obj(pick(det.data, ["data"]) ?? det.data);
-    const pd = obj(pick(od, ["proxy_data", "proxyData"]));
-    const ports = obj(pick(pd, ["ports"]));
-    const httpPort = Number(pick(ports, ["http", "https", "http|https"]) ?? pick(pd, ["http_port"]) ?? 0) || 0;
-    const socksPort = Number(pick(ports, ["socks5", "socks"]) ?? 0) || null;
-    const country = (pick(od, ["country", "country_code"]) as string) ?? null;
-    const proxies = (pick(pd, ["proxies"]) as unknown[]) ?? [];
+      for (const ord of orders) {
+        const status = String(pick(ord, ["status"]) ?? "");
+        if (DEAD_STATUS.test(status)) continue;
+        const orderId = String(pick(ord, ["id"]) ?? "");
+        const expRaw = pick(ord, ["expire_date", "expireDate"]);
+        const expiresAt = expRaw ? new Date(String(expRaw).replace(" ", "T") + "Z") : null;
+        if (expiresAt && expiresAt.getTime() < now) continue; // vencida
 
-    // credenciales a nivel orden (fallback si no vienen por proxy)
-    const ordUser = String(pick(pd, ["username", "user"]) ?? pick(od, ["username", "user"]) ?? "");
-    const ordPass = String(pick(pd, ["password", "pass"]) ?? pick(od, ["password", "pass"]) ?? "");
+        const label = [pick(ord, ["product_name"]), pick(ord, ["plan_name"])].filter(Boolean).join(" · ") || null;
+        const country = (pick(ord, ["location", "locations"]) as string) ?? null;
+        const pd = obj(pick(ord, ["proxy_data", "proxyData"]));
+        const ports = obj(pick(pd, ["ports"]));
+        const httpPort = Number(pick(ports, ["http|https", "http", "https"]) ?? 0) || 0;
+        const socksPort = Number(pick(ports, ["socks5", "socks"]) ?? 0) || null;
+        const proxies = (pick(pd, ["proxies"]) as Record<string, unknown>[]) ?? [];
 
-    for (const p of proxies) {
-      let host = "", username = "", password = "", hp = httpPort, sp = socksPort;
-      if (typeof p === "string") {
-        // formato "ip:httpPort:user:pass" o solo "ip"
-        const parts = p.split(":");
-        host = parts[0] ?? "";
-        if (parts[1]) hp = Number(parts[1]) || httpPort;
-        if (parts[2]) username = parts[2];
-        if (parts[3]) password = parts[3];
-      } else {
-        const po = obj(p);
-        host = String(pick(po, ["ip", "host", "address", "proxy"]) ?? "");
-        username = String(pick(po, ["username", "user", "login"]) ?? "");
-        password = String(pick(po, ["password", "pass"]) ?? "");
-        hp = Number(pick(po, ["http_port", "port"]) ?? httpPort) || httpPort;
-        sp = Number(pick(po, ["socks_port", "socks5_port"]) ?? socksPort ?? 0) || socksPort;
+        for (const p of proxies) {
+          const host = String(pick(p, ["ip", "host", "address"]) ?? "");
+          if (!host) continue;
+          out.push({
+            externalId: `${orderId}:${host}`,
+            host, httpPort, socksPort,
+            username: String(pick(p, ["username", "user"]) ?? ""),
+            password: String(pick(p, ["password", "pass"]) ?? ""),
+            label, country, orderId, expiresAt,
+          });
+        }
       }
-      if (!host) continue;
-      if (!username) username = ordUser;
-      if (!password) password = ordPass;
-      out.push({ externalId: `${orderId}:${host}`, host, httpPort: hp, socksPort: sp, username, password, label, country, orderId, expiresAt });
-    }
+      page++;
+    } while (page <= lastPage);
   }
 
   return { ok: true, proxies: out };
