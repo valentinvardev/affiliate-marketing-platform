@@ -274,29 +274,14 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
         >
           {/* HERO */}
           <section style={{ textAlign: "center", paddingTop: 40 }}>
-            {/* Logo */}
-            {logoUrl ? (
+            {/* Logo (opcional: si la campaña no tiene logo, no se muestra nada) */}
+            {logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoUrl}
                 alt={campaign.name}
-                style={{ width: 64, height: 64, objectFit: "contain", margin: "0 auto", borderRadius: 12 }}
+                style={{ width: 64, height: 64, objectFit: "contain", margin: "0 auto 4px", borderRadius: 12 }}
               />
-            ) : (
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  margin: "0 auto",
-                  borderRadius: 12,
-                  background: `color-mix(in oklch, ${primary} 20%, oklch(0.15 0.03 265))`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Gamepad2 style={{ width: 32, height: 32, color: primary }} />
-              </div>
             )}
 
             <h1
