@@ -24,14 +24,32 @@ export const DEFAULT_SAFE_PAGES = [
 ];
 
 /**
+ * Cache en memoria de los dominios de redirección. Evita pegarle a la DB en
+ * CADA vista de landing legítima (freecash/teststar/…): sólo las landings de
+ * un dominio de redirección hacen la query pesada. Se refresca cada 60s.
+ */
+let domainCache: { set: Set<string>; at: number } | null = null;
+async function redirectDomains(): Promise<Set<string>> {
+  if (domainCache && Date.now() - domainCache.at < 60_000) return domainCache.set;
+  const rows = await db.redirectDomain.findMany({ select: { domain: true } });
+  domainCache = { set: new Set(rows.map((r) => r.domain)), at: Date.now() };
+  return domainCache.set;
+}
+
+/**
  * Resuelve a dónde redirigir un dominio/ruta de cloaking según su config.
  * - cloakOn  → una whitepage al azar de la lista.
  * - cloakOff → la landing de la campaña (targetUrl).
- * Devuelve null si no hay redirector para ese dominio/ruta (o no hay destino).
+ * Devuelve null si el host no es de redirección, o no hay destino válido.
  */
 export async function resolveRedirect(rawHost: string | null | undefined, rawPath: string | null | undefined): Promise<string | null> {
   const host = normalizeHost(rawHost);
   if (!host) return null;
+
+  // La mayoría de las landings NO son de redirección → salimos sin tocar Redirect.
+  const domains = await redirectDomains();
+  if (!domains.has(host)) return null;
+
   const path = normalizePath(rawPath);
   const r = await db.redirect.findUnique({ where: { domain_path: { domain: host, path } } });
   if (!r) return null;
@@ -45,7 +63,10 @@ export async function resolveRedirect(rawHost: string | null | undefined, rawPat
   }
   if (!target) return null;
 
-  // Guard anti-loop: nunca redirigir a su propio host.
-  try { if (normalizeHost(new URL(target).host) === host) return null; } catch { /* relativo: lo dejamos pasar */ }
-  return target;
+  // Guard anti-loop: sólo redirigir a una URL http(s) ABSOLUTA de OTRO host.
+  let u: URL;
+  try { u = new URL(target); } catch { return null; } // relativa → no redirigir (evita loop)
+  if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+  if (normalizeHost(u.host) === host) return null; // mismo host → loop
+  return u.toString();
 }
