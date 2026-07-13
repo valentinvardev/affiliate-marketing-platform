@@ -280,8 +280,11 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files; if (!files?.length) return; e.target.value = "";
-    const batch = Array.from(files).map((file) => ({ file, id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, preview: URL.createObjectURL(file) }));
+    const input = e.target;
+    const chosen = Array.from(input.files ?? []); // materializar ANTES de limpiar el input
+    input.value = "";
+    if (!chosen.length) return;
+    const batch = chosen.map((file) => ({ file, id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, preview: URL.createObjectURL(file) }));
     setPending((p) => [...batch.map((b) => ({ id: b.id, preview: b.preview })), ...p]);
     for (const b of batch) {
       try {

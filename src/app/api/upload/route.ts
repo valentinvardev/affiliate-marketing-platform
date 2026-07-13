@@ -15,6 +15,17 @@ const ALLOWED: Record<string, string> = {
 const HEIC_TYPES = new Set(["image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"]);
 const MAX_BYTES = 25 * 1024 * 1024; // 25 MB (fotos/capturas de celular sin comprimir)
 
+export const runtime = "nodejs"; // heic-convert + Buffer necesitan Node, no Edge
+
+// Marcador de deploy: abrí /api/upload en el navegador. Si ves build "v2" con heic:true,
+// el server nuevo está corriendo. Si no, seguís sirviendo el build viejo.
+export function GET() {
+  return NextResponse.json(
+    { ok: true, build: "upload-v2", heic: true, maxMB: 25 },
+    { headers: { "cache-control": "no-store" } },
+  );
+}
+
 export async function POST(req: NextRequest) {
   // Solo usuarios logueados pueden subir.
   const session = await getServerSession(authOptions);
