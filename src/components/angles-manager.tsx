@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import ReactCountryFlag from "react-country-flag";
 import { api } from "@/trpc/react";
@@ -277,6 +277,7 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
   const add = api.angles.proofAdd.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const remove = api.angles.proofRemove.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const [pending, setPending] = useState<{ id: string; preview: string; error?: string }[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files; if (!files?.length) return; e.target.value = "";
@@ -309,11 +310,12 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
       <div className="mb-3 flex items-center gap-2">
         <ImageIcon className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
         <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{title} · {country}</p>
-        <label className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+        <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,.heic,.heif" multiple hidden onChange={onFile} />
+        <button type="button" onClick={() => inputRef.current?.click()}
+          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
           style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
-          <input type="file" accept="image/*" multiple className="sr-only" onChange={onFile} />
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir
-        </label>
+        </button>
       </div>
       {items.length === 0 && pending.length === 0 ? (
         <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{hint}</p>
