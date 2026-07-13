@@ -22,6 +22,7 @@ export function AnglesManager() {
   const [country, setCountry] = useState(TARGET_COUNTRIES[0]?.name ?? "");
   const [campaignId, setCampaignId] = useState("");
   const [modal, setModal] = useState<Loaded | null>(null);
+  const [mainTab, setMainTab] = useState<"gallery" | "kb">("gallery");
   const [imgTab, setImgTab] = useState<"hook" | "proof">("hook");
 
   const campaignsQ = api.campaign.list.useQuery();
@@ -68,22 +69,36 @@ export function AnglesManager() {
           {generate.isPending && <p className="mt-3 text-xs" style={{ color: "var(--color-subtle)" }}>Gemini está analizando el mercado de {country}…</p>}
         </div>
 
-        {/* Gestión de imágenes por pestañas */}
+        {/* Tabs: galería de fotos | base de conocimientos */}
         <div>
           <div className="mb-3 inline-flex gap-1 rounded-lg p-1" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
-            {([["hook", "Hooks (imagen 1)"], ["proof", "Proofs (imagen 2)"]] as const).map(([k, label]) => (
-              <button key={k} type="button" onClick={() => setImgTab(k)} className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
-                style={{ background: imgTab === k ? "var(--color-foreground)" : "transparent", color: imgTab === k ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
+            {([["gallery", "Galería de fotos"], ["kb", "Base de conocimientos"]] as const).map(([k, label]) => (
+              <button key={k} type="button" onClick={() => setMainTab(k)} className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
+                style={{ background: mainTab === k ? "var(--color-foreground)" : "transparent", color: mainTab === k ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
                 {label}
               </button>
             ))}
           </div>
-          {imgTab === "hook"
-            ? <AssetLibrary country={country} kind="hook" title="Fotos hook (imagen 1)" hint="Subí las fotos de la primera imagen del anuncio." />
-            : <AssetLibrary country={country} kind="proof" title="Proofs de pago (imagen 2)" hint="Subí las capturas reales de pago." />}
+
+          {mainTab === "gallery" ? (
+            <div>
+              <div className="mb-3 inline-flex gap-1 rounded-lg p-1" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
+                {([["hook", "Hooks (imagen 1)"], ["proof", "Proofs (imagen 2)"]] as const).map(([k, label]) => (
+                  <button key={k} type="button" onClick={() => setImgTab(k)} className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
+                    style={{ background: imgTab === k ? "var(--color-foreground)" : "transparent", color: imgTab === k ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {imgTab === "hook"
+                ? <AssetLibrary country={country} kind="hook" title="Fotos hook (imagen 1)" hint="Subí las fotos de la primera imagen del anuncio." />
+                : <AssetLibrary country={country} kind="proof" title="Proofs de pago (imagen 2)" hint="Subí las capturas reales de pago." />}
+            </div>
+          ) : (
+            <KbSection country={country} />
+          )}
         </div>
 
-        <KbSection country={country} />
         <History onLoad={setModal} />
       </main>
 
@@ -284,6 +299,7 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
   const add = api.angles.proofAdd.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const remove = api.angles.proofRemove.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const [pending, setPending] = useState<{ id: string; preview: string; error?: string }[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -332,7 +348,7 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {pending.map((pp) => (
-            <div key={pp.id} className="relative overflow-hidden rounded-lg" style={{ border: `1px solid ${pp.error ? "var(--color-error)" : "var(--color-border)"}` }}>
+            <div key={pp.id} onClick={() => setLightbox(pp.preview)} className="relative cursor-zoom-in overflow-hidden rounded-lg" style={{ border: `1px solid ${pp.error ? "var(--color-error)" : "var(--color-border)"}` }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={pp.preview} alt="" className="aspect-[3/4] w-full object-cover" style={{ opacity: 0.35 }} />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-1.5 text-center" style={{ background: "rgba(0,0,0,0.5)" }}>
@@ -340,7 +356,7 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
                   <>
                     <AlertTriangle className="h-4 w-4" style={{ color: "#fca5a5" }} />
                     <span className="text-[9px] leading-tight" style={{ color: "#fca5a5" }}>{pp.error}</span>
-                    <button type="button" onClick={() => setPending((p) => p.filter((x) => x.id !== pp.id))} className="text-[9px] underline" style={{ color: "#fff" }}>quitar</button>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setPending((p) => p.filter((x) => x.id !== pp.id)); }} className="text-[9px] underline" style={{ color: "#fff" }}>quitar</button>
                   </>
                 ) : <Loader2 className="h-5 w-5 animate-spin" style={{ color: "#fff" }} />}
               </div>
@@ -349,8 +365,8 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
           {items.map((p) => (
             <div key={p.id} className="relative overflow-hidden rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <a href={p.url} target="_blank" rel="noopener noreferrer"><img src={p.url} alt={p.label ?? ""} className="aspect-[3/4] w-full object-cover" /></a>
-              <button type="button" title="Eliminar" disabled={remove.isPending} onClick={() => remove.mutate({ id: p.id })}
+              <img src={p.url} alt={p.label ?? ""} onClick={() => setLightbox(p.url)} className="aspect-[3/4] w-full cursor-zoom-in object-cover" />
+              <button type="button" title="Eliminar" disabled={remove.isPending} onClick={(e) => { e.stopPropagation(); remove.mutate({ id: p.id }); }}
                 className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-md" style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}>
                 <Trash2 className="h-3 w-3" />
               </button>
@@ -358,7 +374,26 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
           ))}
         </div>
       )}
+      {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
     </section>
+  );
+}
+
+/* ── Lightbox de imagen ── */
+function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(4px)" }} onClick={onClose}>
+      <button type="button" onClick={onClose} className="absolute right-4 top-4" style={{ color: "#fff" }}><X className="h-6 w-6" /></button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full rounded-lg object-contain" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.85)" }} />
+    </div>,
+    document.body,
   );
 }
 
