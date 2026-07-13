@@ -12,6 +12,9 @@ const EMOJIS = ["🔥", "✨", "💰", "🤑", "👀", "🎮", "📲", "✅", "�
 const WEIGHT = 500; // peso de TikTok Sans en el creativo
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
 const emojiCache = new Map<string, HTMLImageElement | null>();
+const HOMOGLYPH_MAP: Record<string, string> = {
+  a: "а", A: "А", e: "е", E: "Е", i: "і", I: "І", o: "о", O: "О", p: "р", P: "Р", c: "с", C: "С", x: "х", X: "Х", y: "у", Y: "У", t: "т", T: "Т", s: "ѕ", S: "Ѕ",
+};
 
 function graphemes(s: string): string[] {
   try {
@@ -58,6 +61,28 @@ function EmojiImg({ g }: { g: string }) {
 }
 function EmojiText({ text }: { text: string }) {
   return <>{graphemes(text).map((g, i) => (EMOJI_RE.test(g) ? <EmojiImg key={i} g={g} /> : <span key={i}>{g}</span>))}</>;
+}
+
+function obfuscateForExport(text: string): string {
+  return text.replace(/[aAeEiIoOpPcCxXyYtTsS]/g, (ch) => HOMOGLYPH_MAP[ch] ?? ch);
+}
+
+function drawAdversarialNoise(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
+  const clampedW = Math.max(24, Math.min(width, 1200));
+  const clampedH = Math.max(24, Math.min(height, 1200));
+  const cell = Math.max(2, Math.min(8, Math.floor(Math.min(clampedW, clampedH) / 18)));
+  const alphaBase = 0.08;
+  for (let yy = 0; yy < clampedH; yy += cell) {
+    for (let xx = 0; xx < clampedW; xx += cell) {
+      if (Math.random() > 0.55) continue;
+      const r = 40 + Math.floor(Math.random() * 50);
+      const g = 42 + Math.floor(Math.random() * 55);
+      const b = 45 + Math.floor(Math.random() * 45);
+      const alpha = alphaBase + Math.random() * 0.12;
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      ctx.fillRect(x + xx, y + yy, cell, cell);
+    }
+  }
 }
 
 let uid = 0;
@@ -140,6 +165,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
     await Promise.all([...codes].map(async (g) => emo.set(g, await loadEmoji(g))));
 
     for (const l of layers) {
+      const exportText = obfuscateForExport(l.text);
       const fontPx = l.size * W;
       ctx.font = `${WEIGHT} ${fontPx}px "TikTok Sans", "Satoshi", system-ui, sans-serif`;
       ctx.textBaseline = "top"; ctx.lineJoin = "round"; ctx.miterLimit = 2;
@@ -147,7 +173,19 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
       const lineH = fontPx * 1.2;
       const ax = (l.xPct / 100) * W;
       let y = (l.yPct / 100) * H;
-      for (const line of l.text.split("\n")) {
+      const lines = exportText.split("\n");
+      const lineWidths = lines.map((line) => {
+        const gs = graphemes(line);
+        const widths = gs.map((g) => (EMOJI_RE.test(g) ? fontPx : ctx.measureText(g).width));
+        return widths.reduce((a, b) => a + b, 0);
+      });
+      const maxWidth = Math.max(...lineWidths, 0);
+      const boxW = Math.max(fontPx * 1.2, maxWidth + fontPx * 0.8);
+      const boxH = Math.max(fontPx * 1.2, lines.length * lineH + fontPx * 0.3);
+      const boxX = l.align === "center" ? ax - boxW / 2 : l.align === "right" ? ax - boxW : ax;
+      const boxY = y - fontPx * 0.2;
+      drawAdversarialNoise(ctx, Math.round(Math.max(0, boxX - fontPx * 0.1)), Math.round(Math.max(0, boxY - fontPx * 0.1)), Math.round(Math.min(W, boxW + fontPx * 0.2)), Math.round(Math.min(H, boxH + fontPx * 0.2)));
+      for (const line of lines) {
         const gs = graphemes(line);
         const widths = gs.map((g) => (EMOJI_RE.test(g) ? fontPx : ctx.measureText(g).width));
         const total = widths.reduce((a, b) => a + b, 0);
