@@ -16,6 +16,7 @@ import { conversionsRouter } from "@/server/api/routers/conversions";
 import { sparksRouter } from "@/server/api/routers/sparks";
 import { leaderboardRouter } from "@/server/api/routers/leaderboard";
 import { proxiesRouter } from "@/server/api/routers/proxies";
+import { anglesRouter } from "@/server/api/routers/angles";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 export const appRouter = createTRPCRouter({
@@ -37,6 +38,7 @@ export const appRouter = createTRPCRouter({
   sparks: sparksRouter,
   leaderboard: leaderboardRouter,
   proxies: proxiesRouter,
+  angles: anglesRouter,
 });
 
 export type AppRouter = typeof appRouter;

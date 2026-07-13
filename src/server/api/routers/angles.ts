@@ -1,0 +1,60 @@
+import { z } from "zod";
+import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
+import { generateAngles } from "@/lib/gemini";
+import { OP_LABEL } from "@/lib/target-countries";
+
+export const anglesRouter = createTRPCRouter({
+  /* ── Generación (Agente 1) ── */
+  generate: adminProcedure
+    .input(z.object({ country: z.string().min(1), campaignId: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const kbRows = await ctx.db.angleKbEntry.findMany({ where: { country: input.country }, orderBy: { createdAt: "desc" }, take: 20 });
+      const kb = kbRows.map((k) => k.entry);
+
+      let metrics: string | undefined;
+      if (input.campaignId) {
+        const c = await ctx.db.campaign.findUnique({ where: { id: input.campaignId }, select: { slug: true, name: true } });
+        if (c) {
+          const [convs, clicks] = await Promise.all([
+            ctx.db.conversion.findMany({ where: { s1: c.slug }, select: { price: true } }),
+            ctx.db.click.count({ where: { s1: c.slug } }),
+          ]);
+          const revenue = convs.reduce((s, x) => s + x.price, 0);
+          const cvr = clicks ? (convs.length / clicks) * 100 : 0;
+          const epc = clicks ? revenue / clicks : 0;
+          metrics = `Campaña "${c.name}": ${convs.length} conversiones, ${clicks} clicks, CVR ${cvr.toFixed(1)}%, EPC $${epc.toFixed(2)}, revenue $${revenue.toFixed(0)}.`;
+        }
+      }
+
+      const result = await generateAngles({ country: input.country, operableHours: OP_LABEL, kb, metrics });
+      const saved = await ctx.db.adAngle.create({
+        data: { country: input.country, market: result.market_analysis, angles: result.angles, campaignId: input.campaignId ?? null, createdById: ctx.session.user.id },
+      });
+      return { id: saved.id, country: saved.country, campaignId: saved.campaignId, createdAt: saved.createdAt, ...result };
+    }),
+
+  list: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.adAngle.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
+    return rows.map((r) => ({ id: r.id, country: r.country, campaignId: r.campaignId, createdAt: r.createdAt, market: r.market, angles: r.angles }));
+  }),
+
+  remove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.adAngle.delete({ where: { id: input.id } })),
+
+  /* ── Base de conocimientos ── */
+  kbList: adminProcedure
+    .input(z.object({ country: z.string().optional() }).optional())
+    .query(({ ctx, input }) => ctx.db.angleKbEntry.findMany({ where: input?.country ? { country: input.country } : {}, orderBy: { createdAt: "desc" } })),
+  kbAdd: adminProcedure
+    .input(z.object({ country: z.string().min(1), entry: z.string().min(1), tags: z.array(z.string()).optional() }))
+    .mutation(({ ctx, input }) => ctx.db.angleKbEntry.create({ data: { country: input.country, entry: input.entry.trim(), tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean), createdById: ctx.session.user.id } })),
+  kbRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.angleKbEntry.delete({ where: { id: input.id } })),
+
+  /* ── Librería de proofs (imágenes reales que sube el admin) ── */
+  proofList: adminProcedure
+    .input(z.object({ country: z.string().optional() }).optional())
+    .query(({ ctx, input }) => ctx.db.proofImage.findMany({ where: input?.country ? { country: input.country } : {}, orderBy: { createdAt: "desc" } })),
+  proofAdd: adminProcedure
+    .input(z.object({ country: z.string().min(1), url: z.string().min(1), label: z.string().optional() }))
+    .mutation(({ ctx, input }) => ctx.db.proofImage.create({ data: { country: input.country, url: input.url, label: input.label?.trim() || null, createdById: ctx.session.user.id } })),
+  proofRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.proofImage.delete({ where: { id: input.id } })),
+});

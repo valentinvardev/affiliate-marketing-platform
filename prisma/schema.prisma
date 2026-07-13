@@ -245,6 +245,44 @@ model AppConfig {
     updatedAt DateTime @updatedAt
 }
 
+// ─── Ángulos de TikTok Ads (generados con Gemini, solo admin) ───
+model AdAngle {
+    id          String   @id @default(cuid())
+    country     String
+    demographic String   @default("18-40+")
+    market      Json     // market_analysis (trends, best_ad_hours, top_games)
+    angles      Json     // array de ángulos
+    campaignId  String?
+    createdById String
+    createdAt   DateTime @default(now())
+
+    @@index([country])
+}
+
+// Base de conocimientos: aprendizajes de qué ángulos/mercados convierten.
+model AngleKbEntry {
+    id          String   @id @default(cuid())
+    country     String
+    entry       String
+    tags        String[] @default([])
+    createdById String
+    createdAt   DateTime @default(now())
+
+    @@index([country])
+}
+
+// Librería de proofs de pago REALES subidos por el admin, ordenados por país.
+model ProofImage {
+    id          String   @id @default(cuid())
+    country     String
+    url         String
+    label       String?
+    createdById String
+    createdAt   DateTime @default(now())
+
+    @@index([country])
+}
+
 // ─── Proxies ISP/DC (comprados en IPRoyal, dispensados a los usuarios) ───
 model Proxy {
     id         String    @id @default(cuid())
