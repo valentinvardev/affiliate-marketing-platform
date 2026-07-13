@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import ReactCountryFlag from "react-country-flag";
 import { api } from "@/trpc/react";
 import { TARGET_COUNTRIES } from "@/lib/target-countries";
+import { downscaleImage } from "@/lib/downscale-image";
 import { ImageEditor } from "@/components/image-editor";
 import {
   Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle, ThumbsUp, ThumbsDown,
@@ -283,7 +284,8 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
     setPending((p) => [...batch.map((b) => ({ id: b.id, preview: b.preview })), ...p]);
     for (const b of batch) {
       try {
-        const fd = new FormData(); fd.append("file", b.file);
+        const prepared = await downscaleImage(b.file);
+        const fd = new FormData(); fd.append("file", prepared);
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         if (!res.ok) {
           const d = (await res.json().catch(() => ({}))) as { error?: string };
