@@ -111,7 +111,11 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
     const W = img.naturalWidth, H = img.naturalHeight;
     const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d"); if (!ctx) return null;
-    try { await document.fonts.ready; } catch { /* ignore */ }
+    // Asegurar que TikTok Sans (800) esté cargada para los textos antes de dibujar.
+    try {
+      await Promise.all(layers.map((l) => document.fonts.load(`800 40px "TikTok Sans"`, l.text || "A")));
+      await document.fonts.ready;
+    } catch { /* ignore */ }
     ctx.drawImage(img, 0, 0, W, H);
 
     const codes = new Set<string>();
