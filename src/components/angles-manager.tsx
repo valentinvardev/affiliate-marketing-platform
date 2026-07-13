@@ -4,13 +4,15 @@ import { useState } from "react";
 import ReactCountryFlag from "react-country-flag";
 import { api } from "@/trpc/react";
 import { TARGET_COUNTRIES } from "@/lib/target-countries";
+import { ImageEditor } from "@/components/image-editor";
 import {
-  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon,
+  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus,
 } from "lucide-react";
 
-type Angle = { angle_name: string; demographic_target: string; hook_text: string; hook_variants: string[]; proof_text: string; caption: string; why_it_works: string };
+type Texts = { hook_text: string; hook_variants: string[]; proof_text: string; caption: string };
+type Angle = Texts & { angle_name: string; demographic_target: string; why_it_works: string; translation_es: Texts };
 type Market = { trends: string[]; best_ad_hours: string[]; top_games: string[] };
-type Loaded = { country: string; market: Market; angles: Angle[] };
+type Loaded = { id: string; country: string; market: Market; angles: Angle[] };
 
 const flagOf = (name: string) => TARGET_COUNTRIES.find((c) => c.name === name)?.code;
 
@@ -22,7 +24,7 @@ export function AnglesManager() {
   const campaignsQ = api.campaign.list.useQuery();
   const utils = api.useUtils();
   const generate = api.angles.generate.useMutation({
-    onSuccess: (r) => { setLoaded({ country: r.country, market: r.market_analysis, angles: r.angles }); void utils.angles.list.invalidate(); },
+    onSuccess: (r) => { setLoaded({ id: r.id, country: r.country, market: r.market_analysis, angles: r.angles }); void utils.angles.list.invalidate(); },
     onError: (e) => alert(e.message),
   });
 
@@ -65,7 +67,8 @@ export function AnglesManager() {
 
         {loaded && <AngleView data={loaded} />}
 
-        <ProofLibrary country={country} />
+        <AssetLibrary country={country} kind="hook" title="Fotos hook (imagen 1)" hint="Subí las fotos de la primera imagen del anuncio." />
+        <AssetLibrary country={country} kind="proof" title="Proofs de pago (imagen 2)" hint="Subí las capturas reales de pago." />
         <KbSection country={country} />
         <History onLoad={setLoaded} />
       </main>
@@ -75,38 +78,78 @@ export function AnglesManager() {
 
 /* ── Resultado ── */
 function AngleView({ data }: { data: Loaded }) {
+  const [es, setEs] = useState(false); // false = idioma nativo, true = español
+  const [editor, setEditor] = useState(false);
   return (
     <div className="space-y-4">
-      {/* Market analysis */}
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setEditor(true)}
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
+          style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+          <ImagePlus className="h-3.5 w-3.5" /> Armar creativo
+        </button>
+        <AngleMediaStrip angleId={data.id} />
+      </div>
+      {editor && <ImageEditor angleId={data.id} country={data.country} onClose={() => setEditor(false)} />}
+      {/* Market analysis (siempre en inglés) */}
       <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
         <div className="mb-3 flex items-center gap-2">
           {flagOf(data.country) && <ReactCountryFlag countryCode={flagOf(data.country)!} svg style={{ width: "1.2em", height: "0.9em", borderRadius: 2 }} />}
-          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Análisis de mercado · {data.country}</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Market analysis · {data.country}</p>
+          <button type="button" onClick={() => setEs((v) => !v)}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+            style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
+            <Languages className="h-3.5 w-3.5" /> {es ? "Ver original" : "Ver en español"}
+          </button>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <MarketCol icon={<TrendingUp className="h-3.5 w-3.5" />} title="Tendencias" items={data.market.trends} />
-          <MarketCol icon={<Clock className="h-3.5 w-3.5" />} title="Mejores horas" items={data.market.best_ad_hours} />
-          <MarketCol icon={<Gamepad2 className="h-3.5 w-3.5" />} title="Top juegos" items={data.market.top_games} />
+          <MarketCol icon={<TrendingUp className="h-3.5 w-3.5" />} title="Trends" items={data.market.trends} />
+          <MarketCol icon={<Clock className="h-3.5 w-3.5" />} title="Best hours" items={data.market.best_ad_hours} />
+          <MarketCol icon={<Gamepad2 className="h-3.5 w-3.5" />} title="Top games" items={data.market.top_games} />
         </div>
       </div>
 
       {/* Angles */}
-      {data.angles.map((a, i) => (
-        <div key={i} className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)" }}>{i + 1}</span>
-            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{a.angle_name}</p>
-            <span className="ml-auto text-[11px]" style={{ color: "var(--color-subtle)" }}>{a.demographic_target}</span>
-          </div>
-          <Copyable label="Hook (Imagen 1)" value={a.hook_text} />
-          {a.hook_variants?.length > 0 && (
-            <div className="mt-1.5 space-y-1">
-              {a.hook_variants.map((h, j) => <Copyable key={j} label={`Variante ${j + 1}`} value={h} small />)}
+      {data.angles.map((a, i) => {
+        const t: Texts = es ? a.translation_es : a;
+        return (
+          <div key={i} className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)" }}>{i + 1}</span>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{a.angle_name}</p>
+              <span className="ml-auto text-[11px]" style={{ color: "var(--color-subtle)" }}>{a.demographic_target}</span>
             </div>
-          )}
-          <Copyable label="Proof (texto sobre tu imagen)" value={a.proof_text} />
-          <Copyable label="Caption + CTA" value={a.caption} />
-          {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>Por qué funciona:</span> {a.why_it_works}</p>}
+            <Copyable label={`Hook (Imagen 1)${es ? " · ES" : ""}`} value={t.hook_text} />
+            {t.hook_variants?.length > 0 && (
+              <div className="mt-1.5 space-y-1">
+                {t.hook_variants.map((h, j) => <Copyable key={j} label={`Variante ${j + 1}`} value={h} small />)}
+              </div>
+            )}
+            <Copyable label={`Proof (texto sobre tu imagen)${es ? " · ES" : ""}`} value={t.proof_text} />
+            <Copyable label={`Caption + CTA${es ? " · ES" : ""}`} value={t.caption} />
+            {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>Por qué funciona:</span> {a.why_it_works}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+function AngleMediaStrip({ angleId }: { angleId: string }) {
+  const utils = api.useUtils();
+  const q = api.angles.mediaList.useQuery({ angleId });
+  const remove = api.angles.mediaRemove.useMutation({ onSuccess: () => void utils.angles.mediaList.invalidate() });
+  const items = q.data ?? [];
+  if (!items.length) return <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Sin creativos guardados.</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {items.map((m) => (
+        <div key={m.id} className="group relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <a href={m.url} target="_blank" rel="noopener noreferrer"><img src={m.url} alt="" className="h-14 w-14 rounded-md object-cover" style={{ border: "1px solid var(--color-border)" }} /></a>
+          <button type="button" onClick={() => remove.mutate({ id: m.id })}
+            className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100" style={{ background: "var(--color-error)", color: "#fff" }}>
+            <Trash2 className="h-2.5 w-2.5" />
+          </button>
         </div>
       ))}
     </div>
@@ -138,10 +181,10 @@ function Copyable({ label, value, small }: { label: string; value: string; small
   );
 }
 
-/* ── Librería de proofs ── */
-function ProofLibrary({ country }: { country: string }) {
+/* ── Librería de imágenes (proof | hook) ── */
+function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "proof" | "hook"; title: string; hint: string }) {
   const utils = api.useUtils();
-  const q = api.angles.proofList.useQuery({ country });
+  const q = api.angles.proofList.useQuery({ country, kind });
   const add = api.angles.proofAdd.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const remove = api.angles.proofRemove.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const [uploading, setUploading] = useState(false);
@@ -155,7 +198,7 @@ function ProofLibrary({ country }: { country: string }) {
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         if (!res.ok) continue;
         const data = (await res.json()) as { url?: string };
-        if (data.url) await add.mutateAsync({ country, url: data.url });
+        if (data.url) await add.mutateAsync({ country, url: data.url, kind });
       }
     } finally { setUploading(false); }
   }
@@ -165,7 +208,7 @@ function ProofLibrary({ country }: { country: string }) {
     <section className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
       <div className="mb-3 flex items-center gap-2">
         <ImageIcon className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
-        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Proofs de pago · {country}</p>
+        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{title} · {country}</p>
         <label className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
           style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
           <input type="file" accept="image/*" multiple className="sr-only" onChange={onFile} />
@@ -173,7 +216,7 @@ function ProofLibrary({ country }: { country: string }) {
         </label>
       </div>
       {items.length === 0 ? (
-        <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Sin proofs para {country}. Subí las capturas reales de pago.</p>
+        <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{hint}</p>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {items.map((p) => (
@@ -253,7 +296,7 @@ function History({ onLoad }: { onLoad: (l: Loaded) => void }) {
             {flagOf(r.country) && <ReactCountryFlag countryCode={flagOf(r.country)!} svg style={{ width: "1.1em", height: "0.8em", borderRadius: 2 }} />}
             <span style={{ color: "var(--color-foreground)" }}>{r.country}</span>
             <span style={{ color: "var(--color-subtle)" }}>{new Date(r.createdAt).toLocaleDateString("es")}</span>
-            <button type="button" onClick={() => onLoad({ country: r.country, market: r.market as Market, angles: r.angles as Angle[] })}
+            <button type="button" onClick={() => onLoad({ id: r.id, country: r.country, market: r.market as Market, angles: r.angles as Angle[] })}
               className="ml-auto rounded-md px-2 py-1 text-[11px] font-medium" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>Ver</button>
             <button type="button" onClick={() => remove.mutate({ id: r.id })} style={{ color: "var(--color-subtle)" }}><Trash2 className="h-3 w-3" /></button>
           </li>

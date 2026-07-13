@@ -271,16 +271,30 @@ model AngleKbEntry {
     @@index([country])
 }
 
-// Librería de proofs de pago REALES subidos por el admin, ordenados por país.
+// Librería de imágenes fuente subidas por el admin, por país.
+// kind: "proof" (captura real de pago) | "hook" (foto de la primera imagen).
 model ProofImage {
     id          String   @id @default(cuid())
     country     String
+    kind        String   @default("proof")
     url         String
     label       String?
     createdById String
     createdAt   DateTime @default(now())
 
-    @@index([country])
+    @@index([country, kind])
+}
+
+// Creativos exportados (2 imágenes con texto) embebidos a un ángulo.
+model AngleMedia {
+    id          String   @id @default(cuid())
+    angleId     String
+    slot        String   @default("hook") // hook | proof
+    url         String
+    createdById String
+    createdAt   DateTime @default(now())
+
+    @@index([angleId])
 }
 
 // ─── Proxies ISP/DC (comprados en IPRoyal, dispensados a los usuarios) ───

@@ -49,12 +49,24 @@ export const anglesRouter = createTRPCRouter({
     .mutation(({ ctx, input }) => ctx.db.angleKbEntry.create({ data: { country: input.country, entry: input.entry.trim(), tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean), createdById: ctx.session.user.id } })),
   kbRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.angleKbEntry.delete({ where: { id: input.id } })),
 
-  /* ── Librería de proofs (imágenes reales que sube el admin) ── */
+  /* ── Librería de imágenes fuente (proof | hook) que sube el admin ── */
   proofList: adminProcedure
-    .input(z.object({ country: z.string().optional() }).optional())
-    .query(({ ctx, input }) => ctx.db.proofImage.findMany({ where: input?.country ? { country: input.country } : {}, orderBy: { createdAt: "desc" } })),
+    .input(z.object({ country: z.string().optional(), kind: z.enum(["proof", "hook"]).optional() }).optional())
+    .query(({ ctx, input }) => ctx.db.proofImage.findMany({
+      where: { ...(input?.country ? { country: input.country } : {}), ...(input?.kind ? { kind: input.kind } : {}) },
+      orderBy: { createdAt: "desc" },
+    })),
   proofAdd: adminProcedure
-    .input(z.object({ country: z.string().min(1), url: z.string().min(1), label: z.string().optional() }))
-    .mutation(({ ctx, input }) => ctx.db.proofImage.create({ data: { country: input.country, url: input.url, label: input.label?.trim() || null, createdById: ctx.session.user.id } })),
+    .input(z.object({ country: z.string().min(1), url: z.string().min(1), kind: z.enum(["proof", "hook"]).default("proof"), label: z.string().optional() }))
+    .mutation(({ ctx, input }) => ctx.db.proofImage.create({ data: { country: input.country, kind: input.kind, url: input.url, label: input.label?.trim() || null, createdById: ctx.session.user.id } })),
   proofRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.proofImage.delete({ where: { id: input.id } })),
+
+  /* ── Creativos exportados embebidos al ángulo ── */
+  mediaList: adminProcedure
+    .input(z.object({ angleId: z.string() }))
+    .query(({ ctx, input }) => ctx.db.angleMedia.findMany({ where: { angleId: input.angleId }, orderBy: { createdAt: "desc" } })),
+  mediaAdd: adminProcedure
+    .input(z.object({ angleId: z.string(), url: z.string().min(1), slot: z.enum(["hook", "proof"]).default("hook") }))
+    .mutation(({ ctx, input }) => ctx.db.angleMedia.create({ data: { angleId: input.angleId, url: input.url, slot: input.slot, createdById: ctx.session.user.id } })),
+  mediaRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.angleMedia.delete({ where: { id: input.id } })),
 });
