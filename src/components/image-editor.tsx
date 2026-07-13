@@ -6,15 +6,12 @@ import { api } from "@/trpc/react";
 import { X, Download, Save, Plus, Trash2, Loader2, Type, Smile, Sparkles, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 
 type Align = "left" | "center" | "right";
-type Layer = { id: string; text: string; xPct: number; yPct: number; size: number; color: string; align: Align };
+type Layer = { id: string; text: string; xPct: number; yPct: number; size: number; wPct: number; color: string; align: Align };
 
 const EMOJIS = ["🔥", "✨", "💰", "🤑", "👀", "🎮", "📲", "✅", "😱", "🤔", "💸", "🙌", "👇", "❤️", "😮", "🥳", "💵", "⭐"];
 const WEIGHT = 500; // peso de TikTok Sans en el creativo
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
 const emojiCache = new Map<string, HTMLImageElement | null>();
-const HOMOGLYPH_MAP: Record<string, string> = {
-  a: "а", A: "А", e: "е", E: "Е", i: "і", I: "І", o: "о", O: "О", p: "р", P: "Р", c: "с", C: "С", x: "х", X: "Х", y: "у", Y: "У", t: "т", T: "Т", s: "ѕ", S: "Ѕ",
-};
 
 function graphemes(s: string): string[] {
   try {
@@ -63,30 +60,32 @@ function EmojiText({ text }: { text: string }) {
   return <>{graphemes(text).map((g, i) => (EMOJI_RE.test(g) ? <EmojiImg key={i} g={g} /> : <span key={i}>{g}</span>))}</>;
 }
 
-function obfuscateForExport(text: string): string {
-  return text.replace(/[aAeEiIoOpPcCxXyYtTsS]/g, (ch) => HOMOGLYPH_MAP[ch] ?? ch);
-}
-
-function drawAdversarialNoise(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-  const clampedW = Math.max(24, Math.min(width, 1200));
-  const clampedH = Math.max(24, Math.min(height, 1200));
-  const cell = Math.max(2, Math.min(8, Math.floor(Math.min(clampedW, clampedH) / 18)));
-  const alphaBase = 0.08;
-  for (let yy = 0; yy < clampedH; yy += cell) {
-    for (let xx = 0; xx < clampedW; xx += cell) {
-      if (Math.random() > 0.55) continue;
-      const r = 40 + Math.floor(Math.random() * 50);
-      const g = 42 + Math.floor(Math.random() * 55);
-      const b = 45 + Math.floor(Math.random() * 45);
-      const alpha = alphaBase + Math.random() * 0.12;
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-      ctx.fillRect(x + xx, y + yy, cell, cell);
+// Divide el texto en líneas que entren en un ancho máximo, cortando palabras
+// demasiado largas por grafema. Respeta los saltos de línea manuales.
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxW: number, fontPx: number): string[] {
+  const widthOf = (str: string) => graphemes(str).reduce((a, g) => a + (EMOJI_RE.test(g) ? fontPx : ctx.measureText(g).width), 0);
+  const out: string[] = [];
+  for (const para of text.split("\n")) {
+    if (para === "") { out.push(""); continue; }
+    let line = "";
+    for (const word of para.split(" ")) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && widthOf(candidate) > maxW) { out.push(line); line = word; }
+      else line = candidate;
+      while (widthOf(line) > maxW && graphemes(line).length > 1) {
+        const gs = graphemes(line);
+        let fit = gs[0]!; let i = 1;
+        for (; i < gs.length; i++) { if (widthOf(fit + gs[i]) > maxW) break; fit += gs[i]; }
+        out.push(fit); line = gs.slice(i).join("");
+      }
     }
+    out.push(line);
   }
+  return out;
 }
 
 let uid = 0;
-const newLayer = (yPct: number): Layer => ({ id: `l${++uid}`, text: "Tu texto acá", xPct: 50, yPct, size: 0.08, color: "#ffffff", align: "center" });
+const newLayer = (yPct: number): Layer => ({ id: `l${++uid}`, text: "Tu texto acá", xPct: 50, yPct, size: 0.08, wPct: 0.8, color: "#ffffff", align: "center" });
 const anchorX = (align: Align) => (align === "center" ? "-50%" : align === "right" ? "-100%" : "0%");
 
 export function ImageEditor({ angleId, country, presets, onClose }: { angleId: string; country: string; presets?: { hook: string[]; proof: string[] }; onClose: () => void }) {
@@ -165,7 +164,6 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
     await Promise.all([...codes].map(async (g) => emo.set(g, await loadEmoji(g))));
 
     for (const l of layers) {
-      const exportText = obfuscateForExport(l.text);
       const fontPx = l.size * W;
       ctx.font = `${WEIGHT} ${fontPx}px "TikTok Sans", "Satoshi", system-ui, sans-serif`;
       ctx.textBaseline = "top"; ctx.lineJoin = "round"; ctx.miterLimit = 2;
@@ -173,18 +171,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
       const lineH = fontPx * 1.2;
       const ax = (l.xPct / 100) * W;
       let y = (l.yPct / 100) * H;
-      const lines = exportText.split("\n");
-      const lineWidths = lines.map((line) => {
-        const gs = graphemes(line);
-        const widths = gs.map((g) => (EMOJI_RE.test(g) ? fontPx : ctx.measureText(g).width));
-        return widths.reduce((a, b) => a + b, 0);
-      });
-      const maxWidth = Math.max(...lineWidths, 0);
-      const boxW = Math.max(fontPx * 1.2, maxWidth + fontPx * 0.8);
-      const boxH = Math.max(fontPx * 1.2, lines.length * lineH + fontPx * 0.3);
-      const boxX = l.align === "center" ? ax - boxW / 2 : l.align === "right" ? ax - boxW : ax;
-      const boxY = y - fontPx * 0.2;
-      drawAdversarialNoise(ctx, Math.round(Math.max(0, boxX - fontPx * 0.1)), Math.round(Math.max(0, boxY - fontPx * 0.1)), Math.round(Math.min(W, boxW + fontPx * 0.2)), Math.round(Math.min(H, boxH + fontPx * 0.2)));
+      const lines = wrapLines(ctx, l.text, l.wPct * W, fontPx);
       for (const line of lines) {
         const gs = graphemes(line);
         const widths = gs.map((g) => (EMOJI_RE.test(g) ? fontPx : ctx.measureText(g).width));
@@ -256,7 +243,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
                 style={{
                   position: "absolute", left: `${l.xPct}%`, top: `${l.yPct}%`, transform: `translate(${anchorX(l.align)}, -50%)`,
                   fontFamily: '"TikTok Sans","Satoshi",system-ui,sans-serif', fontWeight: WEIGHT, fontSize: `${l.size * 100}cqw`,
-                  color: l.color, textAlign: l.align, whiteSpace: "pre", lineHeight: 1.2, cursor: "move", touchAction: "none",
+                  color: l.color, textAlign: l.align, whiteSpace: "pre-wrap", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: `${l.wPct * 100}cqw`, lineHeight: 1.2, cursor: "move", touchAction: "none",
                   WebkitTextStroke: "4px #000", paintOrder: "stroke", userSelect: "none",
                   outline: sel === l.id ? "1px dashed rgba(255,255,255,0.7)" : "none", outlineOffset: 4,
                 }}>
@@ -334,6 +321,10 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
                     ))}
                   </div>
                   {layers.length > 1 && <button type="button" onClick={() => { setLayers((ls) => ls.filter((x) => x.id !== selLayer.id)); setSel(null); }} className="inline-flex h-7 w-7 items-center justify-center rounded" style={{ color: "var(--color-error)" }}><Trash2 className="h-3.5 w-3.5" /></button>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-12 shrink-0 text-[10px]" style={{ color: "var(--color-subtle)" }}>Ancho</span>
+                  <input type="range" min={0.3} max={1} step={0.05} value={selLayer.wPct} onChange={(e) => patch(selLayer.id, { wPct: parseFloat(e.target.value) })} className="flex-1" />
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <span className="mr-1 inline-flex items-center text-[11px]" style={{ color: "var(--color-subtle)" }}><Smile className="mr-1 h-3.5 w-3.5" />Emoji</span>
