@@ -119,18 +119,20 @@ function AngleModal({ data, onClose }: { data: Loaded; onClose: () => void }) {
 /* ── Resultado ── */
 function AngleView({ data }: { data: Loaded }) {
   const [es, setEs] = useState(false); // false = idioma nativo, true = español
-  const [editor, setEditor] = useState(false);
+  const [editorAngle, setEditorAngle] = useState<Angle | null>(null);
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button type="button" onClick={() => setEditor(true)}
-          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
-          style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
-          <ImagePlus className="h-3.5 w-3.5" /> Armar creativo
-        </button>
+        <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Creativos guardados:</span>
         <AngleMediaStrip angleId={data.id} />
       </div>
-      {editor && <ImageEditor angleId={data.id} country={data.country} onClose={() => setEditor(false)} />}
+      {editorAngle && (
+        <ImageEditor angleId={data.id} country={data.country} onClose={() => setEditorAngle(null)}
+          presets={{
+            hook: [editorAngle.hook_text, ...(editorAngle.hook_variants ?? [])].filter(Boolean),
+            proof: [editorAngle.proof_text].filter(Boolean),
+          }} />
+      )}
       {/* Market analysis (siempre en inglés) */}
       <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
         <div className="mb-3 flex items-center gap-2">
@@ -168,6 +170,11 @@ function AngleView({ data }: { data: Loaded }) {
             <Copyable label={`Proof (texto sobre tu imagen)${es ? " · ES" : ""}`} value={t.proof_text} />
             <Copyable label={`Caption + CTA${es ? " · ES" : ""}`} value={t.caption} />
             {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>Por qué funciona:</span> {a.why_it_works}</p>}
+            <button type="button" onClick={() => setEditorAngle(a)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+              <ImagePlus className="h-3.5 w-3.5" /> Armar creativo
+            </button>
             <AngleFeedback angleId={data.id} angleName={a.angle_name} />
           </div>
         );

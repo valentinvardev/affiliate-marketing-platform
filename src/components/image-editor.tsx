@@ -9,6 +9,7 @@ type Align = "left" | "center" | "right";
 type Layer = { id: string; text: string; xPct: number; yPct: number; size: number; color: string; align: Align };
 
 const EMOJIS = ["🔥", "✨", "💰", "🤑", "👀", "🎮", "📲", "✅", "😱", "🤔", "💸", "🙌", "👇", "❤️", "😮", "🥳", "💵", "⭐"];
+const WEIGHT = 500; // peso de TikTok Sans en el creativo
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
 const emojiCache = new Map<string, HTMLImageElement | null>();
 
@@ -63,7 +64,7 @@ let uid = 0;
 const newLayer = (yPct: number): Layer => ({ id: `l${++uid}`, text: "Tu texto acá", xPct: 50, yPct, size: 0.08, color: "#ffffff", align: "center" });
 const anchorX = (align: Align) => (align === "center" ? "-50%" : align === "right" ? "-100%" : "0%");
 
-export function ImageEditor({ angleId, country, onClose }: { angleId: string; country: string; onClose: () => void }) {
+export function ImageEditor({ angleId, country, presets, onClose }: { angleId: string; country: string; presets?: { hook: string[]; proof: string[] }; onClose: () => void }) {
   const utils = api.useUtils();
   const hooksQ = api.angles.proofList.useQuery({ country, kind: "hook" });
   const proofsQ = api.angles.proofList.useQuery({ country, kind: "proof" });
@@ -72,7 +73,11 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
   const [slot, setSlot] = useState<"hook" | "proof">("hook");
   const [bgUrl, setBgUrl] = useState<string | null>(null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
-  const [layers, setLayers] = useState<Layer[]>([newLayer(30)]);
+  const [layers, setLayers] = useState<Layer[]>(() => {
+    const first = newLayer(30);
+    if (presets?.hook[0]) first.text = presets.hook[0]; // hook precargado listo para posicionar
+    return [first];
+  });
   const [sel, setSel] = useState<string | null>(null);
   const [busy, setBusy] = useState<"" | "dl" | "save">("");
 
@@ -90,6 +95,17 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
   }
   const selLayer = layers.find((l) => l.id === sel) ?? null;
   const patch = (id: string, p: Partial<Layer>) => setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, ...p } : l)));
+
+  // Coloca un texto del ángulo con un click: usa la capa seleccionada, o crea una nueva.
+  function insertPreset(text: string) {
+    if (sel) { patch(sel, { text }); return; }
+    if (layers.length < 2) {
+      const nl = newLayer(layers.length === 0 ? 30 : 65); nl.text = text;
+      setLayers((ls) => [...ls, nl]); setSel(nl.id);
+    } else {
+      const last = layers[layers.length - 1]!; patch(last.id, { text }); setSel(last.id);
+    }
+  }
 
   function onDown(e: React.PointerEvent, id: string) {
     e.stopPropagation(); setSel(id);
@@ -111,9 +127,9 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
     const W = img.naturalWidth, H = img.naturalHeight;
     const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d"); if (!ctx) return null;
-    // Asegurar que TikTok Sans (800) esté cargada para los textos antes de dibujar.
+    // Asegurar que TikTok Sans esté cargada para los textos antes de dibujar.
     try {
-      await Promise.all(layers.map((l) => document.fonts.load(`800 40px "TikTok Sans"`, l.text || "A")));
+      await Promise.all(layers.map((l) => document.fonts.load(`${WEIGHT} 40px "TikTok Sans"`, l.text || "A")));
       await document.fonts.ready;
     } catch { /* ignore */ }
     ctx.drawImage(img, 0, 0, W, H);
@@ -125,7 +141,7 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
 
     for (const l of layers) {
       const fontPx = l.size * W;
-      ctx.font = `800 ${fontPx}px "TikTok Sans", "Satoshi", system-ui, sans-serif`;
+      ctx.font = `${WEIGHT} ${fontPx}px "TikTok Sans", "Satoshi", system-ui, sans-serif`;
       ctx.textBaseline = "top"; ctx.lineJoin = "round"; ctx.miterLimit = 2;
       const sw = Math.max(2, fontPx * 0.10); // borde grueso estilo TikTok (~4px equiv.)
       const lineH = fontPx * 1.2;
@@ -201,7 +217,7 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
               <div key={l.id} onPointerDown={(e) => onDown(e, l.id)}
                 style={{
                   position: "absolute", left: `${l.xPct}%`, top: `${l.yPct}%`, transform: `translate(${anchorX(l.align)}, -50%)`,
-                  fontFamily: '"TikTok Sans","Satoshi",system-ui,sans-serif', fontWeight: 800, fontSize: `${l.size * 100}cqw`,
+                  fontFamily: '"TikTok Sans","Satoshi",system-ui,sans-serif', fontWeight: WEIGHT, fontSize: `${l.size * 100}cqw`,
                   color: l.color, textAlign: l.align, whiteSpace: "pre", lineHeight: 1.2, cursor: "move", touchAction: "none",
                   WebkitTextStroke: "4px #000", paintOrder: "stroke", userSelect: "none",
                   outline: sel === l.id ? "1px dashed rgba(255,255,255,0.7)" : "none", outlineOffset: 4,
@@ -236,6 +252,27 @@ export function ImageEditor({ angleId, country, onClose }: { angleId: string; co
               </div>
             )}
           </div>
+
+          {/* Textos del ángulo (un click para colocarlos) */}
+          {presets && (
+            <div className="rounded-xl p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>
+                Texto del ángulo · {slot === "hook" ? "hook" : "proof"}
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {(slot === "hook" ? presets.hook : presets.proof).map((t, i) => (
+                  <button key={i} type="button" onClick={() => insertPreset(t)}
+                    className="rounded-md px-2.5 py-1.5 text-left text-[11px] leading-snug transition-colors hover:opacity-80"
+                    style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
+                    {t}
+                  </button>
+                ))}
+                {(slot === "hook" ? presets.hook : presets.proof).length === 0 && (
+                  <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Sin texto para este slot.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Capa seleccionada */}
           <div className="rounded-xl p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
