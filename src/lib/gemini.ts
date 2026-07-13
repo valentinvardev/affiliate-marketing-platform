@@ -77,3 +77,40 @@ export async function generateAngles(o: { country: string; operableHours?: strin
   const res = await model.generateContent(buildPrompt(o));
   return parseJson(res.response.text());
 }
+
+/* ── Agente 3: consolida el feedback de un ángulo en un aprendizaje reutilizable ── */
+const KB_SYSTEM = `Eres un analista de performance de campañas de TikTok Ads (nicho "Get Paid to Play"). A partir del feedback de un ángulo que ya se corrió, extraés el PRINCIPIO creativo o de mercado que explica por qué resonó (o no) con la audiencia, escrito como una regla concisa y accionable para futuros creativos.
+
+Reglas:
+- Enfocate SOLO en qué conecta con la audiencia y el mercado (demografía, tono, juego usado, gancho emocional, horario, formato). NADA sobre evadir moderación, disfrazar contenido ni engañar plataformas.
+- Una sola idea por entrada, en español, concreta y breve (máx ~200 caracteres). Que sirva de input para generar próximos ángulos.
+- Respondé ÚNICAMENTE con un objeto JSON válido.`;
+
+export type KbEntry = { kb_entry: string; tags: string[] };
+
+/** Toma el resultado + nota del usuario y devuelve un aprendizaje para la base de conocimientos. */
+export async function consolidateKb(o: { country: string; angleName: string; outcome: string; note?: string; metrics?: string }): Promise<KbEntry> {
+  const key = env.GOOGLE_AI_KEY;
+  if (!key) throw new Error("Falta GOOGLE_AI_KEY en el entorno.");
+  const genAI = new GoogleGenerativeAI(key);
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: KB_SYSTEM,
+    generationConfig: { responseMimeType: "application/json", temperature: 0.6 },
+  });
+  const prompt = `País: ${o.country}
+Ángulo evaluado: ${o.angleName}
+Resultado: ${o.outcome}
+Nota del media buyer: ${o.note?.trim() || "sin nota"}
+Métricas: ${o.metrics ?? "sin métricas"}
+
+Extraé UN aprendizaje accionable para futuros creativos en este país.
+Devolvé estrictamente: {"kb_entry": "", "tags": ["",""]}`;
+  const res = await model.generateContent(prompt);
+  let t = res.response.text().trim();
+  if (t.startsWith("```")) t = t.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const first = t.indexOf("{"), last = t.lastIndexOf("}");
+  if (first >= 0 && last > first) t = t.slice(first, last + 1);
+  const parsed = JSON.parse(t) as KbEntry;
+  return { kb_entry: parsed.kb_entry?.trim() ?? "", tags: Array.isArray(parsed.tags) ? parsed.tags.map((x) => x.trim()).filter(Boolean) : [] };
+}

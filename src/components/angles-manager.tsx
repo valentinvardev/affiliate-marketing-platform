@@ -7,7 +7,7 @@ import { api } from "@/trpc/react";
 import { TARGET_COUNTRIES } from "@/lib/target-countries";
 import { ImageEditor } from "@/components/image-editor";
 import {
-  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle,
+  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 
 type Texts = { hook_text: string; hook_variants: string[]; proof_text: string; caption: string };
@@ -167,9 +167,58 @@ function AngleView({ data }: { data: Loaded }) {
             <Copyable label={`Proof (texto sobre tu imagen)${es ? " · ES" : ""}`} value={t.proof_text} />
             <Copyable label={`Caption + CTA${es ? " · ES" : ""}`} value={t.caption} />
             {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>Por qué funciona:</span> {a.why_it_works}</p>}
+            <AngleFeedback angleId={data.id} angleName={a.angle_name} />
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* Feedback de un ángulo → Gemini lo consolida en un aprendizaje para la base */
+function AngleFeedback({ angleId, angleName }: { angleId: string; angleName: string }) {
+  const utils = api.useUtils();
+  const [outcome, setOutcome] = useState<null | "worked" | "failed">(null);
+  const [note, setNote] = useState("");
+  const fb = api.angles.feedback.useMutation({
+    onSuccess: () => void utils.angles.kbList.invalidate(),
+    onError: (e) => alert(e.message),
+  });
+
+  if (fb.isSuccess) {
+    return (
+      <div className="mt-2.5 flex items-start gap-1.5 rounded-md px-3 py-2 text-[11px]" style={{ background: "var(--color-success-bg)", border: "1px solid var(--color-border)" }}>
+        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
+        <span style={{ color: "var(--color-foreground)" }}><span style={{ color: "var(--color-success)" }}>Aprendizaje agregado a la base:</span> {fb.data.entry}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2.5 rounded-md px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Feedback</span>
+        <button type="button" onClick={() => setOutcome("worked")} className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium"
+          style={{ border: `1px solid ${outcome === "worked" ? "var(--color-success)" : "var(--color-border)"}`, color: outcome === "worked" ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
+          <ThumbsUp className="h-3 w-3" /> Funcionó
+        </button>
+        <button type="button" onClick={() => setOutcome("failed")} className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium"
+          style={{ border: `1px solid ${outcome === "failed" ? "var(--color-error)" : "var(--color-border)"}`, color: outcome === "failed" ? "var(--color-error)" : "var(--color-muted-foreground)" }}>
+          <ThumbsDown className="h-3 w-3" /> No funcionó
+        </button>
+      </div>
+      {outcome && (
+        <div className="mt-2 flex flex-col gap-2">
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
+            placeholder="Nota opcional: qué viste (métricas, comentarios, público…). Gemini lo resume como aprendizaje."
+            className="w-full resize-none rounded-md px-2.5 py-2 text-xs outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
+          <button type="button" disabled={fb.isPending} onClick={() => fb.mutate({ angleId, angleName, outcome, note: note.trim() || undefined })}
+            className="inline-flex w-fit items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+            {fb.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />} Aprender de esto
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -226,28 +275,31 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
   const q = api.angles.proofList.useQuery({ country, kind });
   const add = api.angles.proofAdd.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const remove = api.angles.proofRemove.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
-  const [uploading, setUploading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ id: string; preview: string; error?: string }[]>([]);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files; if (!files?.length) return; e.target.value = "";
-    setErr(null); setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        const fd = new FormData(); fd.append("file", file);
+    const batch = Array.from(files).map((file) => ({ file, id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, preview: URL.createObjectURL(file) }));
+    setPending((p) => [...batch.map((b) => ({ id: b.id, preview: b.preview })), ...p]);
+    for (const b of batch) {
+      try {
+        const fd = new FormData(); fd.append("file", b.file);
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         if (!res.ok) {
           const d = (await res.json().catch(() => ({}))) as { error?: string };
-          setErr(d.error ?? `Error ${res.status} subiendo ${file.name}`);
+          setPending((p) => p.map((x) => (x.id === b.id ? { ...x, error: d.error ?? `Error ${res.status}` } : x)));
           continue;
         }
         const data = (await res.json()) as { url?: string };
         if (data.url) await add.mutateAsync({ country, url: data.url, kind });
+        setPending((p) => p.filter((x) => x.id !== b.id));
+        URL.revokeObjectURL(b.preview);
+      } catch (err) {
+        setPending((p) => p.map((x) => (x.id === b.id ? { ...x, error: err instanceof Error ? err.message : "Error" } : x)));
       }
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "No se pudo subir");
-    } finally { setUploading(false); }
+    }
   }
+  const uploading = pending.some((p) => !p.error);
 
   const items = q.data ?? [];
   return (
@@ -261,11 +313,25 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir
         </label>
       </div>
-      {err && <p className="mb-2 inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
-      {items.length === 0 ? (
+      {items.length === 0 && pending.length === 0 ? (
         <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{hint}</p>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {pending.map((pp) => (
+            <div key={pp.id} className="relative overflow-hidden rounded-lg" style={{ border: `1px solid ${pp.error ? "var(--color-error)" : "var(--color-border)"}` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={pp.preview} alt="" className="aspect-[3/4] w-full object-cover" style={{ opacity: 0.35 }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-1.5 text-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+                {pp.error ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4" style={{ color: "#fca5a5" }} />
+                    <span className="text-[9px] leading-tight" style={{ color: "#fca5a5" }}>{pp.error}</span>
+                    <button type="button" onClick={() => setPending((p) => p.filter((x) => x.id !== pp.id))} className="text-[9px] underline" style={{ color: "#fff" }}>quitar</button>
+                  </>
+                ) : <Loader2 className="h-5 w-5 animate-spin" style={{ color: "#fff" }} />}
+              </div>
+            </div>
+          ))}
           {items.map((p) => (
             <div key={p.id} className="relative overflow-hidden rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -297,6 +363,7 @@ function KbSection({ country }: { country: string }) {
       <div className="mb-3 flex items-center gap-2">
         <Brain className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
         <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Base de conocimientos · {country}</p>
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--color-subtle)" }}><Sparkles className="h-3 w-3" /> manual o automática (feedback de ángulos)</span>
       </div>
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Aprendizaje: qué ángulo/persona/juego convierte acá…"
