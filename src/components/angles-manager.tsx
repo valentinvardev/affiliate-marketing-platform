@@ -7,7 +7,7 @@ import { api } from "@/trpc/react";
 import { TARGET_COUNTRIES } from "@/lib/target-countries";
 import { ImageEditor } from "@/components/image-editor";
 import {
-  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X,
+  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle,
 } from "lucide-react";
 
 type Texts = { hook_text: string; hook_variants: string[]; proof_text: string; caption: string };
@@ -227,18 +227,25 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
   const add = api.angles.proofAdd.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const remove = api.angles.proofRemove.useMutation({ onSuccess: () => void utils.angles.proofList.invalidate() });
   const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files; if (!files?.length) return; e.target.value = "";
-    setUploading(true);
+    setErr(null); setUploading(true);
     try {
       for (const file of Array.from(files)) {
         const fd = new FormData(); fd.append("file", file);
         const res = await fetch("/api/upload", { method: "POST", body: fd });
-        if (!res.ok) continue;
+        if (!res.ok) {
+          const d = (await res.json().catch(() => ({}))) as { error?: string };
+          setErr(d.error ?? `Error ${res.status} subiendo ${file.name}`);
+          continue;
+        }
         const data = (await res.json()) as { url?: string };
         if (data.url) await add.mutateAsync({ country, url: data.url, kind });
       }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo subir");
     } finally { setUploading(false); }
   }
 
@@ -254,16 +261,17 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir
         </label>
       </div>
+      {err && <p className="mb-2 inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
       {items.length === 0 ? (
         <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{hint}</p>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {items.map((p) => (
-            <div key={p.id} className="group relative overflow-hidden rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
+            <div key={p.id} className="relative overflow-hidden rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <a href={p.url} target="_blank" rel="noopener noreferrer"><img src={p.url} alt={p.label ?? ""} className="aspect-[3/4] w-full object-cover" /></a>
-              <button type="button" title="Eliminar" onClick={() => remove.mutate({ id: p.id })}
-                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100" style={{ background: "rgba(0,0,0,0.65)", color: "#fff" }}>
+              <button type="button" title="Eliminar" disabled={remove.isPending} onClick={() => remove.mutate({ id: p.id })}
+                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-md" style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}>
                 <Trash2 className="h-3 w-3" />
               </button>
             </div>

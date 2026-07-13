@@ -11,7 +11,7 @@ const ALLOWED: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
 };
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 20 * 1024 * 1024; // 20 MB (fotos/capturas de celular)
 
 export async function POST(req: NextRequest) {
   // Solo usuarios logueados pueden subir.
