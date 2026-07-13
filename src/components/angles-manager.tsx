@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import ReactCountryFlag from "react-country-flag";
 import { api } from "@/trpc/react";
 import { TARGET_COUNTRIES } from "@/lib/target-countries";
 import { ImageEditor } from "@/components/image-editor";
 import {
-  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus,
+  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X,
 } from "lucide-react";
 
 type Texts = { hook_text: string; hook_variants: string[]; proof_text: string; caption: string };
@@ -19,12 +20,13 @@ const flagOf = (name: string) => TARGET_COUNTRIES.find((c) => c.name === name)?.
 export function AnglesManager() {
   const [country, setCountry] = useState(TARGET_COUNTRIES[0]?.name ?? "");
   const [campaignId, setCampaignId] = useState("");
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [modal, setModal] = useState<Loaded | null>(null);
+  const [imgTab, setImgTab] = useState<"hook" | "proof">("hook");
 
   const campaignsQ = api.campaign.list.useQuery();
   const utils = api.useUtils();
   const generate = api.angles.generate.useMutation({
-    onSuccess: (r) => { setLoaded({ id: r.id, country: r.country, market: r.market_analysis, angles: r.angles }); void utils.angles.list.invalidate(); },
+    onSuccess: (r) => { setModal({ id: r.id, country: r.country, market: r.market_analysis, angles: r.angles }); void utils.angles.list.invalidate(); },
     onError: (e) => alert(e.message),
   });
 
@@ -65,14 +67,51 @@ export function AnglesManager() {
           {generate.isPending && <p className="mt-3 text-xs" style={{ color: "var(--color-subtle)" }}>Gemini está analizando el mercado de {country}…</p>}
         </div>
 
-        {loaded && <AngleView data={loaded} />}
+        {/* Gestión de imágenes por pestañas */}
+        <div>
+          <div className="mb-3 inline-flex gap-1 rounded-lg p-1" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
+            {([["hook", "Hooks (imagen 1)"], ["proof", "Proofs (imagen 2)"]] as const).map(([k, label]) => (
+              <button key={k} type="button" onClick={() => setImgTab(k)} className="rounded-md px-4 py-1.5 text-xs font-semibold transition-colors"
+                style={{ background: imgTab === k ? "var(--color-foreground)" : "transparent", color: imgTab === k ? "var(--color-background)" : "var(--color-muted-foreground)" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {imgTab === "hook"
+            ? <AssetLibrary country={country} kind="hook" title="Fotos hook (imagen 1)" hint="Subí las fotos de la primera imagen del anuncio." />
+            : <AssetLibrary country={country} kind="proof" title="Proofs de pago (imagen 2)" hint="Subí las capturas reales de pago." />}
+        </div>
 
-        <AssetLibrary country={country} kind="hook" title="Fotos hook (imagen 1)" hint="Subí las fotos de la primera imagen del anuncio." />
-        <AssetLibrary country={country} kind="proof" title="Proofs de pago (imagen 2)" hint="Subí las capturas reales de pago." />
         <KbSection country={country} />
-        <History onLoad={setLoaded} />
+        <History onLoad={setModal} />
       </main>
+
+      {modal && <AngleModal data={modal} onClose={() => setModal(null)} />}
     </div>
+  );
+}
+
+/* ── Modal del ángulo ── */
+function AngleModal({ data, onClose }: { data: Loaded; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto p-4" style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="my-4 w-full max-w-2xl overflow-hidden rounded-2xl" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
+        <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
+          {flagOf(data.country) && <ReactCountryFlag countryCode={flagOf(data.country)!} svg style={{ width: "1.2em", height: "0.9em", borderRadius: 2 }} />}
+          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Ángulo · {data.country}</p>
+          <button type="button" onClick={onClose} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+        </div>
+        <div className="p-4"><AngleView data={data} /></div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
