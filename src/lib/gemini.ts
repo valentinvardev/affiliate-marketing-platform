@@ -114,3 +114,24 @@ Devolvé estrictamente: {"kb_entry": "", "tags": ["",""]}`;
   const parsed = JSON.parse(t) as KbEntry;
   return { kb_entry: parsed.kb_entry?.trim() ?? "", tags: Array.isArray(parsed.tags) ? parsed.tags.map((x) => x.trim()).filter(Boolean) : [] };
 }
+
+/** Generador de comentarios orgánicos relacionados a un ángulo/video. */
+export async function generateComments(o: { country: string; angleName: string; videoContext?: string; count?: number }): Promise<string[]> {
+  const key = env.GOOGLE_AI_KEY;
+  if (!key) throw new Error("Falta GOOGLE_AI_KEY en el entorno.");
+  const genAI = new GoogleGenerativeAI(key);
+  const MODEL_COMMENTS = MODEL; // reuse same model
+  const SYSTEM_COMMENTS = `Eres un usuario nativo del país objetivo que comenta videos de forma natural y orgánica. Generá comentarios cortos y verosímiles que una persona normal (de 18-40 años) podría escribir en el feed. No incluír instrucciones ni textos promocionales ni llamadas a evadir moderación. Cada comentario debe ser una línea separada. Respondé sólo con el texto de los comentarios, nada más.`;
+
+  const model = genAI.getGenerativeModel({ model: MODEL_COMMENTS, systemInstruction: SYSTEM_COMMENTS, generationConfig: { responseMimeType: "text/plain", temperature: 0.9 } });
+  const prompt = `País: ${o.country}
+Ángulo/contexto: ${o.angleName}
+Contexto del video: ${o.videoContext ?? "sin contexto adicional"}
+Generá ${o.count ?? 6} comentarios orgánicos, concisos, naturales y variados (una idea por línea).`;
+
+  const res = await model.generateContent(prompt);
+  let text = res.response.text().trim();
+  if (text.startsWith("```")) text = text.replace(/^```(?:\w+)?/i, "").replace(/```$/, "").trim();
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  return lines.slice(0, o.count ?? 6);
+}

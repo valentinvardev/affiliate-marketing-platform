@@ -110,4 +110,14 @@ export const anglesRouter = createTRPCRouter({
     .input(z.object({ angleId: z.string(), url: z.string().min(1), slot: z.enum(["hook", "proof"]).default("hook") }))
     .mutation(({ ctx, input }) => ctx.db.angleMedia.create({ data: { angleId: input.angleId, url: input.url, slot: input.slot, createdById: ctx.session.user.id } })),
   mediaRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.angleMedia.delete({ where: { id: input.id } })),
+
+  /* ── Generador de comentarios (orgánicos) ── */
+  generateComments: adminProcedure
+    .input(z.object({ country: z.string().min(1), angleName: z.string().min(1), videoContext: z.string().optional(), count: z.number().min(1).max(20).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      // opcional: podríamos validar que el ángulo exista; por ahora usamos el contexto recibido
+      const { generateComments } = await import('@/lib/gemini');
+      const comments = await generateComments({ country: input.country, angleName: input.angleName, videoContext: input.videoContext, count: input.count ?? 6 });
+      return comments;
+    }),
 });
