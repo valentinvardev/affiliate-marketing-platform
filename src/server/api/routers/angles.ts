@@ -7,7 +7,7 @@ import { OP_LABEL } from "@/lib/target-countries";
 export const anglesRouter = createTRPCRouter({
   /* ── Generación (Agente 1) ── */
   generate: adminProcedure
-    .input(z.object({ country: z.string().min(1), campaignId: z.string().optional() }))
+    .input(z.object({ country: z.string().min(1), campaignId: z.string().optional(), guidance: z.string().max(2000).optional() }))
     .mutation(async ({ ctx, input }) => {
       const kbRows = await ctx.db.angleKbEntry.findMany({ where: { country: input.country }, orderBy: { createdAt: "desc" }, take: 20 });
       const kb = kbRows.map((k) => k.entry);
@@ -27,7 +27,7 @@ export const anglesRouter = createTRPCRouter({
         }
       }
 
-      const result = await generateAngles({ country: input.country, operableHours: OP_LABEL, kb, metrics });
+      const result = await generateAngles({ country: input.country, operableHours: OP_LABEL, kb, metrics, guidance: input.guidance });
       const saved = await ctx.db.adAngle.create({
         data: { country: input.country, market: result.market_analysis, angles: result.angles, campaignId: input.campaignId ?? null, createdById: ctx.session.user.id },
       });

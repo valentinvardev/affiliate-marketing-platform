@@ -8,7 +8,7 @@ import { TARGET_COUNTRIES } from "@/lib/target-countries";
 import { downscaleImage } from "@/lib/downscale-image";
 import { ImageEditor } from "@/components/image-editor";
 import {
-  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle, ThumbsUp, ThumbsDown,
+  Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle, ThumbsUp, ThumbsDown, SlidersHorizontal,
 } from "lucide-react";
 
 type Texts = { hook_text: string; hook_variants: string[]; proof_text: string; caption: string };
@@ -24,6 +24,8 @@ export function AnglesManager() {
   const [modal, setModal] = useState<Loaded | null>(null);
   const [mainTab, setMainTab] = useState<"gallery" | "kb">("gallery");
   const [imgTab, setImgTab] = useState<"hook" | "proof">("hook");
+  const [guidance, setGuidance] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const campaignsQ = api.campaign.list.useQuery();
   const utils = api.useUtils();
@@ -59,12 +61,20 @@ export function AnglesManager() {
                 {(campaignsQ.data ?? []).map((c) => <option key={c.id} value={c.id} style={{ background: "var(--color-surface-raised)" }}>{c.name}</option>)}
               </select>
             </label>
-            <button type="button" disabled={generate.isPending || !country} onClick={() => generate.mutate({ country, campaignId: campaignId || undefined })}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-50"
-              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
-              {generate.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Generar ángulos
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button type="button" onClick={() => setGuideOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+                style={{ background: "var(--color-surface-overlay)", border: `1px solid ${guidance.trim() ? "var(--color-border-focus)" : "var(--color-border)"}`, color: "var(--color-foreground)" }}>
+                <SlidersHorizontal className="h-3.5 w-3.5" /> Condicionar
+                {guidance.trim() && <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-success)" }} />}
+              </button>
+              <button type="button" disabled={generate.isPending || !country} onClick={() => generate.mutate({ country, campaignId: campaignId || undefined, guidance: guidance.trim() || undefined })}
+                className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-50"
+                style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+                {generate.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Generar ángulos
+              </button>
+            </div>
           </div>
           {generate.isPending && <p className="mt-3 text-xs" style={{ color: "var(--color-subtle)" }}>Gemini está analizando el mercado de {country}…</p>}
         </div>
@@ -103,6 +113,35 @@ export function AnglesManager() {
       </main>
 
       {modal && <AngleModal data={modal} onClose={() => setModal(null)} />}
+      {guideOpen && createPortal(
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setGuideOpen(false); }}>
+          <div className="w-full max-w-lg rounded-2xl" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
+            <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
+              <SlidersHorizontal className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Condicionar ángulos</p>
+              <button type="button" onClick={() => setGuideOpen(false)} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-3 p-4">
+              <p className="text-[11px] leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
+                Instrucciones extra que Gemini va a respetar al generar (sin romper el tono natural). Ej: enfocá en madres jóvenes, mencioná que se juega en ratos libres, tono más directo, evitá prometer montos exactos.
+              </p>
+              <textarea value={guidance} onChange={(e) => setGuidance(e.target.value)} rows={6} autoFocus maxLength={2000}
+                placeholder="Escribí acá cómo querés condicionar los ángulos…"
+                className="w-full resize-y rounded-md px-3 py-2 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
+              <div className="flex items-center gap-2">
+                {guidance.trim() && (
+                  <button type="button" onClick={() => setGuidance("")} className="rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                    style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>Limpiar</button>
+                )}
+                <button type="button" onClick={() => setGuideOpen(false)} className="ml-auto rounded-md px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Listo</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

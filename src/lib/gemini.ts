@@ -25,7 +25,7 @@ export type AngleResult = {
   }>;
 };
 
-function buildPrompt(o: { country: string; operableHours?: string; kb?: string[]; metrics?: string }): string {
+function buildPrompt(o: { country: string; operableHours?: string; kb?: string[]; metrics?: string; guidance?: string }): string {
   const kb = o.kb?.length ? o.kb.map((k, i) => `${i + 1}. ${k}`).join("\n") : "Sin base de conocimientos previa para este país.";
   return `País Objetivo: ${o.country}
 Demografía: 18-40+ años.
@@ -33,7 +33,7 @@ Horario operable local (referencia para best_ad_hours): ${o.operableHours ?? "07
 Base de Conocimientos (aprendizajes previos de qué ángulos convierten):
 ${kb}
 Métricas Históricas de Campañas: ${o.metrics ?? "sin métricas históricas todavía"}
-
+${o.guidance?.trim() ? `\nInstrucciones adicionales del media buyer (respetalas al generar los ángulos y textos, sin romper las reglas de idioma y tono):\n${o.guidance.trim()}\n` : ""}
 Realizá lo siguiente:
 1. Analizá el mercado actual en ${o.country} (EN INGLÉS): tendencias de Gen Z/Millennials, humor, eventos cercanos y las mejores horas locales para correr TikTok Ads.
 2. Identificá los 3 juegos móviles (App Store/Play Store) más populares actualmente en ese país que sirvan como excusa realista para el "Get Paid to Play".
@@ -65,7 +65,7 @@ function parseJson(text: string): AngleResult {
 }
 
 /** Agente 1: genera ángulos + análisis de mercado para un país. */
-export async function generateAngles(o: { country: string; operableHours?: string; kb?: string[]; metrics?: string }): Promise<AngleResult> {
+export async function generateAngles(o: { country: string; operableHours?: string; kb?: string[]; metrics?: string; guidance?: string }): Promise<AngleResult> {
   const key = env.GOOGLE_AI_KEY;
   if (!key) throw new Error("Falta GOOGLE_AI_KEY en el entorno.");
   const genAI = new GoogleGenerativeAI(key);
