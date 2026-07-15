@@ -174,14 +174,6 @@ function AngleModal({ data, onClose }: { data: Loaded; onClose: () => void }) {
 function AngleView({ data }: { data: Loaded }) {
   const [es, setEs] = useState(false); // false = idioma nativo, true = español
   const [editorAngle, setEditorAngle] = useState<Angle | null>(null);
-  const [commentsMap, setCommentsMap] = useState<Record<string, string[]>>({});
-  const genComments = api.angles.generateComments.useMutation({
-    onSuccess: (res, vars) => setCommentsMap((s) => ({ ...s, [vars.angleName]: res })),
-    onError: (e) => alert(e.message),
-  });
-  const commentsQ = api.angles.commentsList.useQuery({ angleId: data.id });
-  const commentsAdd = api.angles.commentsAdd.useMutation({ onSuccess: () => void commentsQ.refetch(), onError: (e) => alert(e.message) });
-  const commentsRemove = api.angles.commentsRemove.useMutation({ onSuccess: () => void commentsQ.refetch(), onError: (e) => alert(e.message) });
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -232,39 +224,12 @@ function AngleView({ data }: { data: Loaded }) {
             <Copyable label={`Proof (texto sobre tu imagen)${es ? " · ES" : ""}`} value={t.proof_text} />
             <Copyable label={`Caption + CTA${es ? " · ES" : ""}`} value={t.caption} />
             {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>Por qué funciona:</span> {a.why_it_works}</p>}
-            <div className="mt-3 flex gap-2">
-              <button type="button" onClick={() => setEditorAngle(a)}
+            <button type="button" onClick={() => setEditorAngle(a)}
               className="mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
               style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
               <ImagePlus className="h-3.5 w-3.5" /> Armar creativo
             </button>
-              <button type="button" disabled={genComments.isPending} onClick={() => genComments.mutate({ country: data.country, angleName: a.angle_name, count: 6 })}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
-                style={{ background: "var(--color-surface-overlay)", color: "var(--color-foreground)" }}>
-                {genComments.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />} Generar comentarios
-              </button>
-            </div>
             <AngleFeedback angleId={data.id} angleName={a.angle_name} />
-            {(() => {
-              const comments = commentsMap[a.angle_name];
-              if (!comments) return null;
-              return (
-                <div className="mt-3 rounded-md p-3" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
-                  <p className="mb-2 text-[11px] font-semibold" style={{ color: "var(--color-subtle)" }}>Comentarios generados:</p>
-                  <div className="space-y-1 text-sm" style={{ color: "var(--color-foreground)" }}>
-                    {comments.map((c, idx) => <p key={idx} className="leading-snug">{c}</p>)}
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={() => navigator.clipboard.writeText(comments.join('\n'))}
-                      className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Copiar</button>
-                      <button type="button" onClick={() => setCommentsMap((s) => { const t = { ...s }; delete t[a.angle_name]; return t; })}
-                        className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "transparent", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>Cerrar</button>
-                      <button type="button" disabled={commentsAdd.isPending} onClick={() => commentsAdd.mutate({ angleId: data.id, angleName: a.angle_name, comments })}
-                        className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Guardar</button>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         );
       })}

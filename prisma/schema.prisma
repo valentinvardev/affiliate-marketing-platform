@@ -298,17 +298,6 @@ model AngleMedia {
 }
 
 // Guardado de listas de comentarios generados para un ángulo (ej. para usar en boosts)
-model AngleCommentList {
-  id          String   @id @default(cuid())
-  angleId     String
-  angleName   String
-  comments    String[] @default([])
-  createdById String
-  createdAt   DateTime @default(now())
-
-  @@index([angleId])
-}
-
 // ─── Proxies ISP/DC (comprados en IPRoyal, dispensados a los usuarios) ───
 model Proxy {
   id         String    @id @default(cuid())
