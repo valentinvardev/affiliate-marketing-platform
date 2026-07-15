@@ -69,9 +69,22 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
   const add = api.stack.addItem.useMutation({
     onSuccess: () => { void utils.stack.list.invalidate(); onDone(); },
   });
+  const appsQ = api.apps.list.useQuery();
 
   const [f, setF] = useState({ name: "", imageUrl: "", tag: "1 hr", badge: "TOP", amount: "" });
   const [uploading, setUploading] = useState(false);
+
+  function pickApp(id: string) {
+    const app = appsQ.data?.find((a) => a.id === id);
+    if (!app) return;
+    setF({
+      name:     app.name,
+      imageUrl: app.imageUrl ?? "",
+      tag:      app.tag ?? "1 hr",
+      badge:    app.badge ?? "TOP",
+      amount:   app.amount != null ? String(app.amount) : "",
+    });
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -109,6 +122,24 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
       <p className="col-span-2 text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--color-subtle)" }}>
         Nueva aplicación
       </p>
+      <label className="col-span-2 flex flex-col gap-1">
+        <span className="text-[10px]" style={{ color: "var(--color-subtle)" }}>Elegí de la lista de apps (prellena los campos) o cargá una manual abajo</span>
+        <select
+          defaultValue=""
+          onChange={(e) => { pickApp(e.target.value); }}
+          className="w-full rounded-md px-3 py-2 text-sm outline-none"
+          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+        >
+          <option value="" style={{ background: "var(--color-surface-raised)" }}>
+            {appsQ.isLoading ? "Cargando apps…" : "— Elegí una app —"}
+          </option>
+          {(appsQ.data ?? []).map((a) => (
+            <option key={a.id} value={a.id} style={{ background: "var(--color-surface-raised)" }}>
+              {a.name}{a.amount != null ? ` · $${a.amount}` : ""}
+            </option>
+          ))}
+        </select>
+      </label>
       <Input placeholder="Nombre (ej: Block Blast)" value={f.name} onChange={(e) => setF(p => ({ ...p, name: e.target.value }))} required />
       <Input placeholder="Monto (ej: 12)" type="number" step="0.01" value={f.amount} onChange={(e) => setF(p => ({ ...p, amount: e.target.value }))} required />
       <Input placeholder="Tag (ej: 1 hr)" value={f.tag} onChange={(e) => setF(p => ({ ...p, tag: e.target.value }))} />
