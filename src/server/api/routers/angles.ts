@@ -111,6 +111,17 @@ export const anglesRouter = createTRPCRouter({
     .mutation(({ ctx, input }) => ctx.db.angleMedia.create({ data: { angleId: input.angleId, url: input.url, slot: input.slot, createdById: ctx.session.user.id } })),
   mediaRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.angleMedia.delete({ where: { id: input.id } })),
 
+  /* ── Comentarios guardados generados por Gemini ── */
+  commentsList: adminProcedure
+    .input(z.object({ angleId: z.string() }))
+    .query(({ ctx, input }) => ctx.db.angleCommentList.findMany({ where: { angleId: input.angleId }, orderBy: { createdAt: "desc" } })),
+
+  commentsAdd: adminProcedure
+    .input(z.object({ angleId: z.string(), angleName: z.string().min(1), comments: z.array(z.string()).min(1) }))
+    .mutation(({ ctx, input }) => ctx.db.angleCommentList.create({ data: { angleId: input.angleId, angleName: input.angleName, comments: input.comments, createdById: ctx.session.user.id } })),
+
+  commentsRemove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.angleCommentList.delete({ where: { id: input.id } })),
+
   /* ── Generador de comentarios (orgánicos) ── */
   generateComments: adminProcedure
     .input(z.object({ country: z.string().min(1), angleName: z.string().min(1), videoContext: z.string().optional(), count: z.number().min(1).max(20).optional() }))

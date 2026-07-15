@@ -140,6 +140,9 @@ function AngleView({ data }: { data: Loaded }) {
     onSuccess: (res, vars) => setCommentsMap((s) => ({ ...s, [vars.angleName]: res })),
     onError: (e) => alert(e.message),
   });
+  const commentsQ = api.angles.commentsList.useQuery({ angleId: data.id });
+  const commentsAdd = api.angles.commentsAdd.useMutation({ onSuccess: () => void commentsQ.refetch(), onError: (e) => alert(e.message) });
+  const commentsRemove = api.angles.commentsRemove.useMutation({ onSuccess: () => void commentsQ.refetch(), onError: (e) => alert(e.message) });
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -215,8 +218,10 @@ function AngleView({ data }: { data: Loaded }) {
                   <div className="mt-2 flex gap-2">
                     <button type="button" onClick={() => navigator.clipboard.writeText(comments.join('\n'))}
                       className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Copiar</button>
-                    <button type="button" onClick={() => setCommentsMap((s) => { const t = { ...s }; delete t[a.angle_name]; return t; })}
-                      className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "transparent", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>Cerrar</button>
+                      <button type="button" onClick={() => setCommentsMap((s) => { const t = { ...s }; delete t[a.angle_name]; return t; })}
+                        className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "transparent", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>Cerrar</button>
+                      <button type="button" disabled={commentsAdd.isPending} onClick={() => commentsAdd.mutate({ angleId: data.id, angleName: a.angle_name, comments })}
+                        className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Guardar</button>
                   </div>
                 </div>
               );
