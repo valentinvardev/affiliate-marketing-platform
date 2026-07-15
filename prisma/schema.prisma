@@ -1,452 +1,464 @@
 generator client {
-    provider = "prisma-client-js"
-    output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-    provider  = "postgresql"
-    url       = env("DATABASE_URL")
-    directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Campaign {
-    id             String          @id @default(cuid())
-    name           String
-    slug           String          @unique
-    templateSlug   String          @default("gonza-gb-sn-fc")
-    locale         String          @default("en")
-    currencySymbol String          @default("£")
-    currencyCode   String          @default("GBP")
-    ctaUrl         String
-    logoUrl        String?
-    colorPrimary   String          @default("oklch(0.74 0.19 55)")
-    colorBg        String          @default("oklch(0.16 0.04 265)")
-    isActive       Boolean         @default(true)
-    domain         String?         // root domain en el que se sirve (path-based: <domain>/<slug>)
-    fontTitle      String?         // fuente de títulos (Google Font, ej. "Manrope")
-    fontBody       String?         // fuente de párrafos (ej. "Inter")
-    offerName      String?         // oferta de la que se creó (para la franja de la card)
-    offerImage     String?         // logo de la oferta
-    ownerId        String?
-    owner          User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-    createdAt      DateTime        @default(now())
-    updatedAt      DateTime        @updatedAt
-    offers         CampaignOffer[]
-    domains        LandingDomain[]
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  templateSlug   String          @default("gonza-gb-sn-fc")
+  locale         String          @default("en")
+  currencySymbol String          @default("£")
+  currencyCode   String          @default("GBP")
+  ctaUrl         String
+  logoUrl        String?
+  colorPrimary   String          @default("oklch(0.74 0.19 55)")
+  colorBg        String          @default("oklch(0.16 0.04 265)")
+  isActive       Boolean         @default(true)
+  domain         String? // root domain en el que se sirve (path-based: <domain>/<slug>)
+  fontTitle      String? // fuente de títulos (Google Font, ej. "Manrope")
+  fontBody       String? // fuente de párrafos (ej. "Inter")
+  offerName      String? // oferta de la que se creó (para la franja de la card)
+  offerImage     String? // logo de la oferta
+  ownerId        String?
+  owner          User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  offers         CampaignOffer[]
+  domains        LandingDomain[]
 
-    @@index([slug])
-    @@index([isActive])
-    @@index([ownerId])
+  @@index([slug])
+  @@index([isActive])
+  @@index([ownerId])
 }
 
 // Registro de dominios raíz conectados (ej. empfohlen.lat). Path-based:
 // <domain>/<slug> sirve la campaña con ese slug. campaignId opcional = campaña
 // "home" del dominio (lo que muestra el root `domain/`).
 model LandingDomain {
-    id         String    @id @default(cuid())
-    domain     String    @unique // apex en minúsculas, sin www (ej. "empfohlen.lat")
-    campaignId String?
-    campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-    createdAt  DateTime  @default(now())
+  id         String    @id @default(cuid())
+  domain     String    @unique // apex en minúsculas, sin www (ej. "empfohlen.lat")
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
 
-    @@index([campaignId])
+  @@index([campaignId])
 }
 
 // Dominios de redirección disponibles (sólo el admin los agrega; ej. "dealdrop.lat").
 model RedirectDomain {
-    id        String   @id @default(cuid())
-    domain    String   @unique // apex en minúsculas, sin www
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  domain    String   @unique // apex en minúsculas, sin www
+  createdAt DateTime @default(now())
 }
 
 // Redirector (cloaking) en dominio/ruta: ON → rota whitepages, OFF → landing de campaña.
 // Varios por dominio vía la ruta (ej. dealdrop.lat/1, dealdrop.lat/caca).
 model Redirect {
-    id          String   @id @default(cuid())
-    domain      String   // uno de RedirectDomain
-    path        String   @default("") // ruta tras el dominio: "1", "caca" ("" = raíz)
-    createdById String?  // quién lo creó
-    cloakOn     Boolean  @default(false)
-    whitepages  String[] @default([]) // destinos cuando el cloak está prendido
-    targetUrl   String?  // landing de la campaña cuando está apagado
-    campaignId  String?  // campaña elegida (referencia para autofill)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          String   @id @default(cuid())
+  domain      String // uno de RedirectDomain
+  path        String   @default("") // ruta tras el dominio: "1", "caca" ("" = raíz)
+  createdById String? // quién lo creó
+  cloakOn     Boolean  @default(false)
+  whitepages  String[] @default([]) // destinos cuando el cloak está prendido
+  targetUrl   String? // landing de la campaña cuando está apagado
+  campaignId  String? // campaña elegida (referencia para autofill)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    @@unique([domain, path])
-    @@index([domain])
+  @@unique([domain, path])
+  @@index([domain])
 }
 
 model CampaignOffer {
-    id         String   @id @default(cuid())
-    campaignId String
-    campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-    name       String
-    imageUrl   String?
-    tag        String   @default("1 hr")
-    badge      String   @default("TOP")
-    amount     Float
-    rating     Float    @default(4.9)
-    note       String?
-    position   Int      @default(0)
+  name     String
+  imageUrl String?
+  tag      String  @default("1 hr")
+  badge    String  @default("TOP")
+  amount   Float
+  rating   Float   @default(4.9)
+  note     String?
+  position Int     @default(0)
 
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([campaignId, position])
+  @@index([campaignId, position])
 }
 
 model User {
-    id        String   @id @default(cuid())
-    username  String   @unique
-    email     String?
-    password  String
-    role      String   @default("user")
-    approved  Boolean  @default(false)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?
+  password  String
+  role      String   @default("user")
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    campaigns Campaign[]
-    cards     CardOwner[]
-    spend     SpendLog[]
+  campaigns Campaign[]
+  cards     CardOwner[]
+  spend     SpendLog[]
 }
 
 // Mapea cada VCC de TapRain (id de la card) a su usuario dueño
 model CardOwner {
-    id         String    @id @default(cuid())
-    vccId      String    @unique
-    userId     String
-    user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    cardName   String?
-    campaignId String?
-    closedAt   DateTime?
-    closedById String?
-    createdAt  DateTime  @default(now())
+  id         String    @id @default(cuid())
+  vccId      String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardName   String?
+  campaignId String?
+  closedAt   DateTime?
+  closedById String?
+  createdAt  DateTime  @default(now())
 
-    @@index([userId])
-    @@index([campaignId])
+  @@index([userId])
+  @@index([campaignId])
 }
 
 // Guarda del gasto diario de VCC por usuario (baseline = total acumulado al inicio del día)
 model SpendGuard {
-    id        String    @id @default(cuid())
-    userId    String    @unique
-    day       String    // YYYY-MM-DD del baseline
-    baseline  Float     @default(0)
-    pausedAt  DateTime? // cuándo se auto-pausaron las tarjetas por superar el cap
-    updatedAt DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  day       String // YYYY-MM-DD del baseline
+  baseline  Float     @default(0)
+  pausedAt  DateTime? // cuándo se auto-pausaron las tarjetas por superar el cap
+  updatedAt DateTime  @updatedAt
 }
 
 // Gasto atribuido a un usuario (vcc | interaction | engagement | bc | email | ...)
 model SpendLog {
-    id        String   @id @default(cuid())
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    kind      String
-    amount    Float
-    ref       String?
-    note      String?
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  amount    Float
+  ref       String?
+  note      String?
+  createdAt DateTime @default(now())
 
-    @@index([userId, createdAt])
+  @@index([userId, createdAt])
 }
 
 // Reparto de profit: por usuario fuente, filas (beneficiario, %) que suman 100
 model RevenueSplit {
-    id                String   @id @default(cuid())
-    sourceUserId      String
-    beneficiaryUserId String
-    percent           Float
-    createdAt         DateTime @default(now())
-    updatedAt         DateTime @updatedAt
+  id                String   @id @default(cuid())
+  sourceUserId      String
+  beneficiaryUserId String
+  percent           Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-    @@unique([sourceUserId, beneficiaryUserId])
-    @@index([sourceUserId])
+  @@unique([sourceUserId, beneficiaryUserId])
+  @@index([sourceUserId])
 }
 
 model ColorPreset {
-    id           String   @id @default(cuid())
-    name         String
-    colorPrimary String
-    colorBg      String
-    createdAt    DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  colorPrimary String
+  colorBg      String
+  createdAt    DateTime @default(now())
 }
 
 model LogoPreset {
-    id        String   @id @default(cuid())
-    name      String
-    imageUrl  String
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  imageUrl  String
+  createdAt DateTime @default(now())
 }
 
 model OfferConfig {
-    id            String    @id @default(cuid())
-    offerId       String    @unique
-    offerName     String
-    whitelisted   Boolean   @default(false)
-    imageUrl      String?
-    notes         String?
-    appStackId    String?
-    appStack      AppStack? @relation(fields: [appStackId], references: [id], onDelete: SetNull)
-    // Paquete completo que arrastra la oferta al crear campaña (autocompletado):
-    colorPresetId String?   // → ColorPreset (colores)
-    logoPresetId  String?   // → LogoPreset (logo)
-    domain        String?   // root domain donde se publican las campañas de esta oferta
-    fontTitle     String?   // fuente de títulos (ej. "Manrope")
-    fontBody      String?   // fuente de párrafos (ej. "Inter")
-    appIds        String[]  @default([]) // apps sueltas del directorio (alternativa al stack)
-    createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  offerId       String    @unique
+  offerName     String
+  whitelisted   Boolean   @default(false)
+  imageUrl      String?
+  notes         String?
+  appStackId    String?
+  appStack      AppStack? @relation(fields: [appStackId], references: [id], onDelete: SetNull)
+  // Paquete completo que arrastra la oferta al crear campaña (autocompletado):
+  colorPresetId String? // → ColorPreset (colores)
+  logoPresetId  String? // → LogoPreset (logo)
+  domain        String? // root domain donde se publican las campañas de esta oferta
+  fontTitle     String? // fuente de títulos (ej. "Manrope")
+  fontBody      String? // fuente de párrafos (ej. "Inter")
+  appIds        String[]  @default([]) // apps sueltas del directorio (alternativa al stack)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-    @@index([whitelisted])
-    @@index([appStackId])
+  @@index([whitelisted])
+  @@index([appStackId])
 }
 
 // Directorio/librería de apps sueltas (dedup de los stacks + agregadas a mano).
 // Se usan en ofertas que no van con un stack entero (ej. teststar, empfohlen).
 model App {
-    id        String   @id @default(cuid())
-    name      String
-    imageUrl  String?
-    tag       String   @default("1 hr")
-    badge     String   @default("TOP")
-    amount    Float    @default(0)
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  imageUrl  String?
+  tag       String   @default("1 hr")
+  badge     String   @default("TOP")
+  amount    Float    @default(0)
+  createdAt DateTime @default(now())
 }
 
 model AppStack {
-    id        String         @id @default(cuid())
-    name      String
-    items     AppStackItem[]
-    offers    OfferConfig[]
-    createdAt DateTime       @default(now())
-    updatedAt DateTime       @updatedAt
+  id        String         @id @default(cuid())
+  name      String
+  items     AppStackItem[]
+  offers    OfferConfig[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model AppStackItem {
-    id       String   @id @default(cuid())
-    stackId  String
-    stack    AppStack @relation(fields: [stackId], references: [id], onDelete: Cascade)
-    name     String
-    imageUrl String?
-    tag      String   @default("1 hr")
-    badge    String   @default("TOP")
-    amount   Float
-    position Int      @default(0)
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  stackId   String
+  stack     AppStack @relation(fields: [stackId], references: [id], onDelete: Cascade)
+  name      String
+  imageUrl  String?
+  tag       String   @default("1 hr")
+  badge     String   @default("TOP")
+  amount    Float
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
 
-    @@index([stackId, position])
+  @@index([stackId, position])
 }
 
 model AppConfig {
-    key       String   @id
-    value     String
-    updatedAt DateTime @updatedAt
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Ángulos de TikTok Ads (generados con Gemini, solo admin) ───
 model AdAngle {
-    id          String   @id @default(cuid())
-    country     String
-    demographic String   @default("18-40+")
-    market      Json     // market_analysis (trends, best_ad_hours, top_games)
-    angles      Json     // array de ángulos
-    campaignId  String?
-    createdById String
-    createdAt   DateTime @default(now())
+  id          String   @id @default(cuid())
+  country     String
+  demographic String   @default("18-40+")
+  market      Json // market_analysis (trends, best_ad_hours, top_games)
+  angles      Json // array de ángulos
+  campaignId  String?
+  createdById String
+  createdAt   DateTime @default(now())
 
-    @@index([country])
+  @@index([country])
 }
 
 // Base de conocimientos: aprendizajes de qué ángulos/mercados convierten.
 model AngleKbEntry {
-    id          String   @id @default(cuid())
-    country     String
-    entry       String
-    tags        String[] @default([])
-    createdById String
-    createdAt   DateTime @default(now())
+  id          String   @id @default(cuid())
+  country     String
+  entry       String
+  tags        String[] @default([])
+  createdById String
+  createdAt   DateTime @default(now())
 
-    @@index([country])
+  @@index([country])
 }
 
 // Librería de imágenes fuente subidas por el admin, por país.
 // kind: "proof" (captura real de pago) | "hook" (foto de la primera imagen).
 model ProofImage {
-    id          String   @id @default(cuid())
-    country     String
-    kind        String   @default("proof")
-    url         String
-    label       String?
-    createdById String
-    createdAt   DateTime @default(now())
+  id          String   @id @default(cuid())
+  country     String
+  kind        String   @default("proof")
+  url         String
+  label       String?
+  createdById String
+  createdAt   DateTime @default(now())
 
-    @@index([country, kind])
+  @@index([country, kind])
 }
 
 // Creativos exportados (2 imágenes con texto) embebidos a un ángulo.
 model AngleMedia {
-    id          String   @id @default(cuid())
-    angleId     String
-    slot        String   @default("hook") // hook | proof
-    url         String
-    createdById String
-    createdAt   DateTime @default(now())
+  id          String   @id @default(cuid())
+  angleId     String
+  slot        String   @default("hook") // hook | proof
+  url         String
+  createdById String
+  createdAt   DateTime @default(now())
 
-    @@index([angleId])
+  @@index([angleId])
+}
+
+// Guardado de listas de comentarios generados para un ángulo (ej. para usar en boosts)
+model AngleCommentList {
+  id          String   @id @default(cuid())
+  angleId     String
+  angleName   String
+  comments    String[] @default([])
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([angleId])
 }
 
 // ─── Proxies ISP/DC (comprados en IPRoyal, dispensados a los usuarios) ───
 model Proxy {
-    id         String    @id @default(cuid())
-    externalId String    @unique // dedupe del sync (order:ip)
-    host       String
-    httpPort   Int
-    socksPort  Int?
-    username   String
-    password   String
-    label      String?   // product_name / orden
-    country    String?
-    orderId    String?
-    expiresAt  DateTime?
-    status     String    @default("available") // available | claimed | disabled
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  externalId String    @unique // dedupe del sync (order:ip)
+  host       String
+  httpPort   Int
+  socksPort  Int?
+  username   String
+  password   String
+  label      String? // product_name / orden
+  country    String?
+  orderId    String?
+  expiresAt  DateTime?
+  status     String    @default("available") // available | claimed | disabled
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-    claim ProxyClaim?
+  claim ProxyClaim?
 
-    @@index([status])
+  @@index([status])
 }
 
 model ProxyClaim {
-    id        String   @id @default(cuid())
-    proxyId   String   @unique // un reclamo por proxy → se retira del pool
-    userId    String
-    claimedAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  proxyId   String   @unique // un reclamo por proxy → se retira del pool
+  userId    String
+  claimedAt DateTime @default(now())
 
-    proxy Proxy @relation(fields: [proxyId], references: [id], onDelete: Cascade)
+  proxy Proxy @relation(fields: [proxyId], references: [id], onDelete: Cascade)
 
-    @@index([userId])
+  @@index([userId])
 }
 
 // ─── Sparks (creativos de TikTok que el estrategista sube y los usuarios reclaman) ───
 model Spark {
-    id           String   @id @default(cuid())
-    createdById  String   // estrategista que lo subió
-    title        String
-    description  String?
-    tiktokUrl    String?  // opcional: se puede subir sin link de TikTok
-    sparkCode    String   // el código a copiar (catálogo público, no reclamable)
-    kind         String   @default("WH") // WH (white hat) | BH (black hat)
-    countryCode  String   // ISO-2 objetivo
-    language     String   // locale (en, fr, de…)
-    thumbnailUrl String?  // cache de oEmbed
-    authorName   String?
-    isCarousel   Boolean  @default(false)
-    status       String   @default("available") // available | claimed | disabled
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+  id           String   @id @default(cuid())
+  createdById  String // estrategista que lo subió
+  title        String
+  description  String?
+  tiktokUrl    String? // opcional: se puede subir sin link de TikTok
+  sparkCode    String // el código a copiar (catálogo público, no reclamable)
+  kind         String   @default("WH") // WH (white hat) | BH (black hat)
+  countryCode  String // ISO-2 objetivo
+  language     String // locale (en, fr, de…)
+  thumbnailUrl String? // cache de oEmbed
+  authorName   String?
+  isCarousel   Boolean  @default(false)
+  status       String   @default("available") // available | claimed | disabled
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-    claim   SparkClaim?
-    ratings SparkRating[]
-    boosts  SparkBoost[]
-    reports SparkReport[]
+  claim   SparkClaim?
+  ratings SparkRating[]
+  boosts  SparkBoost[]
+  reports SparkReport[]
 
-    @@index([status])
-    @@index([kind])
+  @@index([status])
+  @@index([kind])
 }
 
 model SparkClaim {
-    id        String   @id @default(cuid())
-    sparkId   String   @unique // un solo reclamo por spark → se retira del pool
-    userId    String
-    claimedAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  sparkId   String   @unique // un solo reclamo por spark → se retira del pool
+  userId    String
+  claimedAt DateTime @default(now())
 
-    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
 
-    @@index([userId])
+  @@index([userId])
 }
 
 model SparkRating {
-    id        String   @id @default(cuid())
-    sparkId   String
-    userId    String
-    stars     Int
-    comment   String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  sparkId   String
+  userId    String
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
 
-    @@unique([sparkId, userId])
-    @@index([sparkId])
+  @@unique([sparkId, userId])
+  @@index([sparkId])
 }
 
 model SparkBoost {
-    id           String   @id @default(cuid())
-    sparkId      String
-    createdById  String
-    provider     String   @default("smm")
-    interactions Json
-    comments     String[] @default([])
-    status       String   @default("pending") // pending | running | done | failed
-    providerRef  String?
-    createdAt    DateTime @default(now())
+  id           String   @id @default(cuid())
+  sparkId      String
+  createdById  String
+  provider     String   @default("smm")
+  interactions Json
+  comments     String[] @default([])
+  status       String   @default("pending") // pending | running | done | failed
+  providerRef  String?
+  createdAt    DateTime @default(now())
 
-    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
 
-    @@index([sparkId])
+  @@index([sparkId])
 }
 
 // Reporte de un usuario sobre un spark (falta de interacciones, review no aprobada…)
 model SparkReport {
-    id        String   @id @default(cuid())
-    sparkId   String
-    userId    String
-    reason    String   // no_interactions | review_not_approved | other
-    note      String?
-    status    String   @default("open") // open | resolved
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  sparkId   String
+  userId    String
+  reason    String // no_interactions | review_not_approved | other
+  note      String?
+  status    String   @default("open") // open | resolved
+  createdAt DateTime @default(now())
 
-    spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  spark Spark @relation(fields: [sparkId], references: [id], onDelete: Cascade)
 
-    @@index([sparkId])
+  @@index([sparkId])
 }
 
 model ChatMessage {
-    id        String   @id @default(cuid())
-    userId    String
-    username  String
-    text      String
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  username  String
+  text      String
+  createdAt DateTime @default(now())
 
-    @@index([createdAt])
+  @@index([createdAt])
 }
 
 model Conversion {
-    id           String   @id @default(cuid())
-    price        Float    @default(0)
-    offerName    String?
-    country      String?
-    s1           String?
-    s2           String?
-    clickId      String?
-    conversionId String?
-    ip           String?
-    receivedAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  price        Float    @default(0)
+  offerName    String?
+  country      String?
+  s1           String?
+  s2           String?
+  clickId      String?
+  conversionId String?
+  ip           String?
+  receivedAt   DateTime @default(now())
 
-    @@index([receivedAt])
-    @@index([s1])
+  @@index([receivedAt])
+  @@index([s1])
 }
 
 // Click al CTA de una landing (s1 = slug de la campaña), para métricas por campaña.
 model Click {
-    id        String   @id @default(cuid())
-    s1        String
-    ip        String?
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  s1        String
+  ip        String?
+  createdAt DateTime @default(now())
 
-    @@index([s1])
-    @@index([createdAt])
+  @@index([s1])
+  @@index([createdAt])
 }
