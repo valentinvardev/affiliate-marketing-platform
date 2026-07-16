@@ -450,6 +450,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
       ctaUrl: values.ctaUrl || "#",
       logoUrl: values.logoUrl || null,
       currencySymbol: values.currencySymbol,
+      currencyCode: values.currencyCode,
       fontTitle: values.fontTitle || null,
       fontBody: values.fontBody || null,
       offers: previewOffers.map((o, i) => ({ id: String(i), name: o.name, imageUrl: o.imageUrl ?? null, tag: "1 hr", badge: o.badge, amount: o.amount, rating: 4.9, note: null })),
@@ -457,7 +458,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     const t = setTimeout(() => setPreviewUrl(`/landing-preview?c=${toB64Url(JSON.stringify(cfg))}`), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.name, values.locale, values.colorPrimary, values.colorBg, values.ctaUrl, values.logoUrl, values.currencySymbol, values.fontTitle, values.fontBody, offersKey]);
+  }, [values.name, values.locale, values.colorPrimary, values.colorBg, values.ctaUrl, values.logoUrl, values.currencySymbol, values.currencyCode, values.fontTitle, values.fontBody, offersKey]);
 
   return (
     <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>

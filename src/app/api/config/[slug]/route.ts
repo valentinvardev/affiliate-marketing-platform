@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/server/db";
+import { formatMoneyFromUsd } from "@/lib/currencies";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,14 +44,15 @@ export async function GET(
       colorPrimary:  campaign.colorPrimary,
       colorBg:       campaign.colorBg,
       offers: campaign.offers.map((o) => ({
-        id:       o.id,
-        name:     o.name,
-        imageUrl: o.imageUrl,
-        tag:      o.tag,
-        badge:    o.badge,
-        amount:   o.amount,
-        rating:   o.rating,
-        note:     o.note,
+        id:          o.id,
+        name:        o.name,
+        imageUrl:    o.imageUrl,
+        tag:         o.tag,
+        badge:       o.badge,
+        amount:      o.amount, // USD (base)
+        amountLabel: formatMoneyFromUsd(o.amount, campaign.currencyCode), // convertido + formateado (ej. "179 kr")
+        rating:      o.rating,
+        note:        o.note,
       })),
     },
     { headers: CORS },

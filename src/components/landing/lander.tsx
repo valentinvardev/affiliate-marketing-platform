@@ -16,6 +16,7 @@ import {
 import { LanderFaq } from "@/components/landing/lander-faq";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 import { googleFontsHref, fontStack } from "@/lib/fonts";
+import { formatMoneyFromUsd } from "@/lib/currencies";
 
 const FEATURE_ICONS = [UserPlus, Search, Zap, Wallet];
 
@@ -29,6 +30,7 @@ export type LanderCampaign = {
   ctaUrl: string;
   logoUrl: string | null;
   currencySymbol: string;
+  currencyCode: string;
   fontTitle: string | null;
   fontBody: string | null;
   offers: {
@@ -157,9 +159,10 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
   const offerImages = offers.map((o) => o.imageUrl).filter(Boolean) as string[];
   const cascadeItems = buildCascade(offerImages);
 
+  // El monto se guarda en USD (base) y se muestra convertido a la moneda local.
   function fmtAmount(n: number) {
-    if (n === Math.floor(n)) return `${currencySymbol}${n}`;
-    return `${currencySymbol}${n.toFixed(2)}`;
+    if (campaign.currencyCode) return formatMoneyFromUsd(n, campaign.currencyCode);
+    return n === Math.floor(n) ? `${currencySymbol}${n}` : `${currencySymbol}${n.toFixed(2)}`;
   }
 
   return (
