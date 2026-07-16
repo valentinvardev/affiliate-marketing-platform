@@ -57,6 +57,9 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: { signIn: "/login" },
-  session: { strategy: "jwt" },
+  // Sesión larga y "rolling": se renueva cada 24 h de uso, así el usuario
+  // queda logueado mientras entre al menos una vez cada 90 días.
+  session: { strategy: "jwt", maxAge: 90 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
+  jwt: { maxAge: 90 * 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
 };
