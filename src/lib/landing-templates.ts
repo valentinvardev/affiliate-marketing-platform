@@ -8,6 +8,9 @@ export const LANDING_TEMPLATES: TemplateDef[] = [
 
 export const DEFAULT_TEMPLATE = "classic";
 
+// Marca fija de la plantilla FreeCash v2 (no usa el nombre de la campaña).
+export const V2_BRAND = "FreeCash";
+
 /** Mapea cualquier templateSlug legacy a uno del catálogo (default = clásica). */
 export function resolveTemplate(slug?: string | null): string {
   return slug === "freecash-v2" ? "freecash-v2" : "classic";

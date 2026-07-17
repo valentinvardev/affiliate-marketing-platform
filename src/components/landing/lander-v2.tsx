@@ -6,6 +6,7 @@ import { googleFontsHref } from "@/lib/fonts";
 import { formatMoneyFromUsd } from "@/lib/currencies";
 import type { LanderCampaign } from "@/components/landing/lander";
 import { V2Reveal } from "@/components/landing/v2-reveal";
+import { V2_BRAND } from "@/lib/landing-templates";
 
 /* FreeCash v2 — vibe fintech/SaaS: fondo oscuro premium, tipografía Space Grotesk + Inter,
    layout serio y optimizado a conversión. El color de acento sale de la campaña. */
@@ -208,13 +209,13 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
             {campaign.logoUrl ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 11 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 44, width: "auto", maxWidth: 150, objectFit: "contain", borderRadius: 12 }} />
-                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>{campaign.name}</span>
+                <img src={campaign.logoUrl} alt={V2_BRAND} style={{ height: 44, width: "auto", maxWidth: 150, objectFit: "contain", borderRadius: 12 }} />
+                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>{V2_BRAND}</span>
               </span>
             ) : (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 32, height: 32, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DISPLAY, fontWeight: 700, fontSize: 17, color: "#05070c", background: `linear-gradient(180deg, color-mix(in oklch, ${acc} 92%, white), ${acc})` }}>{(campaign.name.charAt(0) || "F").toUpperCase()}</span>
-                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em" }}>{campaign.name}</span>
+                <span style={{ width: 32, height: 32, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DISPLAY, fontWeight: 700, fontSize: 17, color: "#05070c", background: `linear-gradient(180deg, color-mix(in oklch, ${acc} 92%, white), ${acc})` }}>{V2_BRAND.charAt(0)}</span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em" }}>{V2_BRAND}</span>
               </span>
             )}
             <a href={ctaHref} className="v2-ghost" style={{ marginLeft: "auto" }}>
@@ -387,7 +388,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
             <span className="v2-chip">{t.footer.devices}</span>
             <span className="v2-chip"><Lock style={{ width: 12, height: 12 }} /> {t.footer.ssl}</span>
           </div>
-          <span>{t.footer.legal} · {campaign.name}</span>
+          <span>{t.footer.legal} · {V2_BRAND}</span>
         </div></footer>
 
         {/* Sticky mobile CTA */}
