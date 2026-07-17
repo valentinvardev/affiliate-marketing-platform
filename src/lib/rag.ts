@@ -51,17 +51,22 @@ export function chunkText(text: string, maxChars = 1200, overlap = 150): string[
   return out.filter(Boolean);
 }
 
-/** Embeddea e inserta chunks en KnowledgeChunk (para la ingesta del hito 6). */
+/** Embeddea e inserta chunks en KnowledgeChunk (en lotes, para la ingesta del hito 6). */
 export async function ingestChunks(db: DB, opts: { source: string; kind?: string; createdById?: string | null; chunks: string[] }): Promise<number> {
-  if (!opts.chunks.length) return 0;
-  const vecs = await embedDocuments(opts.chunks);
-  for (let i = 0; i < opts.chunks.length; i++) {
-    await db.$executeRawUnsafe(
-      `INSERT INTO "KnowledgeChunk" ("id","source","kind","content","embedding","createdById") VALUES ($1,$2,$3,$4,$5::vector,$6)`,
-      randomUUID(), opts.source, opts.kind ?? "manual", opts.chunks[i], toVectorLiteral(vecs[i]!), opts.createdById ?? null,
-    );
+  const BATCH = 100; // límite razonable por request de embeddings
+  let total = 0;
+  for (let i = 0; i < opts.chunks.length; i += BATCH) {
+    const batch = opts.chunks.slice(i, i + BATCH);
+    const vecs = await embedDocuments(batch);
+    for (let j = 0; j < batch.length; j++) {
+      await db.$executeRawUnsafe(
+        `INSERT INTO "KnowledgeChunk" ("id","source","kind","content","embedding","createdById") VALUES ($1,$2,$3,$4,$5::vector,$6)`,
+        randomUUID(), opts.source, opts.kind ?? "manual", batch[j], toVectorLiteral(vecs[j]!), opts.createdById ?? null,
+      );
+    }
+    total += batch.length;
   }
-  return opts.chunks.length;
+  return total;
 }
 
 /** Borra todos los chunks de una fuente (para reindexar). */
