@@ -173,10 +173,7 @@ async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx
 
 export const assistantRouter = createTRPCRouter({
   send: protectedProcedure
-    .input(z.object({
-      message: z.string().min(1).max(4000),
-      history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() })).max(30).optional(),
-    }))
+    .input(z.object({ message: z.string().min(1).max(4000) }))
     .mutation(async ({ ctx, input }) => {
       const role: "admin" | "user" = ctx.session.user.role === "admin" ? "admin" : "user";
       const { appRouter } = await import("@/server/api/root");
@@ -195,7 +192,11 @@ export const assistantRouter = createTRPCRouter({
         tools: [{ functionDeclarations: decls }],
       });
 
-      const history: Content[] = (input.history ?? []).map((h) => ({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.content }] }));
+      // Contexto de la conversación desde la DB (últimas 24 h).
+      const me = ctx.session.user.id;
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const prior = await ctx.db.assistantMessage.findMany({ where: { userId: me, createdAt: { gte: cutoff } }, orderBy: { createdAt: "asc" }, take: 20, select: { role: true, content: true } });
+      const history: Content[] = prior.map((h) => ({ role: h.role === "assistant" ? "model" : "user", parts: [{ text: h.content }] }));
       const chat = model.startChat({ history });
 
       const toolsUsed: string[] = [];
@@ -221,8 +222,34 @@ export const assistantRouter = createTRPCRouter({
       try { reply = resp.response.text(); } catch { reply = ""; }
       if (!reply.trim()) reply = "No pude generar una respuesta. Probá reformular.";
 
-      return { reply, toolsUsed: [...new Set(toolsUsed)], pendingAction, refs };
+      // Persistir + limpiar lo que pase de 24 h.
+      const usedTools = [...new Set(toolsUsed)];
+      await ctx.db.assistantMessage.createMany({ data: [
+        { userId: me, role: "user", content: input.message },
+        { userId: me, role: "assistant", content: reply, meta: { toolsUsed: usedTools, refs } },
+      ] });
+      await ctx.db.assistantMessage.deleteMany({ where: { userId: me, createdAt: { lt: cutoff } } });
+
+      return { reply, toolsUsed: usedTools, pendingAction, refs };
     }),
+
+  // Historial de las últimas 24 h del usuario.
+  history: protectedProcedure.query(async ({ ctx }) => {
+    const me = ctx.session.user.id;
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const rows = await ctx.db.assistantMessage.findMany({
+      where: { userId: me, createdAt: { gte: cutoff } },
+      orderBy: { createdAt: "asc" }, take: 100,
+      select: { id: true, role: true, content: true, meta: true },
+    });
+    return rows.map((r) => ({ id: r.id, role: r.role === "assistant" ? ("assistant" as const) : ("user" as const), content: r.content, meta: (r.meta ?? null) as { toolsUsed?: string[]; refs?: Ref[] } | null }));
+  }),
+
+  // Nueva conversación (borra el historial del usuario).
+  clear: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.db.assistantMessage.deleteMany({ where: { userId: ctx.session.user.id } });
+    return { ok: true };
+  }),
 
   // Ejecuta una acción destructiva previamente confirmada por el usuario.
   runAction: protectedProcedure
@@ -235,6 +262,7 @@ export const assistantRouter = createTRPCRouter({
         const active = cards.filter((c) => c.status === "active" && !c.closedAt);
         let paused = 0;
         for (const c of active) { try { await caller.cards.close({ vccId: c.id }); paused++; } catch { /* best-effort */ } }
+        await ctx.db.assistantMessage.create({ data: { userId: ctx.session.user.id, role: "assistant", content: `Listo — pausé ${paused} de ${active.length} VCCs.` } });
         return { type: "pause_vccs", paused, total: active.length };
       }
       return { type: input.type, paused: 0, total: 0 };

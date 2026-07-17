@@ -313,6 +313,18 @@ model KnowledgeChunk {
   @@index([source])
 }
 
+// Historial del asistente (chatbot). Se limpia solo pasadas 24 h.
+model AssistantMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String // user | assistant
+  content   String
+  meta      Json? // { toolsUsed?: string[], refs?: [...] }
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 // ─── Proxies ISP/DC (comprados en IPRoyal, dispensados a los usuarios) ───
 model Proxy {
   id         String    @id @default(cuid())

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
-import { Bot, X, Send, Wrench, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { Bot, X, Send, Wrench, AlertTriangle, Sparkles, Loader2, SquarePen } from "lucide-react";
 
 const AngleModal = dynamic(() => import("@/components/angles-manager").then((m) => m.AngleModal), { ssr: false });
 
@@ -114,9 +114,22 @@ export function AssistantWidget() {
   const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const utils = api.useUtils();
   const send = api.assistant.send.useMutation();
   const runAction = api.assistant.runAction.useMutation();
   const angleQ = api.angles.get.useQuery({ id: openAngleId ?? "" }, { enabled: !!openAngleId });
+  const historyQ = api.assistant.history.useQuery(undefined, { enabled: open, refetchOnWindowFocus: false });
+  const clear = api.assistant.clear.useMutation({ onSuccess: () => { setMsgs([]); void utils.assistant.history.invalidate(); } });
+  const inited = useRef(false);
+
+  // Cargar el historial (últimas 24 h) una sola vez.
+  useEffect(() => {
+    if (inited.current || !historyQ.data) return;
+    inited.current = true;
+    if (historyQ.data.length) {
+      setMsgs(historyQ.data.map((r) => ({ id: r.id, role: r.role, content: r.content, toolsUsed: r.meta?.toolsUsed, refs: r.meta?.refs, pendingAction: null })));
+    }
+  }, [historyQ.data]);
 
   // Mobile vs desktop
   useEffect(() => {
@@ -154,10 +167,9 @@ export function AssistantWidget() {
     const text = input.trim();
     if (!text || send.isPending) return;
     setInput("");
-    const history = msgs.slice(-12).map((m) => ({ role: m.role, content: m.content }));
     setMsgs((m) => [...m, { id: nextId(), role: "user", content: text }]);
     try {
-      const res = await send.mutateAsync({ message: text, history });
+      const res = await send.mutateAsync({ message: text });
       setMsgs((m) => [...m, { id: nextId(), role: "assistant", content: res.reply, toolsUsed: res.toolsUsed, pendingAction: res.pendingAction, refs: res.refs }]);
     } catch (e) {
       setMsgs((m) => [...m, { id: nextId(), role: "assistant", content: "Uy, algo falló: " + (e instanceof Error ? e.message : "error") }]);
@@ -206,7 +218,15 @@ export function AssistantWidget() {
             <Bot className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Asistente</p>
             <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>tu segundo cerebro</span>
-            <button type="button" onClick={() => setOpen(false)} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+            <div className="ml-auto flex items-center gap-1">
+              {msgs.length > 0 && (
+                <button type="button" onClick={() => clear.mutate()} disabled={clear.isPending} title="Nueva conversación"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-subtle)" }}>
+                  {clear.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SquarePen className="h-4 w-4" />}
+                </button>
+              )}
+              <button type="button" onClick={() => setOpen(false)} title="Cerrar" className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+            </div>
           </div>
 
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3" style={{ overscrollBehavior: "contain", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}>
