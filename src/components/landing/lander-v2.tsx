@@ -205,8 +205,11 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
           {/* Nav */}
           <nav className="v2-nav">
             {campaign.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 46, width: "auto", maxWidth: 190, objectFit: "contain", borderRadius: 12 }} />
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 11 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 44, width: "auto", maxWidth: 150, objectFit: "contain", borderRadius: 12 }} />
+                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>{campaign.name}</span>
+              </span>
             ) : (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                 <span style={{ width: 32, height: 32, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DISPLAY, fontWeight: 700, fontSize: 17, color: "#05070c", background: `linear-gradient(180deg, color-mix(in oklch, ${acc} 92%, white), ${acc})` }}>{(campaign.name.charAt(0) || "F").toUpperCase()}</span>

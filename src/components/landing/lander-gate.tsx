@@ -17,6 +17,9 @@ export function LanderGate({
   headlineHighlight,
   headlineB,
   swipe,
+  variant = "classic",
+  logoUrl,
+  brand,
 }: {
   children: React.ReactNode;
   primary: string;
@@ -25,7 +28,13 @@ export function LanderGate({
   headlineHighlight: string;
   headlineB: string;
   swipe: string;
+  variant?: "classic" | "v2";
+  logoUrl?: string | null;
+  brand?: string;
 }) {
+  const isV2 = variant === "v2";
+  const gateBg = isV2 ? "#07080c" : bg;
+  const headFont = isV2 ? "'Space Grotesk', system-ui, sans-serif" : "'Inter', system-ui, -apple-system, sans-serif";
   const [revealed, setRevealed] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const leavingRef = useRef(false);
@@ -99,12 +108,22 @@ export function LanderGate({
         padding: "0 24px",
         textAlign: "center",
         cursor: "pointer",
-        background: bg,
+        background: isV2
+          ? `radial-gradient(90% 55% at 50% 12%, color-mix(in oklch, ${primary} 26%, transparent), transparent 62%), ${gateBg}`
+          : gateBg,
         color: "#fff",
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         WebkitFontSmoothing: "antialiased",
       }}
     >
+      {isV2 && <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" />}
+      {isV2 && (
+        <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.5,
+          backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          maskImage: "radial-gradient(100% 70% at 50% 0%, #000 30%, transparent 75%)",
+          WebkitMaskImage: "radial-gradient(100% 70% at 50% 0%, #000 30%, transparent 75%)" }} />
+      )}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -150,12 +169,25 @@ export function LanderGate({
           filter: leaving ? "blur(6px)" : "blur(0)",
         }}
       >
+        {isV2 && (logoUrl || brand) && (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 26 }}>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={brand ?? ""} style={{ height: 34, width: "auto", maxWidth: 120, objectFit: "contain", borderRadius: 9 }} />
+            ) : (
+              <span style={{ width: 30, height: 30, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: headFont, fontWeight: 700, fontSize: 16, color: "#04140b", background: primary }}>{(brand?.charAt(0) ?? "F").toUpperCase()}</span>
+            )}
+            {brand && <span style={{ fontFamily: headFont, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em" }}>{brand}</span>}
+          </div>
+        )}
+
         <h1
           style={{
-            fontSize: 32,
-            fontWeight: 800,
-            lineHeight: 1.15,
-            letterSpacing: "-0.02em",
+            fontFamily: headFont,
+            fontSize: isV2 ? 34 : 32,
+            fontWeight: isV2 ? 700 : 800,
+            lineHeight: 1.12,
+            letterSpacing: "-0.03em",
             margin: 0,
             maxWidth: "16ch",
             textShadow: "0 2px 18px rgba(0,0,0,0.4)",

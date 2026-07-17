@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
+import { resolveTemplate } from "@/lib/landing-templates";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 import { resolveRedirect } from "@/server/redirect-resolver";
 
@@ -41,6 +42,9 @@ export default async function LandingPage({
 
   return (
     <LanderGate
+      variant={resolveTemplate(campaign.templateSlug) === "freecash-v2" ? "v2" : "classic"}
+      logoUrl={campaign.logoUrl}
+      brand={campaign.name}
       primary={campaign.colorPrimary}
       bg={campaign.colorBg}
       headlineA={t.gate.headlineA}

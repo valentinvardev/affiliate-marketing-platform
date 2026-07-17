@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { LanderByTemplate } from "@/components/landing/lander-switch";
+import { LanderGate } from "@/components/landing/lander-gate";
 import type { LanderCampaign } from "@/components/landing/lander";
-import type { LanderLocale } from "@/lib/lander-i18n";
+import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 import { LANDING_TEMPLATES } from "@/lib/landing-templates";
 
 const LOCALES: { code: LanderLocale; label: string }[] = [
@@ -42,6 +43,7 @@ function initFrom(key: string, fallback: string): string {
 export default function TemplatePreviewPage() {
   const [template, setTemplate] = useState(() => initFrom("t", "freecash-v2"));
   const [locale, setLocale] = useState<LanderLocale>(() => initFrom("locale", "sv") as LanderLocale);
+  const [showGate, setShowGate] = useState(false);
 
   const selectStyle: React.CSSProperties = {
     background: "#14161d", border: "1px solid rgba(255,255,255,0.16)", color: "#f4f6fb",
@@ -59,9 +61,24 @@ export default function TemplatePreviewPage() {
         <select value={locale} onChange={(e) => setLocale(e.target.value as LanderLocale)} style={selectStyle}>
           {LOCALES.map((l) => <option key={l.code} value={l.code} style={{ background: "#14161d" }}>{l.label}</option>)}
         </select>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#9aa3b2", cursor: "pointer", paddingRight: 4 }}>
+          <input type="checkbox" checked={showGate} onChange={(e) => setShowGate(e.target.checked)} /> Intro
+        </label>
       </div>
 
-      <LanderByTemplate campaign={sampleCampaign(locale)} templateSlug={template} localeOverride={locale} />
+      {(() => {
+        const camp = sampleCampaign(locale);
+        const g = getDict(locale).gate;
+        const content = <LanderByTemplate campaign={camp} templateSlug={template} localeOverride={locale} />;
+        if (!showGate) return content;
+        return (
+          <LanderGate key={template + locale} variant={template === "freecash-v2" ? "v2" : "classic"}
+            logoUrl={camp.logoUrl} brand={camp.name} primary={camp.colorPrimary} bg={camp.colorBg}
+            headlineA={g.headlineA} headlineHighlight={g.headlineHighlight} headlineB={g.headlineB} swipe={g.swipe}>
+            {content}
+          </LanderGate>
+        );
+      })()}
     </>
   );
 }
