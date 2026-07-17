@@ -6,9 +6,24 @@ import {
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { env } from "@/env";
 import { retrieveContext } from "@/lib/rag";
+import { fetchStats, type StatsRange } from "@/lib/taprain";
 
 const MODEL = "gemini-2.5-flash";
 const MAX_STEPS = 6;
+const RANGES: StatsRange[] = ["hour", "today", "yesterday", "7days", "30days"];
+
+// Misma ventana temporal que usa la página de Estadísticas.
+function windowFor(range: StatsRange): { from: Date; to: Date } {
+  const now = new Date();
+  const sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  switch (range) {
+    case "hour": return { from: new Date(now.getTime() - 3_600_000), to: now };
+    case "today": return { from: sod, to: now };
+    case "yesterday": return { from: new Date(sod.getTime() - 86_400_000), to: sod };
+    case "7days": return { from: new Date(sod.getTime() - 7 * 86_400_000), to: now };
+    case "30days": return { from: new Date(sod.getTime() - 30 * 86_400_000), to: now };
+  }
+}
 
 // Tipo estructural del caller SOLO con lo que usamos. No referencia appRouter a
 // propósito: hacerlo crea un ciclo de tipos que rompe la inferencia de todo `api`.
@@ -30,7 +45,7 @@ type Ref = { kind: "angle"; id: string; label: string };
 /* ── Declaración de herramientas (lo que el modelo puede pedir) ── */
 const TOOLS: { decl: FunctionDeclaration; adminOnly?: boolean }[] = [
   { decl: { name: "get_finances", description: "Revenue, costo de VCC, costo de suite y profit (neto) del usuario. Un usuario normal ve solo lo suyo; un admin ve a todos. Todo el histórico.", parameters: { type: SchemaType.OBJECT, properties: {} } } },
-  { decl: { name: "get_period_stats", description: "Métricas de los últimos N días del usuario: revenue, conversiones, clicks, CVR y gasto logueado. Para preguntas tipo 'cuánto facturé/gasté esta semana'.", parameters: { type: SchemaType.OBJECT, properties: { days: { type: SchemaType.NUMBER, description: "Cantidad de días hacia atrás (ej. 7 = última semana)." } }, required: ["days"] } } },
+  { decl: { name: "get_period_stats", description: "Métricas del período (revenue, conversiones, clicks, EPC), IGUAL que la página de Estadísticas. Para admin usa el resumen de TapRain (cuenta completa); para usuarios, sus campañas (datos locales). Usalo para 'cuánto facturé/cliquearon hoy/ayer/esta semana'.", parameters: { type: SchemaType.OBJECT, properties: { range: { type: SchemaType.STRING, description: "Uno de: hour, today, yesterday, 7days (semana), 30days (mes)." } }, required: ["range"] } } },
   { decl: { name: "get_stats_by_campaign", description: "Desglose por campaña (clicks, conversiones, revenue) y por país (solo conversiones — los clicks NO tienen país guardado). Para 'de qué campaña/ubicación vienen los clicks o las conversiones'. days=0 = histórico completo.", parameters: { type: SchemaType.OBJECT, properties: { days: { type: SchemaType.NUMBER, description: "Días hacia atrás; 0 = histórico." } } } } },
   { decl: { name: "list_campaigns", description: "Lista de campañas del usuario (admin: todas), con estado.", parameters: { type: SchemaType.OBJECT, properties: {} } } },
   { decl: { name: "get_vccs", description: "Estado de las tarjetas virtuales (VCCs) del usuario: activas, gasto, límites.", parameters: { type: SchemaType.OBJECT, properties: {} } } },
@@ -61,20 +76,27 @@ async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx
       return { data: rows };
     }
     case "get_period_stats": {
-      const days = Math.max(1, Math.min(365, Number(args.days) || 7));
+      const range: StatsRange = RANGES.includes(args.range as StatsRange) ? (args.range as StatsRange) : "7days";
       const isAdmin = ctx.session.user.role === "admin";
+      // Admin: mismo origen que la página de Estadísticas → resumen de TapRain (cuenta completa).
+      if (isAdmin) {
+        try {
+          const s = (await fetchStats(range)).summary;
+          return { data: { range, source: "TapRain (cuenta completa, igual que Estadísticas)", revenue: s.revenue, conversions: s.conversions ?? null, clicks: s.clicks ?? null, epc: s.epc ?? null } };
+        } catch { /* si TapRain falla, caemos a datos locales */ }
+      }
+      // Usuario (o fallback de admin): datos locales. Admin → global; usuario → sus campañas.
       const me = ctx.session.user.id;
-      const campaigns = await ctx.db.campaign.findMany({ where: isAdmin ? {} : { ownerId: me }, select: { slug: true } });
-      const slugs = campaigns.map((c) => c.slug).filter(Boolean) as string[];
-      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const [convs, clickRows, spend] = await Promise.all([
-        ctx.db.conversion.findMany({ where: { s1: { in: slugs }, receivedAt: { gte: cutoff } }, select: { price: true } }),
-        ctx.db.click.findMany({ where: { s1: { in: slugs }, createdAt: { gte: cutoff } }, select: { ip: true }, distinct: ["ip"] }),
-        ctx.db.spendLog.aggregate({ where: { ...(isAdmin ? {} : { userId: me }), createdAt: { gte: cutoff } }, _sum: { amount: true } }),
+      const slugs: string[] | null = isAdmin ? null : (await ctx.db.campaign.findMany({ where: { ownerId: me }, select: { slug: true } })).map((c) => c.slug).filter(Boolean) as string[];
+      const scope = slugs === null ? {} : { s1: { in: slugs.length ? slugs : ["__no-match__"] } };
+      const { from, to } = windowFor(range);
+      const [convs, clickRows] = await Promise.all([
+        ctx.db.conversion.findMany({ where: { ...scope, receivedAt: { gte: from, lte: to } }, select: { price: true } }),
+        ctx.db.click.findMany({ where: { ...scope, createdAt: { gte: from, lte: to } }, select: { ip: true }, distinct: ["ip"] }),
       ]);
       const revenue = convs.reduce((s, x) => s + x.price, 0);
-      const clicks = clickRows.length; // visitantes únicos (por IP), no hits crudos
-      return { data: { days, revenue, conversions: convs.length, clicks, clicks_note: "clicks = visitantes únicos por IP", cvr: clicks ? (convs.length / clicks) * 100 : 0, loggedSpend: spend._sum.amount ?? 0 } };
+      const clicks = clickRows.length;
+      return { data: { range, source: "local (tus campañas)", revenue, conversions: convs.length, clicks, clicks_note: "clicks = visitantes únicos por IP", epc: clicks ? revenue / clicks : 0 } };
     }
     case "get_stats_by_campaign": {
       const days = Math.max(0, Math.min(365, Number(args.days) || 0));
