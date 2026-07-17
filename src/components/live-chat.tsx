@@ -30,6 +30,27 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
 }
 
+const IA_BOT_ID = "ia-bot";
+
+// Blip corto al enviar (Web Audio, sin assets).
+let ac: AudioContext | null = null;
+function playSendBlip() {
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    ac ??= new AC();
+    if (ac.state === "suspended") void ac.resume();
+    const o = ac.createOscillator(); const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = "sine";
+    o.frequency.setValueAtTime(680, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(920, ac.currentTime + 0.07);
+    g.gain.setValueAtTime(0.05, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.16);
+    o.start(); o.stop(ac.currentTime + 0.18);
+  } catch { /* silencio si no hay audio */ }
+}
+
 export function LiveChatProvider() {
   const { data: session } = useSession();
   const me       = session?.user?.id ?? "";
@@ -95,6 +116,7 @@ export function LiveChatProvider() {
     const text = input.trim();
     if (!text || !me) return;
     setInput("");
+    playSendBlip();
     sendMut.mutate(
       { userId: me, username: myName, text },
       { onSuccess: (row) => merge([toMsg(row)]) },
@@ -194,6 +216,7 @@ export function LiveChatProvider() {
 
           {msgs.map((m) => {
             const mine = m.userId === me;
+            const isIa = m.userId === IA_BOT_ID;
             return (
               <div
                 key={m.id}
@@ -201,11 +224,12 @@ export function LiveChatProvider() {
                   display:       "flex",
                   flexDirection: "column",
                   alignItems:    mine ? "flex-end" : "flex-start",
+                  animation:     "chatMsgIn 0.28s ease both",
                 }}
               >
                 {!mine && (
-                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--color-muted-foreground)", marginBottom: 3, paddingLeft: 4 }}>
-                    {m.username}
+                  <span style={{ fontSize: 10, fontWeight: 600, color: isIa ? "var(--color-accent)" : "var(--color-muted-foreground)", marginBottom: 3, paddingLeft: 4 }}>
+                    {isIa ? "🤖 IA" : m.username}
                   </span>
                 )}
                 <div
@@ -219,6 +243,7 @@ export function LiveChatProvider() {
                     wordBreak:    "break-word",
                     background:   mine ? "var(--color-foreground)" : "var(--color-surface-overlay)",
                     color:        mine ? "var(--color-background)" : "var(--color-foreground)",
+                    border:       isIa ? "1px solid var(--color-accent)" : undefined,
                   }}
                 >
                   {m.text}
