@@ -297,7 +297,22 @@ model AngleMedia {
   @@index([angleId])
 }
 
-// Guardado de listas de comentarios generados para un ángulo (ej. para usar en boosts)
+// RAG: fragmentos de conocimiento embebidos (pgvector). La columna `embedding` es
+// vector(768) y se lee/escribe por SQL crudo; el resto se maneja con Prisma.
+// La tabla + índice HNSW se crean por script (no por `db push`).
+model KnowledgeChunk {
+  id          String                      @id @default(cuid())
+  source      String // notes | platform-docs | angle-kb | faq | ...
+  kind        String                      @default("manual") // manual | auto
+  content     String
+  embedding   Unsupported("vector(768)")?
+  metadata    Json?
+  createdById String?
+  createdAt   DateTime                    @default(now())
+
+  @@index([source])
+}
+
 // ─── Proxies ISP/DC (comprados en IPRoyal, dispensados a los usuarios) ───
 model Proxy {
   id         String    @id @default(cuid())
