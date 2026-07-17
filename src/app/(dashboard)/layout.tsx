@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ConversionToastProvider } from "@/components/conversion-toast";
 import { BalanceBar } from "@/components/balance-bar";
 import { SpendLimitBar } from "@/components/spend-limit-bar";
+import { AssistantWidget } from "@/components/assistant-widget";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </div>
       <ConversionToastProvider />
+      <AssistantWidget />
     </div>
   );
 }
