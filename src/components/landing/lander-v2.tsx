@@ -60,13 +60,13 @@ function styles(acc: string) {
 /* Botones */
 .v2-cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-  font-family: ${DISPLAY}; font-weight: 600; font-size: 16px; letter-spacing: -0.01em;
-  padding: 15px 26px; border-radius: 13px; color: #05070c; border: none; cursor: pointer;
-  background: linear-gradient(180deg, color-mix(in oklch, var(--acc) 92%, white 8%), var(--acc));
-  box-shadow: 0 10px 30px -8px color-mix(in oklch, var(--acc) 70%, transparent), inset 0 1px 0 rgba(255,255,255,0.35);
+  font-family: ${DISPLAY}; font-weight: 700; font-size: 16px; letter-spacing: -0.01em;
+  padding: 15px 26px; border-radius: 13px; color: #04140b; border: none; cursor: pointer;
+  background: linear-gradient(180deg, var(--acc), color-mix(in oklch, var(--acc) 82%, black 18%));
+  box-shadow: 0 10px 30px -8px color-mix(in oklch, var(--acc) 65%, transparent), inset 0 1px 0 rgba(255,255,255,0.28);
   transition: transform .15s ease, box-shadow .15s ease;
 }
-.v2-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 40px -8px color-mix(in oklch, var(--acc) 80%, transparent), inset 0 1px 0 rgba(255,255,255,0.4); }
+.v2-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 42px -8px color-mix(in oklch, var(--acc) 78%, transparent), inset 0 1px 0 rgba(255,255,255,0.34); }
 .v2-ghost {
   display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px;
   padding: 11px 18px; border-radius: 11px; color: var(--fg);
@@ -206,7 +206,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
           <nav className="v2-nav">
             {campaign.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 32, width: "auto", objectFit: "contain" }} />
+              <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 46, width: "auto", maxWidth: 190, objectFit: "contain", borderRadius: 12 }} />
             ) : (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                 <span style={{ width: 32, height: 32, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DISPLAY, fontWeight: 700, fontSize: 17, color: "#05070c", background: `linear-gradient(180deg, color-mix(in oklch, ${acc} 92%, white), ${acc})` }}>{(campaign.name.charAt(0) || "F").toUpperCase()}</span>
