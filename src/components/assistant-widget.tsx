@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
-import { Bot, X, Send, Wrench, AlertTriangle, Sparkles } from "lucide-react";
+import { Bot, X, Send, Wrench, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 
 const AngleModal = dynamic(() => import("@/components/angles-manager").then((m) => m.AngleModal), { ssr: false });
 
@@ -14,6 +14,7 @@ type Msg = { id: string; role: "user" | "assistant"; content: string; toolsUsed?
 const TOOL_LABELS: Record<string, string> = {
   get_finances: "finanzas",
   get_period_stats: "métricas del período",
+  get_stats_by_campaign: "desglose por campaña",
   list_campaigns: "campañas",
   get_vccs: "VCCs",
   search_knowledge: "base de conocimientos",
@@ -24,21 +25,63 @@ const TOOL_LABELS: Record<string, string> = {
 let msgId = 0;
 const nextId = () => `m${++msgId}`;
 
-/* Fade-in palabra por palabra */
-function AnimatedText({ text }: { text: string }) {
-  const parts = text.split(/(\s+)/);
-  let w = 0;
-  return (
-    <>
-      {parts.map((p, i) => {
-        if (p === "" || /^\s+$/.test(p)) return p;
-        const delay = Math.min(w++ * 22, 1400);
-        return (
-          <span key={i} style={{ display: "inline-block", opacity: 0, animation: "aiWord 0.26s ease forwards", animationDelay: `${delay}ms` }}>{p}</span>
-        );
-      })}
-    </>
-  );
+/* Inline: **negrita** + fade palabra por palabra (contador compartido para el stagger) */
+function renderInline(text: string, ctr: { n: number }): ReactNode[] {
+  const out: ReactNode[] = [];
+  const re = /\*\*(.+?)\*\*/g;
+  let last = 0; let key = 0; let m: RegExpExecArray | null;
+  const pushWords = (str: string, bold: boolean) => {
+    for (const p of str.split(/(\s+)/)) {
+      if (p === "") continue;
+      if (/^\s+$/.test(p)) { out.push(<span key={key++}>{p}</span>); continue; }
+      const delay = Math.min(ctr.n++ * 20, 1400);
+      const span = <span key={key++} style={{ display: "inline-block", opacity: 0, animation: "aiWord 0.26s ease forwards", animationDelay: `${delay}ms`, fontWeight: bold ? 700 : undefined }}>{p}</span>;
+      out.push(span);
+    }
+  };
+  while ((m = re.exec(text))) {
+    if (m.index > last) pushWords(text.slice(last, m.index), false);
+    pushWords(m[1] ?? "", true);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) pushWords(text.slice(last), false);
+  return out;
+}
+
+/* Markdown liviano: párrafos, viñetas y listas numeradas + negrita inline */
+function Markdown({ text }: { text: string }) {
+  const ctr = { n: 0 };
+  const lines = text.replace(/\r/g, "").split("\n");
+  const blocks: ReactNode[] = [];
+  let i = 0; let key = 0;
+  while (i < lines.length) {
+    const line = lines[i] ?? "";
+    if (/^\s*[*\-•]\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*[*\-•]\s+/.test(lines[i] ?? "")) { items.push((lines[i] ?? "").replace(/^\s*[*\-•]\s+/, "")); i++; }
+      blocks.push(
+        <ul key={key++} style={{ margin: "4px 0", padding: 0, listStyle: "none" }}>
+          {items.map((it, idx) => (
+            <li key={idx} style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+              <span style={{ color: "var(--color-muted-foreground)" }}>•</span>
+              <span>{renderInline(it, ctr)}</span>
+            </li>
+          ))}
+        </ul>,
+      );
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i] ?? "")) { items.push((lines[i] ?? "").replace(/^\s*\d+\.\s+/, "")); i++; }
+      blocks.push(<ol key={key++} style={{ margin: "4px 0", paddingLeft: 18 }}>{items.map((it, idx) => <li key={idx} style={{ marginBottom: 2 }}>{renderInline(it, ctr)}</li>)}</ol>);
+      continue;
+    }
+    if (line.trim() === "") { blocks.push(<div key={key++} style={{ height: 6 }} />); i++; continue; }
+    blocks.push(<p key={key++} style={{ margin: 0 }}>{renderInline(line, ctr)}</p>);
+    i++;
+  }
+  return <>{blocks}</>;
 }
 
 /* Indicador de "pensando" (shimmer + dots, cicla frases para esperas largas) */
@@ -63,6 +106,7 @@ function Thinking() {
 
 export function AssistantWidget() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false); // sigue montado durante la animación de cierre
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [openAngleId, setOpenAngleId] = useState<string | null>(null);
@@ -103,16 +147,17 @@ export function AssistantWidget() {
   return (
     <>
       {!open && (
-        <button type="button" onClick={() => setOpen(true)} title="Asistente"
+        <button type="button" onClick={() => { setMounted(true); setOpen(true); }} title="Asistente"
           className="fixed bottom-5 right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105"
-          style={{ background: "var(--color-foreground)", color: "var(--color-background)", boxShadow: "0 8px 30px rgba(0,0,0,0.5)" }}>
+          style={{ background: "var(--color-foreground)", color: "var(--color-background)", boxShadow: "0 8px 30px rgba(0,0,0,0.5)", animation: "aiPop 0.2s ease" }}>
           <Bot className="h-5 w-5" />
         </button>
       )}
 
-      {open && (
+      {mounted && (
         <div className="fixed bottom-5 right-5 z-[70] flex w-[calc(100vw-2.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl sm:w-[380px]"
-          style={{ height: "min(600px, calc(100vh - 2.5rem))", background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.7)" }}>
+          onAnimationEnd={() => { if (!open) setMounted(false); }}
+          style={{ height: "min(600px, calc(100vh - 2.5rem))", background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.7)", transformOrigin: "bottom right", animation: open ? "aiPanelIn 0.2s ease forwards" : "aiPanelOut 0.16s ease forwards" }}>
           <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
             <Bot className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Asistente</p>
@@ -131,8 +176,8 @@ export function AssistantWidget() {
                 <div className="max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
                   style={m.role === "user"
                     ? { background: "var(--color-foreground)", color: "var(--color-background)", whiteSpace: "pre-wrap" }
-                    : { background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)", whiteSpace: "pre-wrap" }}>
-                  {m.role === "assistant" ? <AnimatedText text={m.content} /> : m.content}
+                    : { background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)" }}>
+                  {m.role === "assistant" ? <Markdown text={m.content} /> : m.content}
 
                   {m.role === "assistant" && m.toolsUsed && m.toolsUsed.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
@@ -144,13 +189,16 @@ export function AssistantWidget() {
                     </div>
                   )}
 
-                  {m.role === "assistant" && m.refs && m.refs.map((r) => (
-                    <button key={r.id} type="button" onClick={() => setOpenAngleId(r.id)}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-90"
-                      style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
-                      <Sparkles className="h-3 w-3" /> Ver {r.label}
-                    </button>
-                  ))}
+                  {m.role === "assistant" && m.refs && m.refs.map((r) => {
+                    const opening = openAngleId === r.id && angleQ.isLoading;
+                    return (
+                      <button key={r.id} type="button" disabled={opening} onClick={() => setOpenAngleId(r.id)}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-80"
+                        style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+                        {opening ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} {opening ? "Abriendo…" : `Ver ${r.label}`}
+                      </button>
+                    );
+                  })}
 
                   {m.role === "assistant" && m.pendingAction && (
                     <div className="mt-2 flex items-center gap-2 rounded-lg p-2" style={{ background: "var(--color-warning-bg)", border: "1px solid var(--color-border)" }}>

@@ -17,7 +17,15 @@ export async function GET(req: NextRequest) {
 
   if (s1) {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
-    try { await db.click.create({ data: { s1, ip } }); } catch { /* best-effort */ }
+    try {
+      // Dedupe: un mismo IP+campaña cuenta como 1 click dentro de una ventana
+      // (evita inflar por refresh, prefetch de navegadores in-app y re-clicks).
+      const DEDUP_MS = 6 * 60 * 60 * 1000; // 6 h
+      const recent = ip
+        ? await db.click.findFirst({ where: { s1, ip, createdAt: { gte: new Date(Date.now() - DEDUP_MS) } }, select: { id: true } })
+        : null;
+      if (!recent) await db.click.create({ data: { s1, ip } });
+    } catch { /* best-effort */ }
   }
 
   return NextResponse.redirect(dest, 302);

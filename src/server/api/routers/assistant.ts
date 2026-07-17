@@ -31,6 +31,7 @@ type Ref = { kind: "angle"; id: string; label: string };
 const TOOLS: { decl: FunctionDeclaration; adminOnly?: boolean }[] = [
   { decl: { name: "get_finances", description: "Revenue, costo de VCC, costo de suite y profit (neto) del usuario. Un usuario normal ve solo lo suyo; un admin ve a todos. Todo el histórico.", parameters: { type: SchemaType.OBJECT, properties: {} } } },
   { decl: { name: "get_period_stats", description: "Métricas de los últimos N días del usuario: revenue, conversiones, clicks, CVR y gasto logueado. Para preguntas tipo 'cuánto facturé/gasté esta semana'.", parameters: { type: SchemaType.OBJECT, properties: { days: { type: SchemaType.NUMBER, description: "Cantidad de días hacia atrás (ej. 7 = última semana)." } }, required: ["days"] } } },
+  { decl: { name: "get_stats_by_campaign", description: "Desglose por campaña (clicks, conversiones, revenue) y por país (solo conversiones — los clicks NO tienen país guardado). Para 'de qué campaña/ubicación vienen los clicks o las conversiones'. days=0 = histórico completo.", parameters: { type: SchemaType.OBJECT, properties: { days: { type: SchemaType.NUMBER, description: "Días hacia atrás; 0 = histórico." } } } } },
   { decl: { name: "list_campaigns", description: "Lista de campañas del usuario (admin: todas), con estado.", parameters: { type: SchemaType.OBJECT, properties: {} } } },
   { decl: { name: "get_vccs", description: "Estado de las tarjetas virtuales (VCCs) del usuario: activas, gasto, límites.", parameters: { type: SchemaType.OBJECT, properties: {} } } },
   { decl: { name: "search_knowledge", description: "Busca en la base de conocimientos de la plataforma (docs, estrategia, KB de ángulos, FAQ) por significado.", parameters: { type: SchemaType.OBJECT, properties: { query: { type: SchemaType.STRING, description: "Qué buscar." } }, required: ["query"] } } },
@@ -66,13 +67,40 @@ async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx
       const campaigns = await ctx.db.campaign.findMany({ where: isAdmin ? {} : { ownerId: me }, select: { slug: true } });
       const slugs = campaigns.map((c) => c.slug).filter(Boolean) as string[];
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const [convs, clicks, spend] = await Promise.all([
+      const [convs, clickRows, spend] = await Promise.all([
         ctx.db.conversion.findMany({ where: { s1: { in: slugs }, receivedAt: { gte: cutoff } }, select: { price: true } }),
-        ctx.db.click.count({ where: { s1: { in: slugs }, createdAt: { gte: cutoff } } }),
+        ctx.db.click.findMany({ where: { s1: { in: slugs }, createdAt: { gte: cutoff } }, select: { ip: true }, distinct: ["ip"] }),
         ctx.db.spendLog.aggregate({ where: { ...(isAdmin ? {} : { userId: me }), createdAt: { gte: cutoff } }, _sum: { amount: true } }),
       ]);
       const revenue = convs.reduce((s, x) => s + x.price, 0);
-      return { data: { days, revenue, conversions: convs.length, clicks, cvr: clicks ? (convs.length / clicks) * 100 : 0, loggedSpend: spend._sum.amount ?? 0 } };
+      const clicks = clickRows.length; // visitantes únicos (por IP), no hits crudos
+      return { data: { days, revenue, conversions: convs.length, clicks, clicks_note: "clicks = visitantes únicos por IP", cvr: clicks ? (convs.length / clicks) * 100 : 0, loggedSpend: spend._sum.amount ?? 0 } };
+    }
+    case "get_stats_by_campaign": {
+      const days = Math.max(0, Math.min(365, Number(args.days) || 0));
+      const isAdmin = ctx.session.user.role === "admin";
+      const me = ctx.session.user.id;
+      const campaigns = await ctx.db.campaign.findMany({ where: isAdmin ? {} : { ownerId: me }, select: { name: true, slug: true } });
+      const slugs = campaigns.map((c) => c.slug).filter(Boolean) as string[];
+      const since = days > 0 ? new Date(Date.now() - days * 86400000) : null;
+      const [convs, clickRows] = await Promise.all([
+        ctx.db.conversion.findMany({ where: { s1: { in: slugs }, ...(since ? { receivedAt: { gte: since } } : {}) }, select: { s1: true, price: true, country: true } }),
+        ctx.db.click.findMany({ where: { s1: { in: slugs }, ...(since ? { createdAt: { gte: since } } : {}) }, select: { s1: true, ip: true }, distinct: ["s1", "ip"] }),
+      ]);
+      const clicksBySlug = new Map<string, number>(); // clicks = visitantes únicos por IP
+      for (const r of clickRows) clicksBySlug.set(r.s1, (clicksBySlug.get(r.s1) ?? 0) + 1);
+      const byCampaign = campaigns.map((c) => {
+        const cConvs = convs.filter((x) => x.s1 === c.slug);
+        return { campaign: c.name, clicks: clicksBySlug.get(c.slug ?? "") ?? 0, conversions: cConvs.length, revenue: cConvs.reduce((s, x) => s + x.price, 0) };
+      }).filter((r) => r.clicks || r.conversions);
+      const countryMap = new Map<string, { conversions: number; revenue: number }>();
+      for (const c of convs) {
+        const k = c.country ?? "desconocido";
+        const e = countryMap.get(k) ?? { conversions: 0, revenue: 0 };
+        e.conversions++; e.revenue += c.price; countryMap.set(k, e);
+      }
+      const byCountry = [...countryMap.entries()].map(([country, v]) => ({ country, ...v })).sort((a, b) => b.conversions - a.conversions);
+      return { data: { period: days > 0 ? `últimos ${days} días` : "histórico", byCampaign, byCountry } };
     }
     case "list_campaigns": {
       const list = await caller.campaign.list({});
