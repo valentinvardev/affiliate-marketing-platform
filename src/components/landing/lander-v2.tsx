@@ -169,6 +169,20 @@ function styles(acc: string) {
 `;
 }
 
+function hueFromName(name: string): number {
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return h;
+}
+/** Tile tipo app-icon generado (fallback cuando el juego no tiene logo). */
+function GameTile({ name, size }: { name: string; size: number }) {
+  const h = hueFromName(name || "?");
+  return (
+    <div style={{ width: size, height: size, borderRadius: size * 0.26, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DISPLAY, fontWeight: 700, fontSize: size * 0.42, color: "#fff", background: `linear-gradient(140deg, hsl(${h} 78% 56%), hsl(${(h + 45) % 360} 74% 44%))`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)", border: "1px solid rgba(255,255,255,0.14)" }}>
+      {(name.charAt(0) || "•").toUpperCase()}
+    </div>
+  );
+}
+
 export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaign; localeOverride?: LanderLocale }) {
   const locale = localeOverride ?? (campaign.locale as LanderLocale) ?? "sv";
   const t = getDict(locale);
@@ -192,9 +206,12 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
           <nav className="v2-nav">
             {campaign.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 30, width: "auto", objectFit: "contain" }} />
+              <img src={campaign.logoUrl} alt={campaign.name} style={{ height: 32, width: "auto", objectFit: "contain" }} />
             ) : (
-              <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em" }}>{campaign.name}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                <span style={{ width: 32, height: 32, borderRadius: 9, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DISPLAY, fontWeight: 700, fontSize: 17, color: "#05070c", background: `linear-gradient(180deg, color-mix(in oklch, ${acc} 92%, white), ${acc})` }}>{(campaign.name.charAt(0) || "F").toUpperCase()}</span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em" }}>{campaign.name}</span>
+              </span>
             )}
             <a href={ctaHref} className="v2-ghost" style={{ marginLeft: "auto" }}>
               <Download style={{ width: 15, height: 15 }} /> {t.hero.cta}
@@ -269,9 +286,11 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
             <div className="v2-offers">
               {offers.map((o) => (
                 <a key={o.id} href={ctaHref} className="v2-card v2-offer">
-                  {o.imageUrl && (
+                  {o.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={o.imageUrl} alt={o.name} className="v2-offer-img" />
+                  ) : (
+                    <div style={{ margin: "4px auto 12px", width: 62, height: 62 }}><GameTile name={o.name} size={62} /></div>
                   )}
                   <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{o.name}</div>
                   <div style={{ fontSize: 11.5, color: "var(--subtle)", marginBottom: 8 }}>{t.popular.upTo}</div>
