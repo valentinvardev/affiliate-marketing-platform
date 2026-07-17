@@ -110,15 +110,37 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [openAngleId, setOpenAngleId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches);
+  const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const send = api.assistant.send.useMutation();
   const runAction = api.assistant.runAction.useMutation();
   const angleQ = api.angles.get.useQuery({ id: openAngleId ?? "" }, { enabled: !!openAngleId });
 
+  // Mobile vs desktop
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const onMq = () => setIsMobile(mq.matches);
+    onMq();
+    mq.addEventListener("change", onMq);
+    return () => mq.removeEventListener("change", onMq);
+  }, []);
+
+  // Seguir el viewport visible: al abrir/cerrar el teclado el panel se ajusta al área visible.
+  useEffect(() => {
+    const vvp = window.visualViewport;
+    if (!vvp) return;
+    const update = () => setVv({ height: vvp.height, offsetTop: vvp.offsetTop });
+    update();
+    vvp.addEventListener("resize", update);
+    vvp.addEventListener("scroll", update);
+    return () => { vvp.removeEventListener("resize", update); vvp.removeEventListener("scroll", update); };
+  }, [open]);
+
   useEffect(() => {
     if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [msgs, open, send.isPending]);
+  }, [msgs, open, send.isPending, vv]);
 
   async function onSend() {
     const text = input.trim();
@@ -155,9 +177,17 @@ export function AssistantWidget() {
       )}
 
       {mounted && (
-        <div className="fixed bottom-5 right-5 z-[70] flex w-[calc(100vw-2.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl sm:w-[380px]"
+        <div className="fixed z-[70] flex flex-col overflow-hidden"
           onAnimationEnd={() => { if (!open) setMounted(false); }}
-          style={{ height: "min(600px, calc(100vh - 2.5rem))", background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.7)", transformOrigin: "bottom right", animation: open ? "aiPanelIn 0.2s ease forwards" : "aiPanelOut 0.16s ease forwards" }}>
+          style={{
+            ...(isMobile
+              ? { left: 0, top: vv?.offsetTop ?? 0, width: "100vw", height: vv ? `${vv.height}px` : "100dvh", borderRadius: 0, border: "none" }
+              : { right: 20, bottom: 20, width: "min(380px, calc(100vw - 2.5rem))", height: "min(600px, calc(100vh - 2.5rem))", borderRadius: 16, border: "1px solid var(--color-border)" }),
+            background: "var(--color-surface-raised)",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.7)",
+            transformOrigin: isMobile ? "center bottom" : "bottom right",
+            animation: open ? "aiPanelIn 0.2s ease forwards" : "aiPanelOut 0.16s ease forwards",
+          }}>
           <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
             <Bot className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Asistente</p>
