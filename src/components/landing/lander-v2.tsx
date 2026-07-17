@@ -5,6 +5,7 @@ import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 import { googleFontsHref } from "@/lib/fonts";
 import { formatMoneyFromUsd } from "@/lib/currencies";
 import type { LanderCampaign } from "@/components/landing/lander";
+import { V2Reveal } from "@/components/landing/v2-reveal";
 
 /* FreeCash v2 — vibe fintech/SaaS: fondo oscuro premium, tipografía Space Grotesk + Inter,
    layout serio y optimizado a conversión. El color de acento sale de la campaña. */
@@ -288,7 +289,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
             <h2 className="v2-h2" style={{ marginTop: 14 }}>{t.popular.titleA}<span className="v2-accent">{t.popular.titleHighlight}</span></h2>
             <div className="v2-offers">
               {offers.map((o) => (
-                <a key={o.id} href={ctaHref} className="v2-card v2-offer">
+                <a key={o.id} href={ctaHref} className="v2-card v2-offer" data-reveal>
                   {o.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={o.imageUrl} alt={o.name} className="v2-offer-img" />
@@ -313,7 +314,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
           <p className="v2-lead">{t.hero.subtitle}.</p>
           <div className="v2-steps">
             {t.features.map((f, i) => (
-              <div key={i} className="v2-card v2-step">
+              <div key={i} className="v2-card v2-step" data-reveal>
                 <div className="v2-num">{i + 1}</div>
                 <h3 style={{ fontSize: 17, fontWeight: 600, marginTop: 16 }}>{f.title}</h3>
                 <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6, lineHeight: 1.5 }}>{f.body}</p>
@@ -324,7 +325,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
 
         {/* Stats band */}
         <section className="v2-sec" style={{ paddingTop: 0 }}><div className="v2-wrap">
-          <div className="v2-stats">
+          <div className="v2-stats" data-reveal>
             <div className="v2-stat"><b className="v2-accent">1.4M+</b><span style={{ color: "var(--muted)", fontSize: 14 }}>{locale === "sv" ? "spelare" : locale === "fr" ? "joueurs" : "players"}</span></div>
             <div className="v2-stat"><b>251k+</b><span style={{ color: "var(--muted)", fontSize: 14 }}>{locale === "sv" ? "recensioner" : locale === "fr" ? "avis" : "reviews"}</span></div>
             <div className="v2-stat"><b style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><TrendingUp style={{ width: 26, height: 26, color: acc }} /> {"< 24h"}</b><span style={{ color: "var(--muted)", fontSize: 14 }}>{t.features[3]?.title}</span></div>
@@ -337,7 +338,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
           <h2 className="v2-h2" style={{ marginTop: 14 }}>{t.testimonialsBlock.titleA}<span className="v2-accent">{t.testimonialsBlock.titleHighlight}</span>{t.testimonialsBlock.titleB}</h2>
           <div className="v2-tst">
             {t.testimonialsBlock.items.map((tm, i) => (
-              <div key={i} className="v2-card v2-tcard">
+              <div key={i} className="v2-card v2-tcard" data-reveal>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontFamily: DISPLAY, color: acc, background: `color-mix(in oklch, ${acc} 18%, transparent)`, border: `1px solid color-mix(in oklch, ${acc} 30%, transparent)` }}>{tm.name.charAt(0)}</div>
@@ -360,7 +361,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
         <section className="v2-sec" style={{ paddingTop: 0 }}><div className="v2-wrap" style={{ maxWidth: 780 }}>
           <span className="v2-eyebrow">{t.faq.eyebrow}</span>
           <h2 className="v2-h2" style={{ marginTop: 14, marginBottom: 26 }}>{t.faq.title}</h2>
-          <div className="v2-faq">
+          <div className="v2-faq" data-reveal>
             {t.faq.items.map((it, i) => (
               <details key={i} open={i === 0}>
                 <summary>{it.q}</summary>
@@ -372,7 +373,7 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
 
         {/* Final CTA */}
         <section className="v2-sec" style={{ paddingTop: 0 }}><div className="v2-wrap">
-          <div className="v2-final">
+          <div className="v2-final" data-reveal>
             <h2 className="v2-h2" style={{ fontSize: "clamp(26px,4vw,40px)" }}>{t.sticky.title}</h2>
             <p className="v2-lead" style={{ margin: "12px auto 24px" }}>{t.sticky.sub}</p>
             <a href={ctaHref} className="v2-cta">{t.hero.cta} <ArrowRight style={{ width: 18, height: 18 }} /></a>
@@ -397,6 +398,8 @@ export function LanderV2({ campaign, localeOverride }: { campaign: LanderCampaig
           </div>
           <span className="v2-cta" style={{ padding: "11px 18px", fontSize: 14 }}>{t.sticky.badge} <ArrowRight style={{ width: 16, height: 16 }} /></span>
         </a>
+
+        <V2Reveal />
       </div>
     </>
   );
