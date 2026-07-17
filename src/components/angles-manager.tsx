@@ -147,7 +147,7 @@ export function AnglesManager() {
 }
 
 /* ── Modal del ángulo ── */
-function AngleModal({ data, onClose }: { data: Loaded; onClose: () => void }) {
+export function AngleModal({ data, onClose }: { data: Loaded; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);

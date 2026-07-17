@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
-import { Bot, X, Send, Loader2, Wrench, AlertTriangle } from "lucide-react";
+import { Bot, X, Send, Wrench, AlertTriangle, Sparkles } from "lucide-react";
+
+const AngleModal = dynamic(() => import("@/components/angles-manager").then((m) => m.AngleModal), { ssr: false });
 
 type PendingAction = { type: "pause_vccs"; count: number } | null;
-type Msg = { role: "user" | "assistant"; content: string; toolsUsed?: string[]; pendingAction?: PendingAction };
+type Ref = { kind: "angle"; id: string; label: string };
+type Msg = { id: string; role: "user" | "assistant"; content: string; toolsUsed?: string[]; pendingAction?: PendingAction; refs?: Ref[] };
 
 const TOOL_LABELS: Record<string, string> = {
   get_finances: "finanzas",
@@ -17,14 +21,56 @@ const TOOL_LABELS: Record<string, string> = {
   generate_angles: "generar ángulos",
 };
 
+let msgId = 0;
+const nextId = () => `m${++msgId}`;
+
+/* Fade-in palabra por palabra */
+function AnimatedText({ text }: { text: string }) {
+  const parts = text.split(/(\s+)/);
+  let w = 0;
+  return (
+    <>
+      {parts.map((p, i) => {
+        if (p === "" || /^\s+$/.test(p)) return p;
+        const delay = Math.min(w++ * 22, 1400);
+        return (
+          <span key={i} style={{ display: "inline-block", opacity: 0, animation: "aiWord 0.26s ease forwards", animationDelay: `${delay}ms` }}>{p}</span>
+        );
+      })}
+    </>
+  );
+}
+
+/* Indicador de "pensando" (shimmer + dots, cicla frases para esperas largas) */
+function Thinking() {
+  const phrases = ["Pensando", "Trabajando", "Procesando", "Casi listo"];
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((x) => (x < phrases.length - 1 ? x + 1 : x)), 2600);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="inline-flex items-center gap-2 rounded-2xl px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+      <span className="ai-shimmer text-sm font-medium">{phrases[i]}…</span>
+      <span className="flex items-end gap-0.5">
+        {[0, 1, 2].map((d) => (
+          <span key={d} style={{ width: 5, height: 5, borderRadius: 99, background: "var(--color-muted-foreground)", animation: `aiDot 1s ease-in-out ${d * 0.15}s infinite` }} />
+        ))}
+      </span>
+    </div>
+  );
+}
+
 export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [openAngleId, setOpenAngleId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const send = api.assistant.send.useMutation();
   const runAction = api.assistant.runAction.useMutation();
+  const angleQ = api.angles.get.useQuery({ id: openAngleId ?? "" }, { enabled: !!openAngleId });
 
   useEffect(() => {
     if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -35,41 +81,38 @@ export function AssistantWidget() {
     if (!text || send.isPending) return;
     setInput("");
     const history = msgs.slice(-12).map((m) => ({ role: m.role, content: m.content }));
-    setMsgs((m) => [...m, { role: "user", content: text }]);
+    setMsgs((m) => [...m, { id: nextId(), role: "user", content: text }]);
     try {
       const res = await send.mutateAsync({ message: text, history });
-      setMsgs((m) => [...m, { role: "assistant", content: res.reply, toolsUsed: res.toolsUsed, pendingAction: res.pendingAction }]);
+      setMsgs((m) => [...m, { id: nextId(), role: "assistant", content: res.reply, toolsUsed: res.toolsUsed, pendingAction: res.pendingAction, refs: res.refs }]);
     } catch (e) {
-      setMsgs((m) => [...m, { role: "assistant", content: "Uy, algo falló: " + (e instanceof Error ? e.message : "error") }]);
+      setMsgs((m) => [...m, { id: nextId(), role: "assistant", content: "Uy, algo falló: " + (e instanceof Error ? e.message : "error") }]);
     }
   }
 
-  async function onConfirm(idx: number, action: NonNullable<PendingAction>) {
+  async function onConfirm(id: string, action: NonNullable<PendingAction>) {
     try {
       const r = await runAction.mutateAsync({ type: action.type });
-      setMsgs((m) => m.map((mm, i) => (i === idx ? { ...mm, pendingAction: null } : mm))
-        .concat([{ role: "assistant", content: `Listo — pausé ${r.paused} de ${r.total} VCCs.` }]));
+      setMsgs((m) => m.map((mm) => (mm.id === id ? { ...mm, pendingAction: null } : mm))
+        .concat([{ id: nextId(), role: "assistant", content: `Listo — pausé ${r.paused} de ${r.total} VCCs.` }]));
     } catch (e) {
-      setMsgs((m) => [...m, { role: "assistant", content: "No pude ejecutar la acción: " + (e instanceof Error ? e.message : "error") }]);
+      setMsgs((m) => [...m, { id: nextId(), role: "assistant", content: "No pude ejecutar la acción: " + (e instanceof Error ? e.message : "error") }]);
     }
   }
 
   return (
     <>
-      {/* Botón flotante */}
       {!open && (
         <button type="button" onClick={() => setOpen(true)} title="Asistente"
-          className="fixed bottom-5 right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105"
+          className="fixed bottom-5 right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105"
           style={{ background: "var(--color-foreground)", color: "var(--color-background)", boxShadow: "0 8px 30px rgba(0,0,0,0.5)" }}>
           <Bot className="h-5 w-5" />
         </button>
       )}
 
-      {/* Panel */}
       {open && (
         <div className="fixed bottom-5 right-5 z-[70] flex w-[calc(100vw-2.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl sm:w-[380px]"
           style={{ height: "min(600px, calc(100vh - 2.5rem))", background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.7)" }}>
-          {/* Header */}
           <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
             <Bot className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
             <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Asistente</p>
@@ -77,20 +120,20 @@ export function AssistantWidget() {
             <button type="button" onClick={() => setOpen(false)} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
           </div>
 
-          {/* Mensajes */}
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3">
             {msgs.length === 0 && (
               <div className="mt-6 px-2 text-center text-xs" style={{ color: "var(--color-subtle)" }}>
                 Preguntame por tus números (gasto, profit, clicks), pedime que busque algo, o una acción como pausar tus VCCs.
               </div>
             )}
-            {msgs.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+            {msgs.map((m) => (
+              <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div className="max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
                   style={m.role === "user"
                     ? { background: "var(--color-foreground)", color: "var(--color-background)", whiteSpace: "pre-wrap" }
                     : { background: "var(--color-surface-overlay)", color: "var(--color-foreground)", border: "1px solid var(--color-border)", whiteSpace: "pre-wrap" }}>
-                  {m.content}
+                  {m.role === "assistant" ? <AnimatedText text={m.content} /> : m.content}
+
                   {m.role === "assistant" && m.toolsUsed && m.toolsUsed.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {m.toolsUsed.map((t) => (
@@ -100,11 +143,20 @@ export function AssistantWidget() {
                       ))}
                     </div>
                   )}
+
+                  {m.role === "assistant" && m.refs && m.refs.map((r) => (
+                    <button key={r.id} type="button" onClick={() => setOpenAngleId(r.id)}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-90"
+                      style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
+                      <Sparkles className="h-3 w-3" /> Ver {r.label}
+                    </button>
+                  ))}
+
                   {m.role === "assistant" && m.pendingAction && (
                     <div className="mt-2 flex items-center gap-2 rounded-lg p-2" style={{ background: "var(--color-warning-bg)", border: "1px solid var(--color-border)" }}>
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-warning)" }} />
                       <span className="text-[11px]" style={{ color: "var(--color-foreground)" }}>Confirmá para pausar {m.pendingAction.count} VCC{m.pendingAction.count !== 1 ? "s" : ""}.</span>
-                      <button type="button" disabled={runAction.isPending} onClick={() => onConfirm(i, m.pendingAction!)}
+                      <button type="button" disabled={runAction.isPending} onClick={() => onConfirm(m.id, m.pendingAction!)}
                         className="ml-auto shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold disabled:opacity-50"
                         style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
                         {runAction.isPending ? "…" : "Confirmar"}
@@ -114,16 +166,9 @@ export function AssistantWidget() {
                 </div>
               </div>
             ))}
-            {send.isPending && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
-                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: "var(--color-muted-foreground)" }} />
-                </div>
-              </div>
-            )}
+            {send.isPending && <div className="flex justify-start"><Thinking /></div>}
           </div>
 
-          {/* Input */}
           <div className="flex shrink-0 items-end gap-2 p-3" style={{ borderTop: "1px solid var(--color-border)" }}>
             <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={1}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void onSend(); } }}
@@ -137,6 +182,14 @@ export function AssistantWidget() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Modal del ángulo (lazy) abierto desde el chat */}
+      {openAngleId && angleQ.data && (
+        <AngleModal
+          data={{ id: angleQ.data.id, country: angleQ.data.country, market: angleQ.data.market as never, angles: angleQ.data.angles as never }}
+          onClose={() => setOpenAngleId(null)}
+        />
       )}
     </>
   );

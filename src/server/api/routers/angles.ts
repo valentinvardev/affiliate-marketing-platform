@@ -41,6 +41,12 @@ export const anglesRouter = createTRPCRouter({
 
   remove: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => ctx.db.adAngle.delete({ where: { id: input.id } })),
 
+  get: adminProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const r = await ctx.db.adAngle.findUnique({ where: { id: input.id } });
+    if (!r) throw new TRPCError({ code: "NOT_FOUND", message: "Ángulo no encontrado." });
+    return { id: r.id, country: r.country, market: r.market, angles: r.angles };
+  }),
+
   /* ── Base de conocimientos ── */
   kbList: adminProcedure
     .input(z.object({ country: z.string().optional() }).optional())

@@ -25,6 +25,7 @@ type Caller = {
 };
 type Ctx = { db: typeof import("@/server/db").db; session: { user: { id: string; role: string; name?: string | null } } };
 type PendingAction = { type: "pause_vccs"; count: number };
+type Ref = { kind: "angle"; id: string; label: string };
 
 /* ── Declaración de herramientas (lo que el modelo puede pedir) ── */
 const TOOLS: { decl: FunctionDeclaration; adminOnly?: boolean }[] = [
@@ -52,7 +53,7 @@ Reglas:
 }
 
 /* ── Ejecución de herramientas (scopeada por el caller/procedures) ── */
-async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx, caller: Caller): Promise<{ data: unknown; pendingAction?: PendingAction }> {
+async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx, caller: Caller): Promise<{ data: unknown; pendingAction?: PendingAction; ref?: Ref }> {
   switch (name) {
     case "get_finances": {
       const rows = await caller.accounting.summary();
@@ -96,7 +97,10 @@ async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx
     case "generate_angles": {
       try {
         const r = await caller.angles.generate({ country: String(args.country ?? ""), guidance: args.guidance ? String(args.guidance) : undefined });
-        return { data: { ok: true, angleId: r.id, country: r.country, angles: r.angles?.map((a) => a.angle_name) } };
+        return {
+          data: { ok: true, angleId: r.id, country: r.country, angles: r.angles?.map((a) => a.angle_name) },
+          ref: { kind: "angle", id: r.id, label: `Ángulo · ${r.country}` },
+        };
       } catch {
         return { data: { error: "No se pudo generar (generate_angles es solo para admin)." } };
       }
@@ -135,6 +139,7 @@ export const assistantRouter = createTRPCRouter({
 
       const toolsUsed: string[] = [];
       let pendingAction: PendingAction | null = null;
+      const refs: Ref[] = [];
 
       let resp = await chat.sendMessage(input.message);
       for (let step = 0; step < MAX_STEPS; step++) {
@@ -143,8 +148,9 @@ export const assistantRouter = createTRPCRouter({
         const parts: Part[] = [];
         for (const call of calls) {
           toolsUsed.push(call.name);
-          const { data, pendingAction: pa } = await executeTool(call.name, (call.args ?? {}) as Record<string, unknown>, ctx as unknown as Ctx, caller);
+          const { data, pendingAction: pa, ref } = await executeTool(call.name, (call.args ?? {}) as Record<string, unknown>, ctx as unknown as Ctx, caller);
           if (pa) pendingAction = pa;
+          if (ref) refs.push(ref);
           parts.push({ functionResponse: { name: call.name, response: { result: data } } });
         }
         resp = await chat.sendMessage(parts);
@@ -154,7 +160,7 @@ export const assistantRouter = createTRPCRouter({
       try { reply = resp.response.text(); } catch { reply = ""; }
       if (!reply.trim()) reply = "No pude generar una respuesta. Probá reformular.";
 
-      return { reply, toolsUsed: [...new Set(toolsUsed)], pendingAction };
+      return { reply, toolsUsed: [...new Set(toolsUsed)], pendingAction, refs };
     }),
 
   // Ejecuta una acción destructiva previamente confirmada por el usuario.

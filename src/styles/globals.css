@@ -103,6 +103,17 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Asistente: "pensando" (shimmer + dots) y fade de palabras */
+@keyframes aiShimmer { to { background-position: -200% 0; } }
+@keyframes aiDot { 0%, 100% { transform: translateY(0); opacity: 0.35; } 50% { transform: translateY(-3px); opacity: 1; } }
+@keyframes aiWord { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.ai-shimmer {
+  background: linear-gradient(90deg, var(--color-subtle) 0%, var(--color-foreground) 50%, var(--color-subtle) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: aiShimmer 1.5s linear infinite;
+}
+
 /* TikTok Sans (variable 400–900) self-hosteada para el editor de creativos.
    Subsets latin + latin-ext (cubren ES/EN/FR/DE/PL/nórdicos). */
 @font-face {
