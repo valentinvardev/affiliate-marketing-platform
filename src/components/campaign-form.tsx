@@ -9,6 +9,7 @@ import { CURRENCIES } from "@/lib/currencies";
 import { LOCALES } from "@/lib/locales";
 import { slugify } from "@/lib/utils";
 import { LANDING_FONTS } from "@/lib/fonts";
+import { LANDING_TEMPLATES, resolveTemplate } from "@/lib/landing-templates";
 import {
   Loader2, Upload, Check, X, ExternalLink, Smartphone, ChevronDown,
   ImageIcon, Bookmark, Link as LinkIcon, Search, ArrowRight, Rocket, Tag,
@@ -451,6 +452,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
       logoUrl: values.logoUrl || null,
       currencySymbol: values.currencySymbol,
       currencyCode: values.currencyCode,
+      templateSlug: values.templateSlug,
       fontTitle: values.fontTitle || null,
       fontBody: values.fontBody || null,
       offers: previewOffers.map((o, i) => ({ id: String(i), name: o.name, imageUrl: o.imageUrl ?? null, tag: "1 hr", badge: o.badge, amount: o.amount, rating: 4.9, note: null })),
@@ -458,7 +460,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     const t = setTimeout(() => setPreviewUrl(`/landing-preview?c=${toB64Url(JSON.stringify(cfg))}`), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.name, values.locale, values.colorPrimary, values.colorBg, values.ctaUrl, values.logoUrl, values.currencySymbol, values.currencyCode, values.fontTitle, values.fontBody, offersKey]);
+  }, [values.name, values.locale, values.colorPrimary, values.colorBg, values.ctaUrl, values.logoUrl, values.currencySymbol, values.currencyCode, values.templateSlug, values.fontTitle, values.fontBody, offersKey]);
 
   return (
     <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>
@@ -722,6 +724,11 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                         options={[{ value: "", label: "Inter (default)" }, ...LANDING_FONTS.map((f) => ({ value: f, label: f }))]} />
                     </Field>
                   </div>
+                  {/* Plantilla de landing */}
+                  <Field label="Plantilla" hint="Diseño de la landing (previsualizá cada una en Admin → Plantillas)">
+                    <Dropdown value={resolveTemplate(values.templateSlug)} onChange={(v) => set("templateSlug", v)}
+                      options={LANDING_TEMPLATES.map((t) => ({ value: t.slug, label: t.name }))} />
+                  </Field>
                 </>
               )}
 

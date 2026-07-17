@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Lander } from "@/components/landing/lander";
+import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
 import { resolveRedirect } from "@/server/redirect-resolver";
@@ -58,7 +58,7 @@ export default async function LandingByHostPage() {
       headlineB={t.gate.headlineB}
       swipe={t.gate.swipe}
     >
-      <Lander campaign={campaign} />
+      <LanderByTemplate campaign={campaign} templateSlug={campaign.templateSlug} />
     </LanderGate>
   );
 }

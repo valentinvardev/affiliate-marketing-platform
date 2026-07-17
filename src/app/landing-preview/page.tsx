@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth";
 import { redirect } from "next/navigation";
-import { Lander, type LanderCampaign } from "@/components/landing/lander";
+import { type LanderCampaign } from "@/components/landing/lander";
+import { LanderByTemplate } from "@/components/landing/lander-switch";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,10 @@ export default async function LandingPreviewPage({
   if (!session?.user?.id) redirect("/login");
 
   const { c } = await searchParams;
-  let campaign: LanderCampaign | null = null;
+  let campaign: (LanderCampaign & { templateSlug?: string }) | null = null;
   if (c) {
     try {
-      campaign = JSON.parse(Buffer.from(c, "base64url").toString("utf8")) as LanderCampaign;
+      campaign = JSON.parse(Buffer.from(c, "base64url").toString("utf8")) as LanderCampaign & { templateSlug?: string };
     } catch { /* config inválida */ }
   }
 
@@ -34,5 +35,5 @@ export default async function LandingPreviewPage({
     );
   }
 
-  return <Lander campaign={campaign} />;
+  return <LanderByTemplate campaign={campaign} templateSlug={campaign.templateSlug} />;
 }
