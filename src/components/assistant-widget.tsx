@@ -138,6 +138,14 @@ export function AssistantWidget() {
     return () => { vvp.removeEventListener("resize", update); vvp.removeEventListener("scroll", update); };
   }, [open]);
 
+  // En mobile bloqueamos el scroll de la página de atrás mientras el chat está abierto.
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open, isMobile]);
+
   useEffect(() => {
     if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, open, send.isPending, vv]);
@@ -176,6 +184,12 @@ export function AssistantWidget() {
         </button>
       )}
 
+      {/* Capa opaca entre el chat y la página (mobile): tapa el hueco input↔teclado y evita ver la interfaz de atrás */}
+      {mounted && isMobile && (
+        <div className="fixed inset-0 z-[69]" onClick={() => setOpen(false)}
+          style={{ background: "var(--color-surface-raised)", touchAction: "none", animation: open ? "aiFade 0.2s ease" : undefined }} />
+      )}
+
       {mounted && (
         <div className="fixed z-[70] flex flex-col overflow-hidden"
           onAnimationEnd={() => { if (!open) setMounted(false); }}
@@ -195,7 +209,7 @@ export function AssistantWidget() {
             <button type="button" onClick={() => setOpen(false)} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3">
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3" style={{ overscrollBehavior: "contain", touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}>
             {msgs.length === 0 && (
               <div className="mt-6 px-2 text-center text-xs" style={{ color: "var(--color-subtle)" }}>
                 Preguntame por tus números (gasto, profit, clicks), pedime que busque algo, o una acción como pausar tus VCCs.

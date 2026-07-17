@@ -82,7 +82,18 @@ async function executeTool(name: string, args: Record<string, unknown>, ctx: Ctx
       if (isAdmin) {
         try {
           const s = (await fetchStats(range)).summary;
-          return { data: { range, source: "TapRain (cuenta completa, igual que Estadísticas)", revenue: s.revenue, conversions: s.conversions ?? null, clicks: s.clicks ?? null, epc: s.epc ?? null } };
+          // TapRain a veces trae revenue/clicks pero no conversions → completamos con local (igual que Estadísticas).
+          const { from, to } = windowFor(range);
+          const [convs, clickRows] = await Promise.all([
+            ctx.db.conversion.findMany({ where: { receivedAt: { gte: from, lte: to } }, select: { price: true } }),
+            ctx.db.click.findMany({ where: { createdAt: { gte: from, lte: to } }, select: { ip: true }, distinct: ["ip"] }),
+          ]);
+          const localRevenue = convs.reduce((a, c) => a + c.price, 0);
+          const revenue = s.revenue ?? localRevenue;
+          const conversions = s.conversions ?? convs.length;
+          const clicks = s.clicks ?? clickRows.length;
+          const epc = s.epc ?? (clicks ? revenue / clicks : null);
+          return { data: { range, source: "TapRain + local para lo que falte (igual que Estadísticas)", revenue, conversions, clicks, epc } };
         } catch { /* si TapRain falla, caemos a datos locales */ }
       }
       // Usuario (o fallback de admin): datos locales. Admin → global; usuario → sus campañas.
