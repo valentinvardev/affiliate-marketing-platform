@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { X, Send, MessageCircle } from "lucide-react";
+import { X, Send, MessageCircle, Bot } from "lucide-react";
 import { api } from "@/trpc/react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
@@ -228,8 +228,9 @@ export function LiveChatProvider() {
                 }}
               >
                 {!mine && (
-                  <span style={{ fontSize: 10, fontWeight: 600, color: isIa ? "var(--color-accent)" : "var(--color-muted-foreground)", marginBottom: 3, paddingLeft: 4 }}>
-                    {isIa ? "🤖 IA" : m.username}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: isIa ? "var(--color-accent)" : "var(--color-muted-foreground)", marginBottom: 3, paddingLeft: 4 }}>
+                    {isIa && <Bot style={{ width: 12, height: 12 }} />}
+                    {isIa ? "IA" : m.username}
                   </span>
                 )}
                 <div
