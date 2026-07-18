@@ -1,4 +1,4 @@
-export type LanderLocale = "sv" | "fr" | "en";
+export type LanderLocale = "sv" | "fr" | "en" | "de" | "nl" | "no" | "fi" | "pl" | "it";
 
 export type LanderDict = {
   htmlLang: string;
@@ -205,8 +205,719 @@ const en: LanderDict = {
   gate: { headlineA: "Ready to take your ", headlineHighlight: "gaming", headlineB: " to the next level?", swipe: "Swipe up to continue" },
 };
 
-const DICTS: Record<LanderLocale, LanderDict> = { sv, fr, en };
+const de: LanderDict = {
+  "htmlLang": "de-DE",
+  "meta": {
+    "title": "Mit Spielen Geld verdienen — bis zu 80 €/Woche",
+    "description": "Spiele die besten Games und mach aus jeder Minute echtes Geld. Sofortige Auszahlung per PayPal, Krypto oder Überweisung."
+  },
+  "hero": {
+    "titleA": "Verdiene Geld mit ",
+    "titleHighlight": "Games",
+    "subtitle": "Spiele deine Lieblingsspiele und verdiene dabei echtes Geld",
+    "cta": "Jetzt herunterladen",
+    "badges": [
+      "Kostenlos",
+      "Sofort-Auszahlung",
+      "Unbegrenzte Angebote"
+    ]
+  },
+  "popular": {
+    "eyebrow": "Beliebte Angebote",
+    "titleA": "Spielen & Angebote ",
+    "titleHighlight": "abschließen",
+    "perHour": "Pro gespielter Stunde",
+    "upTo": "Bis zu",
+    "cta": "Spielen & verdienen"
+  },
+  "features": [
+    {
+      "title": "Registrieren",
+      "body": "Erstelle dein Konto völlig kostenlos"
+    },
+    {
+      "title": "Angebot finden",
+      "body": "Angebote für jeden Geschmack"
+    },
+    {
+      "title": "Abschließen",
+      "body": "Jeder Abschluss bringt dir garantiert einen Bonus"
+    },
+    {
+      "title": "Auszahlen",
+      "body": "Wir unterstützen alle gängigen Zahlungsmethoden"
+    }
+  ],
+  "testimonialsBlock": {
+    "eyebrow": "Deine Meinung ist uns wichtig",
+    "titleA": "Über ",
+    "titleHighlight": "1,4 Millionen Menschen",
+    "titleB": " verdienen bereits",
+    "items": [
+      {
+        "name": "Lukas M.",
+        "city": "München",
+        "amount": "+75 €",
+        "time": "vor 2 Stunden",
+        "text": "Habe mein Ziel in 4 Tagen erreicht und die Auszahlung per PayPal kam sofort an!"
+      },
+      {
+        "name": "Sarah K.",
+        "city": "Berlin",
+        "amount": "+65 €",
+        "time": "vor 5 Stunden",
+        "text": "Anfangs war ich skeptisch, aber jetzt bin ich völlig überzeugt. Kam direkt aufs Konto."
+      },
+      {
+        "name": "Thomas R.",
+        "city": "Hamburg",
+        "amount": "+95 €",
+        "time": "vor 1 Tag",
+        "text": "Super einfach. Die Auszahlung kam innerhalb von 24 Stunden. Jetzt spiele ich jeden Tag."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Alles, was du wissen musst",
+    "items": [
+      {
+        "q": "Ist es wirklich kostenlos?",
+        "a": "Ja, absolut. Du zahlst nichts und brauchst keine Kreditkarte. Du lädst einfach die App herunter, spielst und wirst bezahlt."
+      },
+      {
+        "q": "Wann bekomme ich mein Geld?",
+        "a": "Auszahlungen werden innerhalb von 24 Stunden bearbeitet. PayPal-Zahlungen sind meist schon nach wenigen Minuten da."
+      },
+      {
+        "q": "Welche Spiele muss ich spielen?",
+        "a": "Du wählst aus unserer Liste. Jedes Spiel zeigt dir genau, wie viel du verdienen kannst und was dafür nötig ist."
+      },
+      {
+        "q": "Ist das legal?",
+        "a": "Ja. Du nimmst an bezahlten Werbekampagnen von Spieleentwicklern teil. Die Apps zahlen dafür, neue Spieler zu gewinnen — und wir geben dieses Geld direkt an dich weiter."
+      }
+    ]
+  },
+  "footer": {
+    "support": "24/7 Live-Support",
+    "devices": "iOS & Android",
+    "noCard": "· Keine Kreditkarte erforderlich",
+    "reviews": "· Über 251.000 Bewertungen",
+    "payments": "PayPal · Krypto · Überweisung · Gutscheine",
+    "legal": "© Alle Rechte vorbehalten",
+    "ssl": "SSL-Verschlüsselung",
+    "terms": "AGB & Datenschutzerklärung"
+  },
+  "sticky": {
+    "title": "Lade die App jetzt herunter",
+    "sub": "Kostenlos · Sofort-Auszahlung",
+    "badge": "GRATIS"
+  },
+  "gate": {
+    "headlineA": "Bereit, dein ",
+    "headlineHighlight": "Gaming",
+    "headlineB": " aufs nächste Level zu bringen?",
+    "swipe": "Nach oben wischen, um fortzufahren"
+  }
+};
+
+const nl: LanderDict = {
+  "htmlLang": "nl-NL",
+  "meta": {
+    "title": "Geld verdienen met games spelen — tot € 70/week",
+    "description": "Speel de beste games en verander elke seconde in echt geld. Direct uitbetaald via PayPal, crypto of bankoverschrijving."
+  },
+  "hero": {
+    "titleA": "Verdien geld met ",
+    "titleHighlight": "games spelen",
+    "subtitle": "Speel je favoriete games en verdien er geld mee",
+    "cta": "Nu downloaden",
+    "badges": [
+      "Gratis",
+      "Direct uitbetaald",
+      "Onbeperkt aanbod"
+    ]
+  },
+  "popular": {
+    "eyebrow": "Populaire aanbiedingen",
+    "titleA": "Speel & voltooi ",
+    "titleHighlight": "aanbiedingen",
+    "perHour": "Per gespeeld uur",
+    "upTo": "Tot",
+    "cta": "Speel & verdien"
+  },
+  "features": [
+    {
+      "title": "Registreren",
+      "body": "Maak volledig gratis je account aan"
+    },
+    {
+      "title": "Kies een aanbieding",
+      "body": "Aanbiedingen voor elke smaak"
+    },
+    {
+      "title": "Voltooien",
+      "body": "100% voltooien levert altijd een bonus op"
+    },
+    {
+      "title": "Uitbetalen",
+      "body": "We ondersteunen alle betaalmethodes"
+    }
+  ],
+  "testimonialsBlock": {
+    "eyebrow": "Jouw mening telt voor ons",
+    "titleA": "Meer dan ",
+    "titleHighlight": "1,4 miljoen mensen",
+    "titleB": " verdienen al mee",
+    "items": [
+      {
+        "name": "Lucas M.",
+        "city": "Amsterdam",
+        "amount": "+€ 70",
+        "time": "2 uur geleden",
+        "text": "Doel binnen 4 dagen gehaald en de PayPal-overboeking kwam meteen binnen!"
+      },
+      {
+        "name": "Sanne K.",
+        "city": "Rotterdam",
+        "amount": "+€ 55",
+        "time": "5 uur geleden",
+        "text": "Eerst sceptisch, maar nu helemaal overtuigd. Rechtstreeks op mijn rekening."
+      },
+      {
+        "name": "Thomas R.",
+        "city": "Utrecht",
+        "amount": "+€ 90",
+        "time": "1 dag geleden",
+        "text": "Supermakkelijk. Binnen 24 uur uitbetaald. Nu speel ik elke dag."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Alles wat je moet weten",
+    "items": [
+      {
+        "q": "Is het echt gratis?",
+        "a": "Ja, absoluut. Je betaalt niets en hebt geen creditcard nodig. Je downloadt gewoon de app, speelt en wordt betaald."
+      },
+      {
+        "q": "Wanneer krijg ik mijn geld?",
+        "a": "Uitbetalingen worden binnen 24 uur verwerkt. PayPal-betalingen komen meestal binnen enkele minuten binnen."
+      },
+      {
+        "q": "Welke games moet ik spelen?",
+        "a": "Je kiest zelf uit onze lijst. Bij elke game zie je precies hoeveel je kunt verdienen en wat ervoor nodig is."
+      },
+      {
+        "q": "Is het legaal?",
+        "a": "Ja. Je neemt deel aan betaalde promotiecampagnes van gameontwikkelaars. De apps betalen om nieuwe spelers te werven — en dat geld geven we rechtstreeks aan jou door."
+      }
+    ]
+  },
+  "footer": {
+    "support": "24/7 live support",
+    "devices": "iOS & Android",
+    "noCard": "· Geen creditcard nodig",
+    "reviews": "· 251.000+ reviews",
+    "payments": "PayPal · Crypto · Bankoverschrijving · Cadeaukaarten",
+    "legal": "© Alle rechten voorbehouden",
+    "ssl": "SSL-encryptie",
+    "terms": "Algemene voorwaarden & Privacybeleid"
+  },
+  "sticky": {
+    "title": "Download nu de app",
+    "sub": "Gratis · Direct uitbetaald",
+    "badge": "GRATIS"
+  },
+  "gate": {
+    "headlineA": "Klaar om je ",
+    "headlineHighlight": "gaming",
+    "headlineB": " naar een hoger niveau te tillen?",
+    "swipe": "Swipe omhoog om verder te gaan"
+  }
+};
+
+const no: LanderDict = {
+  "htmlLang": "nb-NO",
+  "meta": {
+    "title": "Tjen penger på å spille — opptil 900 kr/uke",
+    "description": "Spill de beste spillene og gjør hvert sekund om til ekte penger. Rask utbetaling via PayPal, krypto eller bankoverføring."
+  },
+  "hero": {
+    "titleA": "Tjen penger på å ",
+    "titleHighlight": "spille",
+    "subtitle": "Spill favorittspillene dine og tjen penger",
+    "cta": "Last ned nå",
+    "badges": [
+      "Gratis",
+      "Rask utbetaling",
+      "Ubegrensede tilbud"
+    ]
+  },
+  "popular": {
+    "eyebrow": "Populære tilbud",
+    "titleA": "Spill og fullfør ",
+    "titleHighlight": "tilbud",
+    "perHour": "Per spilt time",
+    "upTo": "Opptil",
+    "cta": "Spill og tjen"
+  },
+  "features": [
+    {
+      "title": "Registrer deg",
+      "body": "Opprett kontoen din helt gratis"
+    },
+    {
+      "title": "Finn et tilbud",
+      "body": "Tilbud for enhver smak"
+    },
+    {
+      "title": "Fullfør",
+      "body": "Fullfør 100 % og få bonus hver gang"
+    },
+    {
+      "title": "Utbetaling",
+      "body": "Vi støtter alle betalingsmetoder"
+    }
+  ],
+  "testimonialsBlock": {
+    "eyebrow": "Din mening betyr mye for oss",
+    "titleA": "Over ",
+    "titleHighlight": "1,4 millioner mennesker",
+    "titleB": " tjener allerede penger",
+    "items": [
+      {
+        "name": "Mathias H.",
+        "city": "Oslo",
+        "amount": "+850 kr",
+        "time": "for 2 timer siden",
+        "text": "Nådde målet på 4 dager, og PayPal-overføringen kom med en gang!"
+      },
+      {
+        "name": "Ingrid K.",
+        "city": "Bergen",
+        "amount": "+720 kr",
+        "time": "for 5 timer siden",
+        "text": "Var skeptisk til å begynne med, men nå er jeg helt overbevist. Rett inn på kontoen."
+      },
+      {
+        "name": "Thomas R.",
+        "city": "Trondheim",
+        "amount": "+1 100 kr",
+        "time": "for 1 dag siden",
+        "text": "Superenkelt. Fikk utbetalingen innen 24 timer. Nå spiller jeg hver dag."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Alt du trenger å vite",
+    "items": [
+      {
+        "q": "Er det virkelig gratis?",
+        "a": "Ja, helt gratis. Du betaler ingenting og trenger ikke kredittkort. Du laster bare ned appen, spiller og får betalt."
+      },
+      {
+        "q": "Når får jeg pengene mine?",
+        "a": "Utbetalinger behandles innen 24 timer. PayPal-betalinger kommer vanligvis frem i løpet av noen minutter."
+      },
+      {
+        "q": "Hvilke spill må jeg spille?",
+        "a": "Du velger selv fra listen vår. Hvert spill viser deg nøyaktig hvor mye du kan tjene og hva som kreves."
+      },
+      {
+        "q": "Er det lovlig?",
+        "a": "Ja. Du deltar i betalte reklamekampanjer fra spillutviklere. Appene betaler for å få nye spillere – og de pengene sender vi rett videre til deg."
+      }
+    ]
+  },
+  "footer": {
+    "support": "24/7 live-support",
+    "devices": "iOS & Android",
+    "noCard": "· Ingen kredittkort nødvendig",
+    "reviews": "· Over 251 000 anmeldelser",
+    "payments": "PayPal · Krypto · Bankoverføring · Gavekort",
+    "legal": "© Med enerett",
+    "ssl": "SSL-kryptering",
+    "terms": "Vilkår og personvernerklæring"
+  },
+  "sticky": {
+    "title": "Last ned appen nå",
+    "sub": "Gratis · Rask utbetaling",
+    "badge": "Gratis"
+  },
+  "gate": {
+    "headlineA": "Klar til å ta ",
+    "headlineHighlight": "spillingen din",
+    "headlineB": " til neste nivå?",
+    "swipe": "Sveip opp for å fortsette"
+  }
+};
+
+const fi: LanderDict = {
+  "htmlLang": "fi-FI",
+  "meta": {
+    "title": "Ansaitse rahaa pelaamalla — jopa 80 €/viikko",
+    "description": "Pelaa parhaita pelejä ja muuta jokainen sekunti oikeaksi rahaksi. Nosta rahat heti PayPalilla, kryptolla tai tilisiirrolla."
+  },
+  "hero": {
+    "titleA": "Ansaitse rahaa pelaamalla ",
+    "titleHighlight": "pelejä",
+    "subtitle": "Pelaa suosikkipelejäsi ja ansaitse rahaa",
+    "cta": "Lataa nyt",
+    "badges": [
+      "Ilmainen",
+      "Nosta heti",
+      "Rajattomasti tarjouksia"
+    ]
+  },
+  "popular": {
+    "eyebrow": "Suositut tarjoukset",
+    "titleA": "Pelaa ja suorita ",
+    "titleHighlight": "tarjouksia",
+    "perHour": "Pelattua tuntia kohti",
+    "upTo": "Jopa",
+    "cta": "Pelaa ja ansaitse"
+  },
+  "features": [
+    {
+      "title": "Rekisteröidy",
+      "body": "Luo tili täysin ilmaiseksi"
+    },
+    {
+      "title": "Löydä tarjous",
+      "body": "Tarjouksia jokaiseen makuun"
+    },
+    {
+      "title": "Suorita",
+      "body": "Suorita loppuun ja bonus on aina taattu"
+    },
+    {
+      "title": "Nosta rahat",
+      "body": "Tuemme kaikkia maksutapoja"
+    }
+  ],
+  "testimonialsBlock": {
+    "eyebrow": "Mitä käyttäjämme sanovat",
+    "titleA": "Yli ",
+    "titleHighlight": "1,4 miljoonaa ihmistä",
+    "titleB": " ansaitsee jo",
+    "items": [
+      {
+        "name": "Leevi M.",
+        "city": "Helsinki",
+        "amount": "+75 €",
+        "time": "2 tuntia sitten",
+        "text": "Saavutin tavoitteen neljässä päivässä, ja PayPal-siirto saapui heti!"
+      },
+      {
+        "name": "Sofia K.",
+        "city": "Tampere",
+        "amount": "+60 €",
+        "time": "5 tuntia sitten",
+        "text": "Aluksi epäilin, mutta nyt olen täysin vakuuttunut. Rahat suoraan tilille."
+      },
+      {
+        "name": "Eetu R.",
+        "city": "Oulu",
+        "amount": "+95 €",
+        "time": "1 päivä sitten",
+        "text": "Superhelppoa. Sain maksun 24 tunnissa. Nyt pelaan joka päivä."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "UKK",
+    "title": "Kaikki, mitä sinun täytyy tietää",
+    "items": [
+      {
+        "q": "Onko se todella ilmaista?",
+        "a": "Kyllä, täysin. Et maksa mitään etkä tarvitse luottokorttia. Lataat vain sovelluksen, pelaat ja saat maksun."
+      },
+      {
+        "q": "Milloin saan rahani?",
+        "a": "Maksut käsitellään 24 tunnin kuluessa. PayPal-maksut saapuvat yleensä muutamassa minuutissa."
+      },
+      {
+        "q": "Mitä pelejä minun pitää pelata?",
+        "a": "Valitset itse listaltamme. Jokainen peli näyttää tarkalleen, kuinka paljon voit ansaita ja mitä siihen vaaditaan."
+      },
+      {
+        "q": "Onko tämä laillista?",
+        "a": "Kyllä. Osallistut pelinkehittäjien maksullisiin mainoskampanjoihin. Sovellukset maksavat saadakseen uusia pelaajia — ja me välitämme nämä rahat suoraan sinulle."
+      }
+    ]
+  },
+  "footer": {
+    "support": "24/7 live-tuki",
+    "devices": "iOS & Android",
+    "noCard": "· Luottokorttia ei tarvita",
+    "reviews": "· Yli 251 000 arvostelua",
+    "payments": "PayPal · Krypto · Tilisiirto · Lahjakortit",
+    "legal": "© Kaikki oikeudet pidätetään",
+    "ssl": "SSL-salaus",
+    "terms": "Käyttöehdot ja tietosuojakäytäntö"
+  },
+  "sticky": {
+    "title": "Lataa sovellus nyt",
+    "sub": "Ilmainen · Nosta heti",
+    "badge": "Ilmainen"
+  },
+  "gate": {
+    "headlineA": "Valmiina viemään ",
+    "headlineHighlight": "pelaamisesi",
+    "headlineB": " uudelle tasolle?",
+    "swipe": "Pyyhkäise ylös jatkaaksesi"
+  }
+};
+
+const pl: LanderDict = {
+  "htmlLang": "pl-PL",
+  "meta": {
+    "title": "Zarabiaj, grając w gry — do 350 zł tygodniowo",
+    "description": "Graj w najlepsze gry i zamień każdą minutę w prawdziwe pieniądze. Natychmiastowa wypłata przez PayPal, krypto lub przelew bankowy."
+  },
+  "hero": {
+    "titleA": "Zarabiaj, grając w ",
+    "titleHighlight": "gry",
+    "subtitle": "Graj w ulubione gry i zarabiaj prawdziwe pieniądze",
+    "cta": "Pobierz teraz",
+    "badges": [
+      "Za darmo",
+      "Natychmiastowa wypłata",
+      "Oferty bez limitu"
+    ]
+  },
+  "popular": {
+    "eyebrow": "Popularne oferty",
+    "titleA": "Graj i wykonuj ",
+    "titleHighlight": "oferty",
+    "perHour": "Za godzinę gry",
+    "upTo": "Nawet",
+    "cta": "Graj i zarabiaj"
+  },
+  "features": [
+    {
+      "title": "Zarejestruj się",
+      "body": "Załóż konto całkowicie za darmo"
+    },
+    {
+      "title": "Znajdź ofertę",
+      "body": "Oferty dla każdego gustu"
+    },
+    {
+      "title": "Wykonaj",
+      "body": "Ukończ zadanie w 100% i odbierz bonus"
+    },
+    {
+      "title": "Wypłać",
+      "body": "Obsługujemy wszystkie metody płatności"
+    }
+  ],
+  "testimonialsBlock": {
+    "eyebrow": "Twoja opinia jest dla nas ważna",
+    "titleA": "Ponad ",
+    "titleHighlight": "1,4 miliona osób",
+    "titleB": " już zarabia",
+    "items": [
+      {
+        "name": "Kacper W.",
+        "city": "Warszawa",
+        "amount": "+320 zł",
+        "time": "2 godziny temu",
+        "text": "Cel osiągnąłem w 4 dni, a przelew z PayPala dotarł od razu!"
+      },
+      {
+        "name": "Julia K.",
+        "city": "Kraków",
+        "amount": "+260 zł",
+        "time": "5 godzin temu",
+        "text": "Na początku byłam sceptyczna, ale teraz jestem w pełni przekonana. Pieniądze trafiają prosto na moje konto."
+      },
+      {
+        "name": "Michał R.",
+        "city": "Wrocław",
+        "amount": "+410 zł",
+        "time": "1 dzień temu",
+        "text": "Mega proste. Wypłatę dostałem w ciągu 24 godzin. Teraz gram codziennie."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Wszystko, co musisz wiedzieć",
+    "items": [
+      {
+        "q": "Czy to naprawdę za darmo?",
+        "a": "Tak, w stu procentach. Nic nie płacisz i nie potrzebujesz karty kredytowej. Po prostu pobierasz aplikację, grasz i dostajesz wypłatę."
+      },
+      {
+        "q": "Kiedy dostanę pieniądze?",
+        "a": "Wypłaty realizujemy w ciągu 24 godzin. Płatności przez PayPal zwykle docierają w kilka minut."
+      },
+      {
+        "q": "W jakie gry mogę grać?",
+        "a": "Wybierasz z naszej listy. Przy każdej grze widzisz dokładnie, ile możesz zarobić i co trzeba zrobić."
+      },
+      {
+        "q": "Czy to legalne?",
+        "a": "Tak. Bierzesz udział w płatnych kampaniach promocyjnych twórców gier. Aplikacje płacą za pozyskanie nowych graczy — a my przekazujemy te pieniądze bezpośrednio Tobie."
+      }
+    ]
+  },
+  "footer": {
+    "support": "Wsparcie na żywo 24/7",
+    "devices": "iOS i Android",
+    "noCard": "· Bez karty kredytowej",
+    "reviews": "· Ponad 251 tys. opinii",
+    "payments": "PayPal · Krypto · Przelew bankowy · Karty podarunkowe",
+    "legal": "© Wszelkie prawa zastrzeżone",
+    "ssl": "Szyfrowanie SSL",
+    "terms": "Regulamin i Polityka prywatności"
+  },
+  "sticky": {
+    "title": "Pobierz aplikację teraz",
+    "sub": "Za darmo · Natychmiastowa wypłata",
+    "badge": "ZA DARMO"
+  },
+  "gate": {
+    "headlineA": "Gotowy, aby przenieść swoją ",
+    "headlineHighlight": "grę",
+    "headlineB": " na wyższy poziom?",
+    "swipe": "Przesuń w górę, aby kontynuować"
+  }
+};
+
+const it: LanderDict = {
+  "htmlLang": "it-IT",
+  "meta": {
+    "title": "Guadagna giocando ai videogiochi — fino a 90 €/settimana",
+    "description": "Gioca ai migliori titoli e trasforma ogni secondo in denaro vero. Prelievo istantaneo con PayPal, crypto o bonifico bancario."
+  },
+  "hero": {
+    "titleA": "Guadagna giocando ai ",
+    "titleHighlight": "videogiochi",
+    "subtitle": "Gioca ai tuoi giochi preferiti e inizia subito a guadagnare",
+    "cta": "Scarica ora",
+    "badges": [
+      "Gratis",
+      "Prelievo istantaneo",
+      "Offerte illimitate"
+    ]
+  },
+  "popular": {
+    "eyebrow": "Offerte popolari",
+    "titleA": "Gioca e completa le ",
+    "titleHighlight": "offerte",
+    "perHour": "Per ogni ora di gioco",
+    "upTo": "Fino a",
+    "cta": "Gioca e guadagna"
+  },
+  "features": [
+    {
+      "title": "Registrati",
+      "body": "Crea il tuo account in modo completamente gratuito"
+    },
+    {
+      "title": "Trova un'offerta",
+      "body": "Offerte disponibili per tutti i gusti"
+    },
+    {
+      "title": "Completa",
+      "body": "Completa un'offerta al 100% e ricevi sempre un bonus"
+    },
+    {
+      "title": "Preleva",
+      "body": "Supportiamo tutti i metodi di pagamento"
+    }
+  ],
+  "testimonialsBlock": {
+    "eyebrow": "La tua opinione conta per noi",
+    "titleA": "Oltre ",
+    "titleHighlight": "1,4 milioni di persone",
+    "titleB": " stanno già guadagnando",
+    "items": [
+      {
+        "name": "Luca M.",
+        "city": "Roma",
+        "amount": "+85 €",
+        "time": "2 ore fa",
+        "text": "Ho raggiunto l'obiettivo in 4 giorni e il pagamento PayPal è arrivato all'istante!"
+      },
+      {
+        "name": "Sara C.",
+        "city": "Milano",
+        "amount": "+70 €",
+        "time": "5 ore fa",
+        "text": "All'inizio ero scettica, ma ora sono del tutto convinta. I soldi arrivano dritti sul mio conto."
+      },
+      {
+        "name": "Tommaso R.",
+        "city": "Napoli",
+        "amount": "+110 €",
+        "time": "1 giorno fa",
+        "text": "Semplicissimo. Ho ricevuto il pagamento entro 24 ore. Ora gioco tutti i giorni."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Tutto quello che c'è da sapere",
+    "items": [
+      {
+        "q": "È davvero gratis?",
+        "a": "Sì, assolutamente. Non paghi nulla e non serve la carta di credito. Ti basta scaricare l'app, giocare e ricevere i pagamenti."
+      },
+      {
+        "q": "Quando ricevo i miei soldi?",
+        "a": "I pagamenti vengono elaborati entro 24 ore. Con PayPal di solito arrivano in pochi minuti."
+      },
+      {
+        "q": "A quali giochi devo giocare?",
+        "a": "Scegli tu dalla nostra lista. Ogni gioco ti mostra esattamente quanto puoi guadagnare e cosa devi fare."
+      },
+      {
+        "q": "È legale?",
+        "a": "Sì. Partecipi a campagne promozionali a pagamento degli sviluppatori di giochi. Le app pagano per acquisire nuovi giocatori e noi giriamo quel denaro direttamente a te."
+      }
+    ]
+  },
+  "footer": {
+    "support": "Assistenza dal vivo 24/7",
+    "devices": "iOS e Android",
+    "noCard": "· Nessuna carta di credito richiesta",
+    "reviews": "· Oltre 251.000 recensioni",
+    "payments": "PayPal · Crypto · Bonifico bancario · Gift card",
+    "legal": "© Tutti i diritti riservati",
+    "ssl": "Crittografia SSL",
+    "terms": "Termini e Condizioni e Informativa sulla Privacy"
+  },
+  "sticky": {
+    "title": "Scarica subito l'app",
+    "sub": "Gratis · Prelievo istantaneo",
+    "badge": "GRATIS"
+  },
+  "gate": {
+    "headlineA": "Pronto a portare il tuo ",
+    "headlineHighlight": "gaming",
+    "headlineB": " a un livello superiore?",
+    "swipe": "Scorri verso l'alto per continuare"
+  }
+};
+
+const DICTS: Record<LanderLocale, LanderDict> = { sv, fr, en, de, nl, no, fi, pl, it };
 
 export function getDict(locale: LanderLocale): LanderDict {
   return DICTS[locale] ?? DICTS.en;
+}
+
+// Mapea el codigo de locale de la campana (ej. "en-US", "de", "da") al dict disponible.
+const LOCALE_MAP: Record<string, LanderLocale> = {
+  en: "en", "en-GB": "en", "en-US": "en", "en-AU": "en", "en-CA": "en", "en-NZ": "en",
+  sv: "sv", fr: "fr", de: "de", nl: "nl", no: "no", fi: "fi", pl: "pl", it: "it",
+};
+export function resolveLocale(code?: string | null): LanderLocale {
+  return (code && LOCALE_MAP[code]) || "en";
 }

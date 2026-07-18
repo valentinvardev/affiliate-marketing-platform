@@ -5,15 +5,28 @@ import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
 import type { LanderCampaign } from "@/components/landing/lander";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
-import { LANDING_TEMPLATES, V2_BRAND } from "@/lib/landing-templates";
+import { LANDING_TEMPLATES, brandFor } from "@/lib/landing-templates";
 
 const LOCALES: { code: LanderLocale; label: string }[] = [
   { code: "sv", label: "🇸🇪 Svenska" },
   { code: "en", label: "🇬🇧 English" },
+  { code: "de", label: "🇩🇪 Deutsch" },
   { code: "fr", label: "🇫🇷 Français" },
+  { code: "nl", label: "🇳🇱 Nederlands" },
+  { code: "no", label: "🇳🇴 Norsk" },
+  { code: "fi", label: "🇫🇮 Suomi" },
+  { code: "pl", label: "🇵🇱 Polski" },
+  { code: "it", label: "🇮🇹 Italiano" },
 ];
 
+const CUR: Record<string, { code: string; symbol: string }> = {
+  sv: { code: "SEK", symbol: "kr" }, no: { code: "NOK", symbol: "kr" },
+  fi: { code: "EUR", symbol: "€" }, fr: { code: "EUR", symbol: "€" }, de: { code: "EUR", symbol: "€" }, nl: { code: "EUR", symbol: "€" }, it: { code: "EUR", symbol: "€" },
+  pl: { code: "PLN", symbol: "zł" }, en: { code: "GBP", symbol: "£" },
+};
+
 function sampleCampaign(locale: LanderLocale): LanderCampaign {
+  const c = CUR[locale] ?? CUR.en!;
   return {
     name: "FreeCash",
     slug: null,
@@ -22,8 +35,8 @@ function sampleCampaign(locale: LanderLocale): LanderCampaign {
     colorBg: "#07080c",
     ctaUrl: "#",
     logoUrl: null,
-    currencySymbol: "kr",
-    currencyCode: "SEK",
+    currencySymbol: c.symbol,
+    currencyCode: c.code,
     fontTitle: null,
     fontBody: null,
     offers: [
@@ -73,7 +86,7 @@ export default function TemplatePreviewPage() {
         if (!showGate) return content;
         return (
           <LanderGate key={template + locale} variant={template === "freecash-v2" ? "v2" : "classic"}
-            logoUrl={camp.logoUrl} brand={template === "freecash-v2" ? V2_BRAND : camp.name} primary={camp.colorPrimary} bg={camp.colorBg}
+            logoUrl={camp.logoUrl} brand={brandFor(template) ?? camp.name} primary={camp.colorPrimary} bg={camp.colorBg}
             headlineA={g.headlineA} headlineHighlight={g.headlineHighlight} headlineB={g.headlineB} swipe={g.swipe}>
             {content}
           </LanderGate>

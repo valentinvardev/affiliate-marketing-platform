@@ -14,7 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { LanderFaq } from "@/components/landing/lander-faq";
-import { getDict, type LanderLocale } from "@/lib/lander-i18n";
+import { getDict, resolveLocale } from "@/lib/lander-i18n";
 import { googleFontsHref, fontStack } from "@/lib/fonts";
 import { formatMoneyFromUsd } from "@/lib/currencies";
 
@@ -140,7 +140,7 @@ function landerStyles(primary: string, bg: string, fontTitle: string, fontBody: 
 }
 
 export function Lander({ campaign }: { campaign: LanderCampaign }) {
-  const locale = (campaign.locale as LanderLocale) ?? "en";
+  const locale = resolveLocale(campaign.locale);
   const t = getDict(locale);
   const primary = campaign.colorPrimary;
   const bg = campaign.colorBg;

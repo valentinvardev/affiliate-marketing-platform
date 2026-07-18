@@ -4,8 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
-import { resolveTemplate, V2_BRAND } from "@/lib/landing-templates";
-import { getDict, type LanderLocale } from "@/lib/lander-i18n";
+import { isV2Template, brandFor } from "@/lib/landing-templates";
+import { getDict, resolveLocale } from "@/lib/lander-i18n";
 import { resolveRedirect } from "@/server/redirect-resolver";
 
 export async function generateMetadata({
@@ -16,7 +16,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const campaign = await db.campaign.findUnique({ where: { slug } });
   if (!campaign) return {};
-  const t = getDict((campaign.locale as LanderLocale) ?? "en");
+  const t = getDict(resolveLocale(campaign.locale));
   return { title: t.meta.title, description: t.meta.description };
 }
 
@@ -38,13 +38,13 @@ export default async function LandingPage({
 
   if (!campaign?.isActive) notFound();
 
-  const t = getDict((campaign.locale as LanderLocale) ?? "en");
+  const t = getDict(resolveLocale(campaign.locale));
 
   return (
     <LanderGate
-      variant={resolveTemplate(campaign.templateSlug) === "freecash-v2" ? "v2" : "classic"}
+      variant={isV2Template(campaign.templateSlug) ? "v2" : "classic"}
       logoUrl={campaign.logoUrl}
-      brand={resolveTemplate(campaign.templateSlug) === "freecash-v2" ? V2_BRAND : campaign.name}
+      brand={brandFor(campaign.templateSlug) ?? campaign.name}
       primary={campaign.colorPrimary}
       bg={campaign.colorBg}
       headlineA={t.gate.headlineA}

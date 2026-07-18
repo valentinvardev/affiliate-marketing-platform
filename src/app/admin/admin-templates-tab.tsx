@@ -2,9 +2,9 @@ import { LANDING_TEMPLATES } from "@/lib/landing-templates";
 import { ExternalLink, Layout } from "lucide-react";
 
 const LOCS = [
-  { code: "sv", label: "🇸🇪 Sueco" },
-  { code: "en", label: "🇬🇧 Inglés" },
-  { code: "fr", label: "🇫🇷 Francés" },
+  { code: "sv", label: "🇸🇪 SV" }, { code: "en", label: "🇬🇧 EN" }, { code: "de", label: "🇩🇪 DE" },
+  { code: "fr", label: "🇫🇷 FR" }, { code: "nl", label: "🇳🇱 NL" }, { code: "no", label: "🇳🇴 NO" },
+  { code: "fi", label: "🇫🇮 FI" }, { code: "pl", label: "🇵🇱 PL" }, { code: "it", label: "🇮🇹 IT" },
 ];
 
 export function AdminTemplatesTab() {
