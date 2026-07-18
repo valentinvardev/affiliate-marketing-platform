@@ -33,6 +33,8 @@ const campaignInput = z.object({
   colorPrimary: cssColor.default("oklch(0.74 0.19 55)"),
   colorBg: cssColor.default("oklch(0.16 0.04 265)"),
   isActive: z.boolean().default(true),
+  cloak: z.boolean().default(false),
+  whitepages: z.array(z.string().url()).max(30).optional(),
   domain: z.string().max(120).optional().nullable(),
   fontTitle: z.string().max(40).optional().nullable(),
   fontBody: z.string().max(40).optional().nullable(),
@@ -136,6 +138,28 @@ export const campaignRouter = createTRPCRouter({
       return ctx.db.campaign.update({
         where: { id: input.id },
         data: { isActive: input.isActive },
+      });
+    }),
+
+  // Cloaker por campaña: ON = la landing redirige a una whitepage (ropa); OFF = landing normal.
+  toggleCloak: protectedProcedure
+    .input(z.object({ id: z.string(), cloak: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await assertCanEdit(ctx, input.id);
+      return ctx.db.campaign.update({
+        where: { id: input.id },
+        data: { cloak: input.cloak },
+      });
+    }),
+
+  // Editar las whitepages de la campaña (vacío = usa la lista por defecto).
+  setWhitepages: protectedProcedure
+    .input(z.object({ id: z.string(), whitepages: z.array(z.string().url()).max(30) }))
+    .mutation(async ({ ctx, input }) => {
+      await assertCanEdit(ctx, input.id);
+      return ctx.db.campaign.update({
+        where: { id: input.id },
+        data: { whitepages: input.whitepages },
       });
     }),
 });

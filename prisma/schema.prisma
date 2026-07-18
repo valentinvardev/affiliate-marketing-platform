@@ -22,6 +22,8 @@ model Campaign {
   colorPrimary   String          @default("oklch(0.74 0.19 55)")
   colorBg        String          @default("oklch(0.16 0.04 265)")
   isActive       Boolean         @default(true)
+  cloak          Boolean         @default(false) // si está ON, la landing redirige a una whitepage (ropa)
+  whitepages     String[]        @default([]) // páginas seguras a rotar cuando cloak=ON (vacío = lista por defecto)
   domain         String? // root domain en el que se sirve (path-based: <domain>/<slug>)
   fontTitle      String? // fuente de títulos (Google Font, ej. "Manrope")
   fontBody       String? // fuente de párrafos (ej. "Inter")

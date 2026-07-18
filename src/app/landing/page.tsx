@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
 import { isV2Template, brandFor } from "@/lib/landing-templates";
+import { pickWhitepage } from "@/lib/whitepages";
 import { getDict, resolveLocale } from "@/lib/lander-i18n";
 import { resolveRedirect } from "@/server/redirect-resolver";
 
@@ -47,6 +48,9 @@ export default async function LandingByHostPage() {
 
   const campaign = await campaignForHost();
   if (!campaign?.isActive) notFound();
+
+  // Cloaker de campaña: si está ON, redirigimos a una whitepage (ropa) en vez de la landing.
+  if (campaign.cloak) redirect(pickWhitepage(campaign.whitepages));
 
   const t = getDict(resolveLocale(campaign.locale));
 
