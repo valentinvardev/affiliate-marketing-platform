@@ -7,6 +7,7 @@ import { getLocaleByCode } from "@/lib/locales";
 import { CampaignCopyUrl } from "./_components/campaign-copy-url";
 import { CampaignCloakToggle } from "./_components/campaign-cloak-toggle";
 import { CampaignDelete } from "./_components/campaign-delete";
+import { AnimatedBar } from "@/components/ui/animated-bar";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Campañas" };
@@ -109,7 +110,7 @@ export default async function CampaignsPage() {
         {campaigns.length === 0 && !dbError ? (
           <EmptyState />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {campaigns.map((c) => (
               <CampaignCard key={c.id} campaign={c} vcc={vccByCampaign.get(c.id) ?? null} />
             ))}
@@ -234,8 +235,8 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
                 {usd(vcc.currentSpend)} / {usd(vcc.spendLimit)}
               </span>
             </div>
-            <div className="mt-1.5 h-1 overflow-hidden rounded-full" style={{ background: "var(--color-surface-raised)" }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: c.colorPrimary }} />
+            <div className="mt-1.5">
+              <AnimatedBar pct={pct} color={c.colorPrimary} track="var(--color-surface-raised)" height={4} radius={999} />
             </div>
             {vcc.count > 1 && (
               <span className="mt-1 block text-[10px]" style={{ color: "var(--color-subtle)" }}>+{vcc.count - 1} tarjeta{vcc.count - 1 > 1 ? "s" : ""} más</span>

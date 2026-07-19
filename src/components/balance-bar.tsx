@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Bell, Eye, EyeOff, MessageCircle, DollarSign, Menu } from "lucide-react";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 
 type BalanceData = {
   today:     { revenue: number; conversions: number };
@@ -136,7 +137,7 @@ export function BalanceBar() {
       >
         <DollarSign className="h-3 w-3" style={{ color: "var(--color-subtle)" }} />
         <span className="text-xs font-medium tabular-nums" style={{ color: "var(--color-foreground)" }}>
-          {loading ? "—" : hidden ? "••••••" : fmt.format(balance)}
+          {loading ? "—" : hidden ? "••••••" : <AnimatedNumber value={balance} format={(n) => fmt.format(n)} />}
         </span>
         <button
           type="button"

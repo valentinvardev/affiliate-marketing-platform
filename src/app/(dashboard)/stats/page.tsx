@@ -6,6 +6,8 @@ import { fetchStats, type StatsRange } from "@/lib/taprain";
 import { DollarSign, Repeat2, MousePointerClick, Zap, AlertTriangle } from "lucide-react";
 import { StatsChart, type ChartPoint } from "./_components/stats-chart";
 import { ConversionList } from "./_components/conversion-list";
+import { AnimatedNumber } from "@/components/ui/animated-number";
+import { AutoRefresh } from "./_components/auto-refresh";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Estadísticas" };
@@ -219,26 +221,29 @@ export default async function StatsPage({
           </div>
         )}
 
+        {/* Refresco periódico → sensación de tiempo real */}
+        <AutoRefresh intervalMs={30_000} />
+
         {/* Metric cards */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
           <MetricCard
             icon={DollarSign}
             label="Revenue"
-            value={summary ? fmt.usd(summary.revenue) : fmt.usd(localRevenue)}
+            value={<AnimatedNumber value={summary ? summary.revenue : localRevenue} format={fmt.usd} />}
             sub={!summary ? "local" : undefined}
             loaded
           />
           <MetricCard
             icon={Repeat2}
             label="Conversiones"
-            value={summary?.conversions != null ? fmt.int(summary.conversions) : fmt.int(localCount)}
+            value={<AnimatedNumber value={summary?.conversions ?? localCount} format={fmt.int} />}
             sub={!summary ? "local" : undefined}
             loaded
           />
           <MetricCard
             icon={MousePointerClick}
             label="Clicks"
-            value={summary?.clicks != null ? fmt.int(summary.clicks) : fmt.int(clicks)}
+            value={<AnimatedNumber value={summary?.clicks ?? clicks} format={fmt.int} />}
             sub={summary?.clicks == null ? "local" : undefined}
             loaded
           />
@@ -247,9 +252,9 @@ export default async function StatsPage({
             label="EPC"
             value={
               summary?.epc != null
-                ? fmt.usd(summary.epc)
+                ? <AnimatedNumber value={summary.epc} format={fmt.usd} />
                 : clicks > 0
-                ? fmt.usd(localRevenue / clicks)
+                ? <AnimatedNumber value={localRevenue / clicks} format={fmt.usd} />
                 : "—"
             }
             sub={summary?.epc == null && clicks > 0 ? "local" : undefined}
@@ -306,7 +311,7 @@ export default async function StatsPage({
 function MetricCard({
   icon: Icon, label, value, sub, loaded,
 }: {
-  icon: React.ElementType; label: string; value: string; sub?: string; loaded: boolean;
+  icon: React.ElementType; label: string; value: React.ReactNode; sub?: string; loaded: boolean;
 }) {
   return (
     <div
