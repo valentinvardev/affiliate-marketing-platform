@@ -5,7 +5,7 @@ import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
 import type { LanderCampaign } from "@/components/landing/lander";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
-import { LANDING_TEMPLATES, brandFor } from "@/lib/landing-templates";
+import { LANDING_TEMPLATES, brandFor, isV2Template } from "@/lib/landing-templates";
 
 const LOCALES: { code: LanderLocale; label: string }[] = [
   { code: "sv", label: "🇸🇪 Svenska" },
@@ -85,7 +85,7 @@ export default function TemplatePreviewPage() {
         const content = <LanderByTemplate campaign={camp} templateSlug={template} localeOverride={locale} />;
         if (!showGate) return content;
         return (
-          <LanderGate key={template + locale} variant={template === "freecash-v2" ? "v2" : "classic"}
+          <LanderGate key={template + locale} variant={isV2Template(template) ? "v2" : "classic"}
             logoUrl={camp.logoUrl} brand={brandFor(template) ?? camp.name} primary={camp.colorPrimary} bg={camp.colorBg}
             headlineA={g.headlineA} headlineHighlight={g.headlineHighlight} headlineB={g.headlineB} swipe={g.swipe}>
             {content}
