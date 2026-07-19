@@ -8,6 +8,7 @@ import { StatsChart, type ChartPoint } from "./_components/stats-chart";
 import { ConversionList } from "./_components/conversion-list";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { AutoRefresh } from "./_components/auto-refresh";
+import { InfoTooltip } from "@/components/ui/tooltip";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Estadísticas" };
@@ -229,32 +230,36 @@ export default async function StatsPage({
           <MetricCard
             icon={DollarSign}
             label="Revenue"
-            value={<AnimatedNumber value={summary ? summary.revenue : localRevenue} format={fmt.usd} />}
+            info="Ingresos totales generados por conversiones en el período seleccionado."
+            value={<AnimatedNumber value={summary ? summary.revenue : localRevenue} format={USD_FMT} />}
             sub={!summary ? "local" : undefined}
             loaded
           />
           <MetricCard
             icon={Repeat2}
             label="Conversiones"
-            value={<AnimatedNumber value={summary?.conversions ?? localCount} format={fmt.int} />}
+            info="Cantidad de conversiones (postbacks recibidos) en el período."
+            value={<AnimatedNumber value={summary?.conversions ?? localCount} format={INT_FMT} />}
             sub={!summary ? "local" : undefined}
             loaded
           />
           <MetricCard
             icon={MousePointerClick}
             label="Clicks"
-            value={<AnimatedNumber value={summary?.clicks ?? clicks} format={fmt.int} />}
+            info="Clicks únicos por IP a tus landings. Se deduplican por IP+campaña dentro de 6 horas."
+            value={<AnimatedNumber value={summary?.clicks ?? clicks} format={INT_FMT} />}
             sub={summary?.clicks == null ? "local" : undefined}
             loaded
           />
           <MetricCard
             icon={Zap}
             label="EPC"
+            info="Earnings Per Click: ingresos ÷ clicks. Cuánto ganás en promedio por cada click."
             value={
               summary?.epc != null
-                ? <AnimatedNumber value={summary.epc} format={fmt.usd} />
+                ? <AnimatedNumber value={summary.epc} format={USD_FMT} />
                 : clicks > 0
-                ? <AnimatedNumber value={localRevenue / clicks} format={fmt.usd} />
+                ? <AnimatedNumber value={localRevenue / clicks} format={USD_FMT} />
                 : "—"
             }
             sub={summary?.epc == null && clicks > 0 ? "local" : undefined}
@@ -309,9 +314,9 @@ export default async function StatsPage({
 }
 
 function MetricCard({
-  icon: Icon, label, value, sub, loaded,
+  icon: Icon, label, value, sub, loaded, info,
 }: {
-  icon: React.ElementType; label: string; value: React.ReactNode; sub?: string; loaded: boolean;
+  icon: React.ElementType; label: string; value: React.ReactNode; sub?: string; loaded: boolean; info?: string;
 }) {
   return (
     <div
@@ -319,7 +324,10 @@ function MetricCard({
       style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{label}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{label}</p>
+          {info && <InfoTooltip content={info} />}
+        </div>
         <Icon className="h-3.5 w-3.5" style={{ color: "var(--color-subtle)" }} />
       </div>
       <p
@@ -335,8 +343,6 @@ function MetricCard({
   );
 }
 
-const fmt = {
-  usd: (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n),
-  int: (n: number) => new Intl.NumberFormat("en-US").format(n),
-};
+// Opciones de formato serializables (server → client): objetos, no funciones.
+const USD_FMT: Intl.NumberFormatOptions = { style: "currency", currency: "USD", minimumFractionDigits: 2 };
+const INT_FMT: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };

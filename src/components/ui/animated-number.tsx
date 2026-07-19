@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-/** Número que cuenta desde 0 (o desde el valor previo) hasta el valor actual, con fade desde arriba. */
+/**
+ * Número que cuenta desde 0 (o desde el valor previo) hasta el valor actual,
+ * con fade desde arriba.
+ *
+ * `format` acepta:
+ *  - una función `(n) => string` (solo desde CLIENT components), o
+ *  - un objeto `Intl.NumberFormatOptions` (serializable → sirve desde SERVER
+ *    components, que no pueden pasar funciones a un client component).
+ */
 export function AnimatedNumber({
-  value, format, duration = 850, className, style,
+  value, format, locale = "en-US", duration = 850, className, style,
 }: {
   value: number;
-  format?: (n: number) => string;
+  format?: ((n: number) => string) | Intl.NumberFormatOptions;
+  locale?: string;
   duration?: number;
   className?: string;
   style?: React.CSSProperties;
@@ -15,6 +24,15 @@ export function AnimatedNumber({
   const [display, setDisplay] = useState(0);
   const fromRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+
+  const fmt = useMemo(() => {
+    if (typeof format === "function") return format;
+    if (format) {
+      const nf = new Intl.NumberFormat(locale, format);
+      return (n: number) => nf.format(n);
+    }
+    return (n: number) => Math.round(n).toLocaleString();
+  }, [format, locale]);
 
   useEffect(() => {
     if (typeof window === "undefined") { setDisplay(value); return; }
@@ -34,7 +52,7 @@ export function AnimatedNumber({
 
   return (
     <span className={className} style={{ display: "inline-block", animation: "numRise .45s ease both", ...style }}>
-      {format ? format(display) : Math.round(display).toLocaleString()}
+      {fmt(display)}
     </span>
   );
 }
