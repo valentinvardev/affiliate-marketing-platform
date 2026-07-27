@@ -28,6 +28,8 @@ export type LanderCampaign = {
   colorPrimary: string;
   colorBg: string;
   ctaUrl: string;
+  ctaAge?: boolean;
+  ctaUrlUnder?: string | null;
   logoUrl: string | null;
   currencySymbol: string;
   currencyCode: string;
@@ -319,7 +321,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
 
             {/* Main CTA button */}
             <a
-              href={ctaHref}
+              href={ctaHref} data-cta
               className="l-cta-zoom"
               style={{
                 display: "block",
@@ -433,7 +435,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
                 {offers.map((offer) => (
                   <a
                     key={offer.id}
-                    href={ctaHref}
+                    href={ctaHref} data-cta
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -588,7 +590,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
               return (
                 <a
                   key={f.title}
-                  href={ctaHref}
+                  href={ctaHref} data-cta
                   className="lg-card"
                   style={{
                     display: "flex",
@@ -851,7 +853,7 @@ export function Lander({ campaign }: { campaign: LanderCampaign }) {
 
         {/* ── Sticky bottom CTA ── */}
         <a
-          href={ctaHref}
+          href={ctaHref} data-cta
           style={{
             position: "fixed",
             insetInline: 0,

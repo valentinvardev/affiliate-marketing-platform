@@ -18,6 +18,8 @@ model Campaign {
   currencySymbol String          @default("£")
   currencyCode   String          @default("GBP")
   ctaUrl         String
+  ctaAge         Boolean         @default(false) // CTA con pregunta de edad (+21 / -21) en vez de botón único
+  ctaUrlUnder    String? // oferta a la que va el botón "-21" (vacío = misma oferta que +21)
   logoUrl        String?
   colorPrimary   String          @default("oklch(0.74 0.19 55)")
   colorBg        String          @default("oklch(0.16 0.04 265)")

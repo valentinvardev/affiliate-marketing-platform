@@ -23,7 +23,7 @@ type UrlStatus = "idle" | "checking" | "valid" | "invalid";
 type FormValues = {
   name: string; slug: string; templateSlug: string;
   locale: string; currencyCode: string; currencySymbol: string;
-  ctaUrl: string; logoUrl: string;
+  ctaUrl: string; ctaAge: boolean; ctaUrlUnder: string; logoUrl: string;
   colorPrimary: string; colorBg: string; isActive: boolean; gate: boolean;
   domain: string; fontTitle: string; fontBody: string;
   offerName: string; offerImage: string;
@@ -33,7 +33,7 @@ type FormValues = {
 type Campaign = {
   id: string; name: string; slug: string; templateSlug: string;
   locale: string; currencyCode: string; currencySymbol: string;
-  ctaUrl: string; logoUrl: string | null;
+  ctaUrl: string; ctaAge?: boolean; ctaUrlUnder?: string | null; logoUrl: string | null;
   colorPrimary: string; colorBg: string; isActive: boolean; gate?: boolean;
   domain?: string | null; fontTitle?: string | null; fontBody?: string | null;
   offerName?: string | null; offerImage?: string | null;
@@ -312,6 +312,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   const [savingUrl, setSavingUrl] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [offerModalUnderOpen, setOfferModalUnderOpen] = useState(false);
   const [pendingStackId, setPendingStackId] = useState<string | null>(null);
   const [pendingAppIds, setPendingAppIds] = useState<string[]>([]);
   const [pendingAppsData, setPendingAppsData] = useState<{ name: string; imageUrl: string | null; badge: string; amount: number }[]>([]);
@@ -325,6 +326,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     currencyCode: campaign?.currencyCode ?? "GBP",
     currencySymbol: campaign?.currencySymbol ?? "£",
     ctaUrl: campaign?.ctaUrl ?? "",
+    ctaAge: campaign?.ctaAge ?? false,
+    ctaUrlUnder: campaign?.ctaUrlUnder ?? "",
     logoUrl: campaign?.logoUrl ?? "",
     colorPrimary: campaign?.colorPrimary ?? "oklch(0.74 0.19 55)",
     colorBg: campaign?.colorBg ?? "oklch(0.16 0.04 265)",
@@ -339,6 +342,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   });
 
   const ctaStatus = useUrlStatus(values.ctaUrl);
+  const underStatus = useUrlStatus(values.ctaUrlUnder);
   const applyStack = api.stack.applyToCampaign.useMutation();
   const applyApps = api.stack.applyAppsToCampaign.useMutation();
   const createVcc = api.cards.createForCampaign.useMutation();
@@ -391,7 +395,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     startTransition(() => {
-      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null, offerName: values.offerName || null, offerImage: values.offerImage || null };
+      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null, offerName: values.offerName || null, offerImage: values.offerImage || null, ctaUrlUnder: values.ctaUrlUnder || null };
       if (campaign) update.mutate({ id: campaign.id, ...payload });
       else create.mutate(payload);
     });
@@ -467,6 +471,9 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     <div className={`flex flex-col ${isEdit ? "" : "h-full min-h-0"}`}>
       <OfferPickerModal open={offerModalOpen} onClose={() => setOfferModalOpen(false)}
         onSelect={(url, s1) => { set("ctaUrl", url); if (s1) set("slug", slugify(s1)); setOfferModalOpen(false); }} defaultS1={values.slug} />
+      {/* Modal de oferta para "-21" (solo setea la URL, no toca el subid) */}
+      <OfferPickerModal open={offerModalUnderOpen} onClose={() => setOfferModalUnderOpen(false)}
+        onSelect={(url) => { set("ctaUrlUnder", url); setOfferModalUnderOpen(false); }} defaultS1={values.slug} />
 
       {/* Created animation */}
       {created && (
@@ -647,6 +654,44 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     )}
                     {savedUrls.length > 0 && !savingUrl && <SavedUrlDropdown items={savedUrls} onSelect={(url) => set("ctaUrl", url)} onDelete={deleteUrl} />}
                   </Field>
+
+                  {/* Pregunta de edad (+21 / -21) */}
+                  <Field label="Pregunta de edad (+21 / -21)" hint="Al hacer click en cualquier CTA aparece “¿Sos mayor de 21?”. “+21” va a la oferta de arriba; “-21” a la oferta de abajo.">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={values.ctaAge}
+                      onClick={() => set("ctaAge", !values.ctaAge)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+                      style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
+                    >
+                      <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors"
+                        style={{ background: values.ctaAge ? "var(--color-success)" : "var(--color-border)" }}>
+                        <span className="inline-block h-4 w-4 rounded-full bg-white transition-transform"
+                          style={{ transform: values.ctaAge ? "translateX(18px)" : "translateX(2px)" }} />
+                      </span>
+                      <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
+                        {values.ctaAge ? "Con pregunta de edad" : "CTA único (sin pregunta)"}
+                      </span>
+                    </button>
+                  </Field>
+
+                  {/* Oferta para "-21" — mismo funcionamiento que la de arriba */}
+                  {values.ctaAge && (
+                    <Field label="URL de oferta “-21” (menores)" hint="A dónde va quien dice ser menor de 21. Vacío = misma oferta que arriba.">
+                      <Input type="url" placeholder="https://taprkr.com/r/... (oferta -21)" value={values.ctaUrlUnder} onChange={(e) => set("ctaUrlUnder", e.target.value)}
+                        style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} suffix={<UrlIndicator status={values.ctaUrlUnder ? underStatus : "idle"} />} />
+                      <div className="mt-2 flex gap-2">
+                        <button type="button" disabled={underStatus !== "valid"} onClick={() => window.open(values.ctaUrlUnder, "_blank", "noopener,noreferrer")}
+                          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
+                          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><ExternalLink className="h-3.5 w-3.5" />Abrir</button>
+                        <button type="button" onClick={() => setOfferModalUnderOpen(true)}
+                          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                          style={{ background: "var(--color-foreground)", border: "1px solid var(--color-border)", color: "var(--color-background)" }}><Search className="h-3.5 w-3.5" />Buscar oferta</button>
+                      </div>
+                      {savedUrls.length > 0 && <SavedUrlDropdown items={savedUrls} onSelect={(url) => set("ctaUrlUnder", url)} onDelete={deleteUrl} />}
+                    </Field>
+                  )}
                 </>
               )}
 

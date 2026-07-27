@@ -217,7 +217,7 @@ export function LanderV2({ campaign, localeOverride, brand = "FreeCash" }: { cam
                 <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em" }}>{brand}</span>
               </span>
             )}
-            <a href={ctaHref} className="v2-ghost" style={{ marginLeft: "auto" }}>
+            <a href={ctaHref} data-cta className="v2-ghost" style={{ marginLeft: "auto" }}>
               <Download style={{ width: 15, height: 15 }} /> {t.hero.cta}
             </a>
           </nav>
@@ -231,7 +231,7 @@ export function LanderV2({ campaign, localeOverride, brand = "FreeCash" }: { cam
               </h1>
               <p className="v2-sub v2-rise v2-d2">{t.hero.subtitle}. {t.meta.description}</p>
               <div className="v2-rise v2-d3" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 30, alignItems: "center" }}>
-                <a href={ctaHref} className="v2-cta">{t.hero.cta} <ArrowRight style={{ width: 18, height: 18 }} /></a>
+                <a href={ctaHref} data-cta className="v2-cta">{t.hero.cta} <ArrowRight style={{ width: 18, height: 18 }} /></a>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--muted)", fontSize: 13.5 }}>
                   <ShieldCheck style={{ width: 16, height: 16, color: acc }} /> {t.faq.items[3]?.q ?? "100% seguro"}
                 </span>
@@ -289,7 +289,7 @@ export function LanderV2({ campaign, localeOverride, brand = "FreeCash" }: { cam
             <h2 className="v2-h2" style={{ marginTop: 14 }}>{t.popular.titleA}<span className="v2-accent">{t.popular.titleHighlight}</span></h2>
             <div className="v2-offers">
               {offers.map((o) => (
-                <a key={o.id} href={ctaHref} className="v2-card v2-offer" data-reveal>
+                <a key={o.id} href={ctaHref} data-cta className="v2-card v2-offer" data-reveal>
                   {o.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={o.imageUrl} alt={o.name} className="v2-offer-img" />
@@ -376,7 +376,7 @@ export function LanderV2({ campaign, localeOverride, brand = "FreeCash" }: { cam
           <div className="v2-final" data-reveal>
             <h2 className="v2-h2" style={{ fontSize: "clamp(26px,4vw,40px)" }}>{t.sticky.title}</h2>
             <p className="v2-lead" style={{ margin: "12px auto 24px" }}>{t.sticky.sub}</p>
-            <a href={ctaHref} className="v2-cta">{t.hero.cta} <ArrowRight style={{ width: 18, height: 18 }} /></a>
+            <a href={ctaHref} data-cta className="v2-cta">{t.hero.cta} <ArrowRight style={{ width: 18, height: 18 }} /></a>
           </div>
         </div></section>
 
@@ -391,7 +391,7 @@ export function LanderV2({ campaign, localeOverride, brand = "FreeCash" }: { cam
         </div></footer>
 
         {/* Sticky mobile CTA */}
-        <a href={ctaHref} className="v2-sticky">
+        <a href={ctaHref} data-cta className="v2-sticky">
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15 }}>{t.sticky.title}</div>
             <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.sticky.sub}</div>

@@ -29,6 +29,8 @@ const campaignInput = z.object({
   currencySymbol: z.string().min(1).max(5),
   currencyCode: z.string().min(3).max(4),
   ctaUrl: z.string().url(),
+  ctaAge: z.boolean().default(false),
+  ctaUrlUnder: z.string().url().optional().nullable(),
   logoUrl: z.string().url().optional().nullable(),
   colorPrimary: cssColor.default("oklch(0.74 0.19 55)"),
   colorBg: cssColor.default("oklch(0.16 0.04 265)"),
