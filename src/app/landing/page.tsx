@@ -54,6 +54,11 @@ export default async function LandingByHostPage() {
 
   const t = getDict(resolveLocale(campaign.locale));
 
+  const content = <LanderByTemplate campaign={campaign} templateSlug={campaign.templateSlug} />;
+
+  // Intro swipe-up desactivable por campaña: si gate=false, mostramos la landing directo.
+  if (!campaign.gate) return content;
+
   return (
     <LanderGate
       variant={isV2Template(campaign.templateSlug) ? "v2" : "classic"}
@@ -66,7 +71,7 @@ export default async function LandingByHostPage() {
       headlineB={t.gate.headlineB}
       swipe={t.gate.swipe}
     >
-      <LanderByTemplate campaign={campaign} templateSlug={campaign.templateSlug} />
+      {content}
     </LanderGate>
   );
 }
