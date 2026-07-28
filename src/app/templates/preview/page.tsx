@@ -5,7 +5,7 @@ import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
 import type { LanderCampaign } from "@/components/landing/lander";
 import { getDict, type LanderLocale } from "@/lib/lander-i18n";
-import { LANDING_TEMPLATES, brandFor, isV2Template } from "@/lib/landing-templates";
+import { LANDING_TEMPLATES, brandFor, usesDarkGate } from "@/lib/landing-templates";
 
 const LOCALES: { code: LanderLocale; label: string }[] = [
   { code: "sv", label: "🇸🇪 Svenska" },
@@ -25,14 +25,16 @@ const CUR: Record<string, { code: string; symbol: string }> = {
   pl: { code: "PLN", symbol: "zł" }, en: { code: "GBP", symbol: "£" },
 };
 
-function sampleCampaign(locale: LanderLocale): LanderCampaign {
+function sampleCampaign(locale: LanderLocale, template: string): LanderCampaign {
   const c = CUR[locale] ?? CUR.en!;
+  // Acento de ejemplo acorde a la plantilla (en producción sale de la campaña).
+  const quest = template === "quest";
   return {
-    name: "FreeCash",
+    name: quest ? "PlayCash" : "FreeCash",
     slug: null,
     locale,
-    colorPrimary: "#22e07a",
-    colorBg: "#07080c",
+    colorPrimary: quest ? "#7C5CFF" : "#22e07a",
+    colorBg: quest ? "#0B0821" : "#07080c",
     ctaUrl: "#",
     logoUrl: null,
     currencySymbol: c.symbol,
@@ -80,12 +82,12 @@ export default function TemplatePreviewPage() {
       </div>
 
       {(() => {
-        const camp = sampleCampaign(locale);
+        const camp = sampleCampaign(locale, template);
         const g = getDict(locale).gate;
         const content = <LanderByTemplate campaign={camp} templateSlug={template} localeOverride={locale} />;
         if (!showGate) return content;
         return (
-          <LanderGate key={template + locale} variant={isV2Template(template) ? "v2" : "classic"}
+          <LanderGate key={template + locale} variant={usesDarkGate(template) ? "v2" : "classic"}
             logoUrl={camp.logoUrl} brand={brandFor(template) ?? camp.name} primary={camp.colorPrimary} bg={camp.colorBg}
             headlineA={g.headlineA} headlineHighlight={g.headlineHighlight} headlineB={g.headlineB} swipe={g.swipe}>
             {content}

@@ -15,6 +15,7 @@ export const LANDING_FONTS = [
   "Lexend",
   "Work Sans",
   "Space Grotesk",
+  "Chakra Petch", // display de la plantilla Quest (angular, DNA esports)
 ] as const;
 
 export const DEFAULT_FONT = "Inter";

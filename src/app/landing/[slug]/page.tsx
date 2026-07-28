@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
-import { isV2Template, brandFor } from "@/lib/landing-templates";
+import { usesDarkGate, brandFor } from "@/lib/landing-templates";
 import { pickWhitepage } from "@/lib/whitepages";
 import { getDict, resolveLocale } from "@/lib/lander-i18n";
 import { getAgeCopy } from "@/lib/age-gate-i18n";
@@ -67,7 +67,7 @@ export default async function LandingPage({
   return (
     <>
       <LanderGate
-        variant={isV2Template(campaign.templateSlug) ? "v2" : "classic"}
+        variant={usesDarkGate(campaign.templateSlug) ? "v2" : "classic"}
         logoUrl={campaign.logoUrl}
         brand={brandFor(campaign.templateSlug) ?? campaign.name}
         primary={campaign.colorPrimary}
