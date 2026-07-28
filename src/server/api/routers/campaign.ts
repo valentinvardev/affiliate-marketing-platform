@@ -31,6 +31,8 @@ const campaignInput = z.object({
   ctaUrl: z.string().url(),
   ctaAge: z.boolean().default(false),
   ctaUrlUnder: z.string().url().optional().nullable(),
+  // Solo alfanumérico: el ID se interpola en el <script> del pixel.
+  tiktokPixel: z.string().regex(/^[A-Z0-9]{6,40}$/i, "ID de pixel inválido").optional().nullable(),
   logoUrl: z.string().url().optional().nullable(),
   colorPrimary: cssColor.default("oklch(0.74 0.19 55)"),
   colorBg: cssColor.default("oklch(0.16 0.04 265)"),

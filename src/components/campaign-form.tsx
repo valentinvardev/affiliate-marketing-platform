@@ -23,7 +23,7 @@ type UrlStatus = "idle" | "checking" | "valid" | "invalid";
 type FormValues = {
   name: string; slug: string; templateSlug: string;
   locale: string; currencyCode: string; currencySymbol: string;
-  ctaUrl: string; ctaAge: boolean; ctaUrlUnder: string; logoUrl: string;
+  ctaUrl: string; ctaAge: boolean; ctaUrlUnder: string; tiktokPixel: string; logoUrl: string;
   colorPrimary: string; colorBg: string; isActive: boolean; gate: boolean;
   domain: string; fontTitle: string; fontBody: string;
   offerName: string; offerImage: string;
@@ -33,7 +33,7 @@ type FormValues = {
 type Campaign = {
   id: string; name: string; slug: string; templateSlug: string;
   locale: string; currencyCode: string; currencySymbol: string;
-  ctaUrl: string; ctaAge?: boolean; ctaUrlUnder?: string | null; logoUrl: string | null;
+  ctaUrl: string; ctaAge?: boolean; ctaUrlUnder?: string | null; tiktokPixel?: string | null; logoUrl: string | null;
   colorPrimary: string; colorBg: string; isActive: boolean; gate?: boolean;
   domain?: string | null; fontTitle?: string | null; fontBody?: string | null;
   offerName?: string | null; offerImage?: string | null;
@@ -328,6 +328,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     ctaUrl: campaign?.ctaUrl ?? "",
     ctaAge: campaign?.ctaAge ?? false,
     ctaUrlUnder: campaign?.ctaUrlUnder ?? "",
+    tiktokPixel: campaign?.tiktokPixel ?? "",
     logoUrl: campaign?.logoUrl ?? "",
     colorPrimary: campaign?.colorPrimary ?? "oklch(0.74 0.19 55)",
     colorBg: campaign?.colorBg ?? "oklch(0.16 0.04 265)",
@@ -395,7 +396,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     startTransition(() => {
-      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null, offerName: values.offerName || null, offerImage: values.offerImage || null, ctaUrlUnder: values.ctaUrlUnder || null };
+      const payload = { ...values, logoUrl: values.logoUrl || null, domain: values.domain || null, fontTitle: values.fontTitle || null, fontBody: values.fontBody || null, offerName: values.offerName || null, offerImage: values.offerImage || null, ctaUrlUnder: values.ctaUrlUnder || null, tiktokPixel: values.tiktokPixel.trim() || null };
       if (campaign) update.mutate({ id: campaign.id, ...payload });
       else create.mutate(payload);
     });
@@ -692,6 +693,23 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                       {savedUrls.length > 0 && <SavedUrlDropdown items={savedUrls} onSelect={(url) => set("ctaUrlUnder", url)} onDelete={deleteUrl} />}
                     </Field>
                   )}
+
+                  {/* TikTok Pixel (opcional) */}
+                  <Field label="TikTok Pixel ID" hint="Vacío = sin pixel. Registra la visita y un único evento ClickButton al tocar el CTA. Solo el ID público — el access token no va acá.">
+                    <Input
+                      placeholder="D9K41S3C77U1QT0MGA60"
+                      value={values.tiktokPixel}
+                      onChange={(e) => set("tiktokPixel", e.target.value.trim())}
+                      style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}
+                      suffix={
+                        values.tiktokPixel
+                          ? /^[A-Za-z0-9]{6,40}$/.test(values.tiktokPixel)
+                            ? <Check className="h-4 w-4" style={{ color: "var(--color-success)" }} />
+                            : <X className="h-4 w-4" style={{ color: "var(--color-error)" }} />
+                          : undefined
+                      }
+                    />
+                  </Field>
                 </>
               )}
 

@@ -9,6 +9,7 @@ import { pickWhitepage } from "@/lib/whitepages";
 import { getDict, resolveLocale } from "@/lib/lander-i18n";
 import { getAgeCopy } from "@/lib/age-gate-i18n";
 import { AgeGate } from "@/components/landing/age-gate";
+import { TikTokPixel } from "@/components/landing/tiktok-pixel";
 import { resolveRedirect } from "@/server/redirect-resolver";
 
 export async function generateMetadata({
@@ -61,8 +62,11 @@ export default async function LandingPage({
     />
   ) : null;
 
+  // TikTok Pixel opcional por campaña (pageview + un único ClickButton en el CTA).
+  const pixelEl = campaign.tiktokPixel ? <TikTokPixel pixelId={campaign.tiktokPixel} /> : null;
+
   // Intro swipe-up desactivable por campaña: si gate=false, mostramos la landing directo.
-  if (!campaign.gate) return <>{content}{ageEl}</>;
+  if (!campaign.gate) return <>{content}{ageEl}{pixelEl}</>;
 
   return (
     <>
@@ -80,6 +84,7 @@ export default async function LandingPage({
         {content}
       </LanderGate>
       {ageEl}
+      {pixelEl}
     </>
   );
 }
