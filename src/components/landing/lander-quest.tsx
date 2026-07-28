@@ -384,7 +384,7 @@ export function LanderQuest({
                     <span style={{ minWidth: 0 }}>
                       <span className="q-row-cap">{t.paid.payLabel}</span>
                       <span className="q-pays">
-                        {payMethods(locale).map((p) => <span key={p} className="q-pay">{p}</span>)}
+                        {payMethods(campaign.locale, locale).map((p) => <span key={p} className="q-pay">{p}</span>)}
                       </span>
                     </span>
                   </div>

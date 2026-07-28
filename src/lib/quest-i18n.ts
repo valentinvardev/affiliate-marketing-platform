@@ -215,19 +215,61 @@ export function getQuestDict(locale: LanderLocale): QuestDict {
   return DICTS[locale] ?? DICTS.en;
 }
 
-/** Métodos de pago reales y usados en cada mercado (para la etapa "cómo te pagan"). */
-const PAY_METHODS: Record<LanderLocale, string[]> = {
-  sv: ["Swish", "PayPal", "Bank"],
-  no: ["Vipps", "PayPal", "Bank"],
-  fi: ["MobilePay", "PayPal", "Bank"],
-  de: ["PayPal", "Revolut", "SEPA"],
-  nl: ["iDEAL", "PayPal", "Revolut"],
-  fr: ["PayPal", "Revolut", "Virement"],
-  it: ["PayPal", "Revolut", "SEPA"],
-  pl: ["BLIK", "PayPal", "Revolut"],
-  en: ["PayPal", "Revolut", "Monzo"],
+/**
+ * Métodos de cobro (recibir plata) más usados por gente joven en cada país,
+ * ordenados por reconocimiento local.
+ *
+ * Va por PAÍS, no por idioma: son ejes distintos. Dinamarca usa la copy en
+ * inglés pero allá se cobra con MobilePay, y "en" cubre GB/US/AU/CA/NZ, que no
+ * comparten ningún rail.
+ *
+ * Solo rails con los que se puede RECIBIR dinero. Ojo con confundirlos con
+ * métodos de checkout: iDEAL (NL) y Klarna (SE) sirven para pagar, no para
+ * cobrar, así que no van acá.
+ *
+ * IMPORTANTE: esto es una afirmación sobre cómo le van a pagar al visitante.
+ * Tiene que coincidir con lo que la oferta realmente soporta — si la plataforma
+ * paga solo por PayPal, mostrar "Swish" es falso. Ajustá la lista por campaña
+ * si la oferta difiere.
+ *
+ * Las claves son los `code` de LOCALES (= Campaign.locale).
+ */
+const PAY_BY_LOCALE: Record<string, string[]> = {
+  // Nórdicos: la app local de pagos es universal entre menores de 30
+  sv: ["Swish", "Revolut", "PayPal"],
+  no: ["Vipps", "Revolut", "PayPal"],
+  da: ["MobilePay", "Revolut", "PayPal"],
+  fi: ["MobilePay", "Revolut", "PayPal"],
+  // Europa occidental
+  de: ["PayPal", "Revolut", "N26"],
+  nl: ["PayPal", "Revolut", "bunq"],
+  fr: ["PayPal", "Lydia", "Revolut"],
+  it: ["PayPal", "Postepay", "Revolut"],
+  es: ["Bizum", "PayPal", "Revolut"],
+  pt: ["MB WAY", "PayPal", "Revolut"],
+  // Europa central/este: Revolut tiene penetración altísima entre jóvenes
+  pl: ["BLIK", "Revolut", "PayPal"],
+  cs: ["Revolut", "PayPal"],
+  hu: ["Revolut", "PayPal"],
+  ro: ["Revolut", "PayPal"],
+  // Anglo: cada país con su rail instantáneo
+  en: ["Revolut", "PayPal", "Monzo"],       // UK
+  "en-US": ["PayPal", "Cash App", "Venmo"],
+  "en-AU": ["PayPal", "PayID", "Revolut"],
+  "en-CA": ["PayPal", "Interac", "Revolut"],
+  "en-NZ": ["PayPal", "Revolut"],
 };
 
-export function payMethods(locale: LanderLocale): string[] {
-  return PAY_METHODS[locale] ?? PAY_METHODS.en;
+const PAY_FALLBACK = ["PayPal", "Revolut"];
+
+/**
+ * Métodos de cobro para el código de locale de la campaña (ej. "sv", "en-US").
+ * `fallback` es el idioma resuelto, por si la campaña no trae locale.
+ */
+export function payMethods(localeCode?: string | null, fallback?: LanderLocale): string[] {
+  return (
+    (localeCode ? PAY_BY_LOCALE[localeCode] : undefined) ??
+    (fallback ? PAY_BY_LOCALE[fallback] : undefined) ??
+    PAY_FALLBACK
+  );
 }
