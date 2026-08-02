@@ -9,6 +9,8 @@ import { ConversionList } from "./_components/conversion-list";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { AutoRefresh } from "./_components/auto-refresh";
 import { InfoTooltip } from "@/components/ui/tooltip";
+import { getT } from "@/lib/i18n-server";
+import type { TFn } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Estadísticas" };
@@ -98,6 +100,7 @@ export default async function StatsPage({
 }: {
   searchParams: Promise<{ range?: string; c?: string }>;
 }) {
+  const t = await getT();
   const { range: rawRange = "today", c: rawC } = await searchParams;
   const range = (RANGES.some((r) => r.key === rawRange) ? rawRange : "today") as StatsRange;
   const window = getWindow(range);
@@ -149,7 +152,7 @@ export default async function StatsPage({
   const localCount   = convList.length;
 
   const summary = selected ? undefined : (isAdmin ? data?.summary : undefined);
-  const rangeLabel = RANGES.find((r) => r.key === range)?.label ?? range;
+  const rangeLabel = t(RANGES.find((r) => r.key === range)?.label ?? range);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -157,7 +160,7 @@ export default async function StatsPage({
         className="flex h-14 shrink-0 items-center px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Estadísticas</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Estadísticas")}</h1>
         <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>TapRain</span>
       </header>
 
@@ -177,7 +180,7 @@ export default async function StatsPage({
                 color:      range === key ? "var(--color-foreground)" : "var(--color-muted-foreground)",
               }}
             >
-              {label}
+              {t(label)}
             </Link>
           ))}
         </nav>
@@ -213,7 +216,7 @@ export default async function StatsPage({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--color-warning)" }} />
             <div>
               <p className="text-sm font-medium" style={{ color: "var(--color-warning)" }}>
-                Stats API no disponible — mostrando datos locales
+                {t("Stats API no disponible — mostrando datos locales")}
               </p>
               <p className="mt-0.5 font-mono text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                 {apiError}
@@ -229,32 +232,32 @@ export default async function StatsPage({
         <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
           <MetricCard
             icon={DollarSign}
-            label="Revenue"
-            info="Ingresos totales generados por conversiones en el período seleccionado."
+            label={t("Revenue")}
+            info={t("Ingresos totales generados por conversiones en el período seleccionado.")}
             value={<AnimatedNumber value={summary ? summary.revenue : localRevenue} format={USD_FMT} />}
-            sub={!summary ? "local" : undefined}
+            sub={!summary ? t("local") : undefined}
             loaded
           />
           <MetricCard
             icon={Repeat2}
-            label="Conversiones"
-            info="Cantidad de conversiones (postbacks recibidos) en el período."
+            label={t("Conversiones")}
+            info={t("Cantidad de conversiones (postbacks recibidos) en el período.")}
             value={<AnimatedNumber value={summary?.conversions ?? localCount} format={INT_FMT} />}
-            sub={!summary ? "local" : undefined}
+            sub={!summary ? t("local") : undefined}
             loaded
           />
           <MetricCard
             icon={MousePointerClick}
-            label="Clicks"
-            info="Clicks únicos por IP a tus landings. Se deduplican por IP+campaña dentro de 6 horas."
+            label={t("Clicks")}
+            info={t("Clicks únicos por IP a tus landings. Se deduplican por IP+campaña dentro de 6 horas.")}
             value={<AnimatedNumber value={summary?.clicks ?? clicks} format={INT_FMT} />}
-            sub={summary?.clicks == null ? "local" : undefined}
+            sub={summary?.clicks == null ? t("local") : undefined}
             loaded
           />
           <MetricCard
             icon={Zap}
-            label="EPC"
-            info="Earnings Per Click: ingresos ÷ clicks. Cuánto ganás en promedio por cada click."
+            label={t("EPC")}
+            info={t("Earnings Per Click: ingresos ÷ clicks. Cuánto ganás en promedio por cada click.")}
             value={
               summary?.epc != null
                 ? <AnimatedNumber value={summary.epc} format={USD_FMT} />
@@ -262,7 +265,7 @@ export default async function StatsPage({
                 ? <AnimatedNumber value={localRevenue / clicks} format={USD_FMT} />
                 : "—"
             }
-            sub={summary?.epc == null && clicks > 0 ? "local" : undefined}
+            sub={summary?.epc == null && clicks > 0 ? t("local") : undefined}
             loaded
           />
         </div>
@@ -274,7 +277,7 @@ export default async function StatsPage({
         <div>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>
-              Conversiones
+              {t("Conversiones")}
             </p>
             <span
               className="rounded-full px-2 py-0.5 text-[11px]"
@@ -290,14 +293,14 @@ export default async function StatsPage({
         {localCount === 0 && (
           <details style={{ color: "var(--color-subtle)" }}>
             <summary className="cursor-pointer select-none text-xs">
-              ¿Cómo configurar el postback?
+              {t("¿Cómo configurar el postback?")}
             </summary>
             <div
               className="mt-3 space-y-2 rounded-xl p-4 text-xs"
               style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
             >
               <p style={{ color: "var(--color-muted-foreground)" }}>
-                En TapRain → Global Postback, pegá esta URL:
+                {t("En TapRain → Global Postback, pegá esta URL:")}
               </p>
               <code
                 className="block overflow-x-auto rounded-md p-3 font-mono"
@@ -316,7 +319,7 @@ export default async function StatsPage({
 function MetricCard({
   icon: Icon, label, value, sub, loaded, info,
 }: {
-  icon: React.ElementType; label: string; value: React.ReactNode; sub?: string; loaded: boolean; info?: string;
+  icon: React.ElementType; label: React.ReactNode; value: React.ReactNode; sub?: string; loaded: boolean; info?: string;
 }) {
   return (
     <div

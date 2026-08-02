@@ -8,6 +8,8 @@ import { CampaignCopyUrl } from "./_components/campaign-copy-url";
 import { CampaignCloakToggle } from "./_components/campaign-cloak-toggle";
 import { CampaignDelete } from "./_components/campaign-delete";
 import { AnimatedBar } from "@/components/ui/animated-bar";
+import { getT } from "@/lib/i18n-server";
+import type { TFn } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Campañas" };
@@ -19,6 +21,7 @@ const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", c
 const trailingNum = (name?: string) => { const m = /(\d+)\s*$/.exec(name ?? ""); return m ? parseInt(m[1]!) : 0; };
 
 export default async function CampaignsPage() {
+  const t = await getT();
   let campaigns: Campaign[] = [];
   let dbError = false;
 
@@ -59,7 +62,7 @@ export default async function CampaignsPage() {
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
-          Campañas
+          {t("Campañas")}
         </h1>
         {!dbError && (
           <span
@@ -79,7 +82,7 @@ export default async function CampaignsPage() {
           style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
         >
           <Plus className="h-3.5 w-3.5" />
-          Nueva campaña
+          {t("Nueva campaña")}
         </Link>
       </header>
 
@@ -95,7 +98,7 @@ export default async function CampaignsPage() {
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "var(--color-warning)" }} />
           <div>
             <p className="text-sm font-medium" style={{ color: "var(--color-warning)" }}>
-              Base de datos no configurada
+              {t("Base de datos no configurada")}
             </p>
             <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
               Rellena <code className="font-mono">.env</code> con tus credenciales de Supabase y ejecuta{" "}
@@ -108,11 +111,11 @@ export default async function CampaignsPage() {
       {/* Content */}
       <main className="flex-1 px-4 py-6 md:px-8">
         {campaigns.length === 0 && !dbError ? (
-          <EmptyState />
+          <EmptyState t={t} />
         ) : (
           <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {campaigns.map((c) => (
-              <CampaignCard key={c.id} campaign={c} vcc={vccByCampaign.get(c.id) ?? null} />
+              <CampaignCard key={c.id} campaign={c} vcc={vccByCampaign.get(c.id) ?? null} t={t} />
             ))}
           </div>
         )}
@@ -121,7 +124,7 @@ export default async function CampaignsPage() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ t }: { t: TFn }) {
   return (
     <div
       className="flex flex-col items-center justify-center rounded-xl py-24 text-center"
@@ -134,10 +137,10 @@ function EmptyState() {
         <Plus className="h-5 w-5" style={{ color: "var(--color-muted-foreground)" }} />
       </div>
       <p className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
-        Sin campañas
+        {t("Sin campañas")}
       </p>
       <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-        Crea tu primera campaña para empezar.
+        {t("Crea tu primera campaña para empezar.")}
       </p>
       <Link
         href="/campaigns/new"
@@ -145,13 +148,13 @@ function EmptyState() {
         style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
       >
         <Plus className="h-3.5 w-3.5" />
-        Nueva campaña
+        {t("Nueva campaña")}
       </Link>
     </div>
   );
 }
 
-function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo | null }) {
+function CampaignCard({ campaign: c, vcc, t }: { campaign: Campaign; vcc: VccInfo | null; t: TFn }) {
   const loc = getLocaleByCode(c.locale);
   const url = c.domain ? `${c.domain}/${c.slug}` : `/${c.slug}`;
   const landingHref = c.domain ? `https://${c.domain}/${c.slug}` : `/landing/${c.slug}`;
@@ -173,11 +176,11 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
           </span>
         )}
         <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: c.offerName ? "var(--color-foreground)" : "var(--color-subtle)" }}>
-          {c.offerName ?? "Sin oferta"}
+          {c.offerName ?? t("Sin oferta")}
         </span>
         <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium" style={{ color: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }}>
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.isActive ? "var(--color-success)" : "var(--color-subtle)" }} />
-          {c.isActive ? "Activa" : "Pausada"}
+          {c.isActive ? t("Activa") : t("Pausada")}
         </span>
       </div>
 
@@ -191,7 +194,7 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
           <span className="min-w-0 flex-1 truncate font-mono text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>{url}</span>
           <CampaignCopyUrl slug={c.slug} domain={c.domain} />
           <CampaignCloakToggle id={c.id} cloak={c.cloak} />
-          <a href={landingHref} target="_blank" rel="noopener noreferrer" title="Abrir landing"
+          <a href={landingHref} target="_blank" rel="noopener noreferrer" title={t("Abrir landing")}
             className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -210,9 +213,9 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
           <Link href={`/campaigns/${c.id}`}
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
             style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
-            <LineChart className="h-3.5 w-3.5" /> Supervisar
+            <LineChart className="h-3.5 w-3.5" /> {t("Supervisar")}
           </Link>
-          <Link href={`/campaigns/${c.id}/edit`} title="Editar"
+          <Link href={`/campaigns/${c.id}/edit`} title={t("Editar")}
             className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors hover:opacity-70"
             style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
             <Pencil className="h-3.5 w-3.5" />
@@ -244,7 +247,7 @@ function CampaignCard({ campaign: c, vcc }: { campaign: Campaign; vcc: VccInfo |
           </>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
-            <CreditCard className="h-3.5 w-3.5" /> Sin tarjeta asignada
+            <CreditCard className="h-3.5 w-3.5" /> {t("Sin tarjeta asignada")}
           </span>
         )}
       </Link>

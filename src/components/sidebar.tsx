@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users, Globe, Shuffle, Sparkles, Network, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
+import { useT } from "@/components/i18n-provider";
 
 const NAV_BASE = [
   { href: "/overview",      icon: LayoutDashboard, label: "Inicio" },
@@ -26,6 +27,7 @@ const NAV_BASE = [
 ];
 
 export function Sidebar() {
+  const t = useT();
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
@@ -137,7 +139,7 @@ export function Sidebar() {
                   }}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  {label}
+                  {t(label)}
                 </Link>
               </li>
             );
@@ -163,7 +165,7 @@ export function Sidebar() {
           </div>
           <button
             type="button"
-            title="Cerrar sesión"
+            title={t("Cerrar sesión")}
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="shrink-0 transition-opacity hover:opacity-70"
             style={{ color: "var(--color-subtle)" }}

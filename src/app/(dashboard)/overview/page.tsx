@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import ReactCountryFlag from "react-country-flag";
+import { getT } from "@/lib/i18n-server";
 import { authOptions } from "@/server/auth";
 import { db } from "@/server/db";
 import { getLocaleByCode } from "@/lib/locales";
@@ -61,6 +62,7 @@ function Sparkline({ data }: { data: number[] }) {
 }
 
 export default async function OverviewPage() {
+  const t = await getT();
   const session = await getServerSession(authOptions);
   const name = session?.user?.name ?? "afiliado";
 
@@ -133,7 +135,7 @@ export default async function OverviewPage() {
 
           {dbError && (
             <div className="rounded-xl p-4 text-sm" style={{ background: "var(--color-warning-bg)", border: "1px solid rgba(245,166,35,0.2)", color: "var(--color-warning)" }}>
-              No se pudo conectar a la base de datos.
+              {t("No se pudo conectar a la base de datos.")}
             </div>
           )}
 
@@ -153,7 +155,7 @@ export default async function OverviewPage() {
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-success)", boxShadow: "0 0 8px var(--color-success)", animation: "ovPulse 2s ease-in-out infinite" }} />
                   <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>
-                    Ingresos · hoy
+                    {t("Ingresos · hoy")}
                   </span>
                 </div>
                 <p
@@ -184,10 +186,10 @@ export default async function OverviewPage() {
               <div className="flex flex-col">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>
-                    Hora a hora
+                    {t("Hora a hora")}
                   </span>
                   <Link href="/stats" className="inline-flex items-center gap-1 text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
-                    Ver stats <ArrowUpRight className="h-3 w-3" />
+                    {t("Ver stats")} <ArrowUpRight className="h-3 w-3" />
                   </Link>
                 </div>
                 <div className="mt-3 flex-1" style={{ minHeight: 120 }}>
@@ -202,10 +204,10 @@ export default async function OverviewPage() {
 
           {/* ── Quick tiles ── */}
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile href="/campaigns" icon={LayoutGrid} label="Campañas" value={`${activeCampaigns}`} sub={`de ${campaigns.length} activas`} />
-            <Tile href="/wallet" icon={Wallet} label="Balance" value={usd(totalFunds)} sub="acumulado" mono />
-            <Tile href="/interactions" icon={Heart} label="Interacciones" value="Gestionar" sub="likes · coments · saves" small />
-            <Tile href="/offers" icon={Package} label="Ofertas" value="Explorar" sub="catálogo TapRain" small />
+            <Tile href="/campaigns" icon={LayoutGrid} label={t("Campañas")} value={`${activeCampaigns}`} sub={`${t("de")} ${campaigns.length} ${t("activas")}`} />
+            <Tile href="/wallet" icon={Wallet} label={t("Balance")} value={usd(totalFunds)} sub={t("acumulado")} mono />
+            <Tile href="/interactions" icon={Heart} label={t("Interacciones")} value={t("Gestionar")} sub="likes · coments · saves" small />
+            <Tile href="/offers" icon={Package} label={t("Ofertas")} value={t("Explorar")} sub="catálogo TapRain" small />
           </section>
 
           {/* ── Bottom: actividad + atajos ── */}
@@ -215,12 +217,12 @@ export default async function OverviewPage() {
               <div className="mb-4 flex items-center gap-2">
                 <Activity className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>
-                  Actividad reciente
+                  {t("Actividad reciente")}
                 </span>
               </div>
               {recent.length === 0 ? (
                 <p className="py-6 text-center text-sm" style={{ color: "var(--color-subtle)" }}>
-                  Sin conversiones todavía.
+                  {t("Sin conversiones todavía.")}
                 </p>
               ) : (
                 <div className="space-y-1">

@@ -1,0 +1,216 @@
+/**
+ * i18n del panel (no de las landings — esas tienen su propio sistema en
+ * lander-i18n.ts).
+ *
+ * Diccionario con el ESPAÑOL como clave: `t("Nueva campaña")` devuelve el
+ * inglés cuando el idioma es "en", y la propia clave cuando es "es". Ventajas
+ * para esta app, que nació en español y solo necesita dos idiomas:
+ *   - el código sigue legible (no hay que inventar claves tipo campaigns.new.title)
+ *   - lo que todavía no está traducido cae al español en vez de romperse
+ */
+
+export type AppLang = "es" | "en";
+
+export const LANGS: { code: AppLang; label: string; countryCode: string }[] = [
+  { code: "es", label: "Español", countryCode: "ES" },
+  { code: "en", label: "English", countryCode: "GB" },
+];
+
+export const DEFAULT_LANG: AppLang = "es";
+export const LANG_COOKIE = "tapsur_lang";
+
+export function isLang(v: unknown): v is AppLang {
+  return v === "es" || v === "en";
+}
+
+/** es → en. Lo que no esté acá se muestra tal cual (en español). */
+const EN: Record<string, string> = {
+  // ── Navegación ──
+  "Inicio": "Home",
+  "Campañas": "Campaigns",
+  "Nueva campaña": "New campaign",
+  "Ofertas": "Offers",
+  "Sparks": "Sparks",
+  "Proxies": "Proxies",
+  "Redirecciones": "Redirects",
+  "Mapa": "Map",
+  "Estadísticas": "Stats",
+  "Leaderboard": "Leaderboard",
+  "Interacciones": "Interactions",
+  "Tarjetas": "Cards",
+  "Finanzas": "Finances",
+  "Billetera": "Wallet",
+  "Mi equipo": "My team",
+  "Ángulos": "Angles",
+  "Admin": "Admin",
+  "Cerrar sesión": "Log out",
+  "Abrir menú": "Open menu",
+
+  // ── Header ──
+  "Notificaciones": "Notifications",
+  "Sin notificaciones nuevas.": "No new notifications.",
+  "Mostrar balance": "Show balance",
+  "Ocultar balance": "Hide balance",
+  "Chat": "Chat",
+  "Chat en vivo": "Live chat",
+  "Idioma": "Language",
+  "Cambiar idioma": "Change language",
+
+  // ── Comunes ──
+  "Guardar": "Save",
+  "Guardando…": "Saving…",
+  "Cancelar": "Cancel",
+  "Eliminar": "Delete",
+  "Editar": "Edit",
+  "Crear": "Create",
+  "Cerrar": "Close",
+  "Continuar": "Continue",
+  "Volver": "Back",
+  "Buscar": "Search",
+  "Copiar": "Copy",
+  "Copiado": "Copied",
+  "Abrir": "Open",
+  "Conectar": "Connect",
+  "Desconectar": "Disconnect",
+  "Reconectar": "Reconnect",
+  "Actualizar": "Refresh",
+  "Activa": "Active",
+  "Pausada": "Paused",
+  "Activar": "Enable",
+  "Pausar": "Pause",
+  "Sí": "Yes",
+  "No": "No",
+  "Total": "Total",
+  "Hoy": "Today",
+  "Ayer": "Yesterday",
+  "local": "local",
+  "Cargando…": "Loading…",
+  "Sin resultados": "No results",
+  "Seleccionar…": "Select…",
+  "Nombre": "Name",
+  "Estado": "Status",
+  "Acciones": "Actions",
+  "Filtros": "Filters",
+  "Tipo": "Type",
+  "Dispositivo": "Device",
+  "País": "Country",
+  "Moneda": "Currency",
+  "Dominio": "Domain",
+  "Slug": "Slug",
+  "Color": "Color",
+  "Apps": "Apps",
+
+  // ── Campañas ──
+  "Sin campañas": "No campaigns",
+  "Crea tu primera campaña para empezar.": "Create your first campaign to get started.",
+  "Sin oferta": "No offer",
+  "Supervisar": "Monitor",
+  "Abrir landing": "Open landing",
+  "Copiar link": "Copy link",
+  "Sin tarjeta asignada": "No card assigned",
+  "Base de datos no configurada": "Database not configured",
+  "Cloaker ACTIVO — la landing redirige a ropa. Click para apagar.":
+    "Cloaker ON — the landing redirects to clothing. Click to turn off.",
+  "Cloaker apagado — la landing se muestra normal. Click para activar.":
+    "Cloaker off — the landing shows normally. Click to turn on.",
+  "Pausar campaña": "Pause campaign",
+  "Activar campaña": "Enable campaign",
+
+  // ── Formulario de campaña ──
+  "Identidad": "Identity",
+  "Mercado": "Market",
+  "Oferta": "Offer",
+  "Marca": "Brand",
+  "Lanzar": "Launch",
+  "Oferta / CTA": "Offer / CTA",
+  "URL de afiliado": "Affiliate URL",
+  "Buscar oferta": "Find offer",
+  "Empezar desde una oferta": "Start from an offer",
+  "Elegí una oferta…": "Pick an offer…",
+  "Sin dominio": "No domain",
+  "Idioma / País": "Language / Country",
+  "Plantilla": "Template",
+  "Subir logo": "Upload logo",
+  "Fuente de títulos": "Heading font",
+  "Fuente de párrafos": "Body font",
+  "Intro (swipe up)": "Intro (swipe up)",
+  "Con intro swipe-up": "With swipe-up intro",
+  "Sin intro — landing directa": "No intro — straight to landing",
+  "Pregunta de edad (+21 / -21)": "Age question (21+ / under 21)",
+  "Con pregunta de edad": "With age question",
+  "CTA único (sin pregunta)": "Single CTA (no question)",
+  "TikTok Pixel ID": "TikTok Pixel ID",
+  "Revisá y creá la campaña.": "Review and create the campaign.",
+  "Primera tarjeta (VCC)": "First card (VCC)",
+  "Aplicaciones": "Applications",
+
+  // ── Estadísticas ──
+  "Última hora": "Last hour",
+  "7 días": "7 days",
+  "30 días": "30 days",
+  "Revenue": "Revenue",
+  "Conversiones": "Conversions",
+  "Clicks": "Clicks",
+  "EPC": "EPC",
+  "Ingresos totales generados por conversiones en el período seleccionado.":
+    "Total revenue generated by conversions in the selected period.",
+  "Cantidad de conversiones (postbacks recibidos) en el período.":
+    "Number of conversions (postbacks received) in the period.",
+  "Clicks únicos por IP a tus landings. Se deduplican por IP+campaña dentro de 6 horas.":
+    "Unique clicks by IP to your landings. Deduplicated by IP+campaign within 6 hours.",
+  "Earnings Per Click: ingresos ÷ clicks. Cuánto ganás en promedio por cada click.":
+    "Earnings Per Click: revenue ÷ clicks. Your average earnings per click.",
+  "Stats API no disponible — mostrando datos locales":
+    "Stats API unavailable — showing local data",
+  "¿Cómo configurar el postback?": "How do I set up the postback?",
+  "Más información": "More information",
+
+  // ── Tarjetas ──
+  "Tarjetas virtuales": "Virtual cards",
+  "Nueva tarjeta": "New card",
+  "Actualizar cookie de sesión": "Update session cookie",
+  "La Ads Suite usa sesión (no API key). Pegá la cookie de sesión de tu cuenta de TapRain.":
+    "The Ads Suite uses a session (not an API key). Paste your TapRain account session cookie.",
+  "¿Cómo obtengo la cookie?": "How do I get the cookie?",
+  "Logueate en taprain.com en el navegador.": "Log in to taprain.com in your browser.",
+  "Pegalos arriba y Conectar. Si expira, repetí el paso.":
+    "Paste them above and hit Connect. If it expires, repeat the step.",
+
+  // ── Overview ──
+  "Ingresos · hoy": "Revenue · today",
+  "Hora a hora": "Hour by hour",
+  "Ver stats": "View stats",
+  "Actividad reciente": "Recent activity",
+  "Sin conversiones todavía.": "No conversions yet.",
+  "Balance": "Balance",
+  "acumulado": "accumulated",
+  "Gestionar": "Manage",
+  "Explorar": "Browse",
+  "de": "of",
+
+  // ── Wallet / Finanzas ──
+  "Sin movimientos": "No transactions",
+  "Retirar": "Withdraw",
+
+  // ── Equipo / Admin ──
+  "Invitar": "Invite",
+  "Miembros": "Members",
+  "Plantillas de landing": "Landing templates",
+  "Base de conocimientos": "Knowledge base",
+  "Galería de fotos": "Photo gallery",
+};
+
+const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };
+
+/** Traduce `text` al idioma dado. Sin entrada → devuelve el original. */
+export function translate(lang: AppLang, text: string): string {
+  if (lang === "es") return text;
+  return TABLES[lang][text] ?? text;
+}
+
+/** Devuelve una función `t` ligada a un idioma. */
+export function makeT(lang: AppLang) {
+  return (text: string) => translate(lang, text);
+}
+
+export type TFn = ReturnType<typeof makeT>;

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, Eye, EyeOff, MessageCircle, DollarSign, Menu } from "lucide-react";
 import { AnimatedNumber } from "@/components/ui/animated-number";
+import { LangSwitcher } from "@/components/lang-switcher";
+import { useT } from "@/components/i18n-provider";
 
 type BalanceData = {
   today:     { revenue: number; conversions: number };
@@ -16,6 +18,7 @@ const fmt = new Intl.NumberFormat("en-US", {
 const HIDE_KEY = "aff_hide_balance";
 
 export function BalanceBar() {
+  const t = useT();
   const [data, setData]       = useState<BalanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [hidden, setHidden]   = useState(false);
@@ -71,7 +74,7 @@ export function BalanceBar() {
       {/* Hamburguesa + logo (solo móvil) */}
       <button
         type="button"
-        aria-label="Abrir menú"
+        aria-label={t("Abrir menú")}
         onClick={() => window.dispatchEvent(new CustomEvent("sidebar:toggle"))}
         className="flex h-7 w-7 items-center justify-center rounded-md transition-colors md:hidden"
         style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
@@ -87,7 +90,7 @@ export function BalanceBar() {
       <div ref={notifRef} className="relative">
         <button
           type="button"
-          title="Notificaciones"
+          title={t("Notificaciones")}
           onClick={() => setNotifOpen((o) => !o)}
           className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
           style={{
@@ -114,17 +117,20 @@ export function BalanceBar() {
               style={{ borderBottom: "1px solid var(--color-border)" }}
             >
               <span className="text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>
-                Notificaciones
+                {t("Notificaciones")}
               </span>
             </div>
             <div className="px-4 py-7 text-center">
               <p className="text-xs" style={{ color: "var(--color-subtle)" }}>
-                Sin notificaciones nuevas.
+                {t("Sin notificaciones nuevas.")}
               </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Idioma del panel */}
+      <LangSwitcher />
 
       {/* Wallet */}
       <div
@@ -141,7 +147,7 @@ export function BalanceBar() {
         </span>
         <button
           type="button"
-          title={hidden ? "Mostrar balance" : "Ocultar balance"}
+          title={hidden ? t("Mostrar balance") : t("Ocultar balance")}
           onClick={toggleHidden}
           className="flex items-center transition-opacity hover:opacity-70"
           style={{ color: "var(--color-subtle)" }}
@@ -153,7 +159,7 @@ export function BalanceBar() {
       {/* Live Chat */}
       <button
         type="button"
-        title="Chat en vivo"
+        title={t("Chat en vivo")}
         onClick={() => window.dispatchEvent(new CustomEvent("chat:open"))}
         className="flex items-center gap-1.5 rounded-md px-2.5 transition-colors hover:opacity-80"
         style={{
@@ -164,7 +170,7 @@ export function BalanceBar() {
         }}
       >
         <MessageCircle className="h-3.5 w-3.5" />
-        <span className="text-xs font-medium">Chat</span>
+        <span className="text-xs font-medium">{t("Chat")}</span>
       </button>
     </div>
   );
