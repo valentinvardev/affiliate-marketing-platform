@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Shuffle, Search, X, Loader2, Check, AlertTriangle } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function ConversionReassign({ id, currentS1, offerName }: { id: string; currentS1: string | null; offerName: string | null }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" title="Reasignar a otra campaña" onClick={() => setOpen(true)}
+      <button type="button" title={t("Reasignar a otra campaña")} onClick={() => setOpen(true)}
         className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70"
         style={{ color: "var(--color-muted-foreground)" }}>
         <Shuffle className="h-3.5 w-3.5" />
@@ -59,7 +60,7 @@ function ReassignModal({ id, currentS1, offerName, onClose }: { id: string; curr
         <div className="shrink-0 px-5 py-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
           <div className="flex items-center gap-2">
             <Shuffle className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
-            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Reasignar conversión</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Reasignar conversión")}</p>
             <button type="button" onClick={onClose} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
           </div>
           <p className="mt-1 truncate text-xs" style={{ color: "var(--color-subtle)" }}>
@@ -69,8 +70,8 @@ function ReassignModal({ id, currentS1, offerName, onClose }: { id: string; curr
 
         {/* s1 destino (editable) */}
         <div className="shrink-0 px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
-          <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>s1 destino</label>
-          <input value={s1} onChange={(e) => setS1(e.target.value)} placeholder="slug de la campaña"
+          <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("s1 destino")}</label>
+          <input value={s1} onChange={(e) => setS1(e.target.value)} placeholder={t("slug de la campaña")}
             className="mt-1 w-full rounded-md px-3 py-2 text-sm outline-none"
             style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }} />
         </div>
@@ -78,7 +79,7 @@ function ReassignModal({ id, currentS1, offerName, onClose }: { id: string; curr
         {/* Buscar campaña */}
         <div className="flex shrink-0 items-center gap-2 px-5 py-2.5" style={{ borderBottom: "1px solid var(--color-border)" }}>
           <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar campaña, slug o usuario…"
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Buscar campaña, slug o usuario…")}
             className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--color-foreground)" }} />
         </div>
 
@@ -86,7 +87,7 @@ function ReassignModal({ id, currentS1, offerName, onClose }: { id: string; curr
           {targetsQ.isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
           ) : list.length === 0 ? (
-            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Sin campañas.</p>
+            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin campañas.")}</p>
           ) : list.map((c) => {
             const sel = s1.trim() === c.slug;
             return (
@@ -110,7 +111,7 @@ function ReassignModal({ id, currentS1, offerName, onClose }: { id: string; curr
         {/* Footer */}
         <div className="flex shrink-0 items-center gap-3 px-5 py-3" style={{ borderTop: "1px solid var(--color-border)" }}>
           {err && <span className="inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</span>}
-          <button type="button" onClick={onClose} className="ml-auto rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+          <button type="button" onClick={onClose} className="ml-auto rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
           <button type="button" disabled={!changed || reassign.isPending}
             onClick={() => { setErr(null); reassign.mutate({ conversionId: id, s1: s1.trim() }); }}
             className="inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition-opacity disabled:opacity-40"

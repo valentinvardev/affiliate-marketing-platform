@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { Loader2, Globe, Trash2, Plus, ExternalLink, AlertCircle } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function AdminDomainsTab() {
   const utils = api.useUtils();
   const domainsQ = api.domains.list.useQuery();
@@ -21,14 +22,14 @@ export function AdminDomainsTab() {
   return (
     <div className="space-y-6">
       {/* ── Registrar dominio ── */}
-      <Section title="Registrar un dominio raíz" icon={Plus}>
+      <Section title={t("Registrar un dominio raíz")} icon={Plus}>
         <form
           onSubmit={(e) => { e.preventDefault(); if (domain) add.mutate({ domain }); }}
           className="space-y-3"
         >
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[200px] flex-1 space-y-1.5">
-              <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Dominio</label>
+              <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Dominio")}</label>
               <input
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
@@ -54,18 +55,18 @@ export function AdminDomainsTab() {
           </div>
           <p className="text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}>
             Se guarda el apex en minúsculas (sin <code>www</code>). El dominio queda disponible para asignarlo a las{" "}
-            <strong>ofertas</strong> (en Offers); las campañas creadas desde esas ofertas salen en
+            <strong>{t("ofertas")}</strong> (en Offers); las campañas creadas desde esas ofertas salen en
             <code> dominio/&lt;slug&gt;</code>. Acordate de apuntar el DNS al VPS + nginx/Cloudflare.
           </p>
         </form>
       </Section>
 
       {/* ── Lista ── */}
-      <Section title="Dominios registrados" icon={Globe} count={domains.length}>
+      <Section title={t("Dominios registrados")} icon={Globe} count={domains.length}>
         {domainsQ.isLoading ? (
           <Spinner />
         ) : domains.length === 0 ? (
-          <Empty>Todavía no registraste ningún dominio.</Empty>
+          <Empty>{t("Todavía no registraste ningún dominio.")}</Empty>
         ) : (
           <div className="space-y-2">
             {domains.map((d) => (
@@ -87,7 +88,7 @@ export function AdminDomainsTab() {
                 </a>
                 <button
                   type="button"
-                  title="Quitar dominio"
+                  title={t("Quitar dominio")}
                   disabled={remove.isPending}
                   onClick={() => remove.mutate({ id: d.id })}
                   className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-50"

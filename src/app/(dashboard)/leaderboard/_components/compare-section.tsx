@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { Users, Loader2, ChevronUp } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
 
 const MEDAL: Record<number, string> = { 1: "#facc15", 2: "#cbd5e1", 3: "#d6a06a" };
@@ -20,7 +21,7 @@ export function CompareSection() {
           style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
           <Users className="h-4 w-4" /> Quiero compararme
         </button>
-        <p className="mt-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>Ver el ranking del equipo (revenue de hoy).</p>
+        <p className="mt-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("Ver el ranking del equipo (revenue de hoy).")}</p>
       </div>
     );
   }
@@ -31,7 +32,7 @@ export function CompareSection() {
   return (
     <div className="mt-10 w-full max-w-lg">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Leaderboard · hoy</span>
+        <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{t("Leaderboard · hoy")}</span>
         {myRank && <span className="rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>Estás #{myRank}</span>}
         <button type="button" onClick={() => setOpen(false)} className="ml-auto inline-flex items-center gap-1 text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
           <ChevronUp className="h-3.5 w-3.5" /> Ocultar
@@ -41,7 +42,7 @@ export function CompareSection() {
       {q.isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
       ) : ranking.length === 0 ? (
-        <p className="py-8 text-center text-sm" style={{ color: "var(--color-subtle)" }}>Sin participantes todavía.</p>
+        <p className="py-8 text-center text-sm" style={{ color: "var(--color-subtle)" }}>{t("Sin participantes todavía.")}</p>
       ) : (
         <ul className="overflow-hidden rounded-xl" style={{ border: "1px solid var(--color-border)" }}>
           {ranking.map((r, i) => {

@@ -3,6 +3,7 @@
 import { api } from "@/trpc/react";
 import { Loader2, CreditCard, LayoutGrid, UserCog } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 type UserOpt = { id: string; username: string; role: string };
 
 const ROLES = [
@@ -32,11 +33,11 @@ export function AdminAssignmentsTab() {
   return (
     <div className="space-y-6">
       {/* ── Roles ── */}
-      <Section title="Rol de cada usuario" icon={UserCog} count={users.length}>
+      <Section title={t("Rol de cada usuario")} icon={UserCog} count={users.length}>
         {usersQ.isLoading ? (
           <Spinner />
         ) : users.length === 0 ? (
-          <Empty>Sin usuarios.</Empty>
+          <Empty>{t("Sin usuarios.")}</Empty>
         ) : (
           <div className="space-y-2">
             {users.map((u) => (
@@ -65,9 +66,9 @@ export function AdminAssignmentsTab() {
         {cardsQ.isLoading ? (
           <Spinner />
         ) : !cardsQ.data?.connected ? (
-          <Note>Conectá la sesión de TapRain en <a href="/cards" className="underline">Tarjetas</a> para listar las VCCs.</Note>
+          <Note>{t("Conectá la sesión de TapRain en")} <a href="/cards" className="underline">{t("Tarjetas")}</a> {t("para listar las VCCs.")}</Note>
         ) : cardsQ.data.cards.length === 0 ? (
-          <Empty>Sin tarjetas.</Empty>
+          <Empty>{t("Sin tarjetas.")}</Empty>
         ) : (
           <div className="space-y-2">
             {cardsQ.data.cards.map((c) => (
@@ -90,7 +91,7 @@ export function AdminAssignmentsTab() {
         {campsQ.isLoading ? (
           <Spinner />
         ) : (campsQ.data ?? []).length === 0 ? (
-          <Empty>Sin campañas.</Empty>
+          <Empty>{t("Sin campañas.")}</Empty>
         ) : (
           <div className="space-y-2">
             {(campsQ.data ?? []).map((c) => (
@@ -150,7 +151,7 @@ function AssignRow({
         className="shrink-0 rounded-md px-2 py-1.5 text-xs outline-none"
         style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: value ? "var(--color-foreground)" : "var(--color-subtle)", maxWidth: 160 }}
       >
-        <option value="">Sin asignar</option>
+        <option value="">{t("Sin asignar")}</option>
         {users.map((u) => (
           <option key={u.id} value={u.id}>{u.username}{u.role === "admin" ? " (admin)" : ""}</option>
         ))}

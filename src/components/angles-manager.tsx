@@ -7,6 +7,7 @@ import { api } from "@/trpc/react";
 import { TARGET_COUNTRIES } from "@/lib/target-countries";
 import { downscaleImage } from "@/lib/downscale-image";
 import { ImageEditor } from "@/components/image-editor";
+import { t as tr } from "@/lib/i18n-client";
 import {
   Brain, Sparkles, Copy, Check, Loader2, Trash2, Upload, Plus, Clock, Gamepad2, TrendingUp, ImageIcon, Languages, ImagePlus, X, AlertTriangle, ThumbsUp, ThumbsDown, SlidersHorizontal,
 } from "lucide-react";
@@ -38,7 +39,7 @@ export function AnglesManager() {
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Brain className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Ángulos</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{tr("Ángulos")}</h1>
         <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>TikTok Ads · Gemini</span>
       </header>
 
@@ -47,17 +48,17 @@ export function AnglesManager() {
         <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
           <div className="flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1">
-              <span className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>País</span>
+              <span className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{tr("País")}</span>
               <select value={country} onChange={(e) => setCountry(e.target.value)}
                 className="rounded-md px-3 py-2 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
                 {TARGET_COUNTRIES.map((c) => <option key={c.id} value={c.name} style={{ background: "var(--color-surface-raised)" }}>{c.name}</option>)}
               </select>
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>Campaña (métricas, opcional)</span>
+              <span className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{tr("Campaña (métricas, opcional)")}</span>
               <select value={campaignId} onChange={(e) => setCampaignId(e.target.value)}
                 className="rounded-md px-3 py-2 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
-                <option value="" style={{ background: "var(--color-surface-raised)" }}>— ninguna —</option>
+                <option value="" style={{ background: "var(--color-surface-raised)" }}>{tr("— ninguna —")}</option>
                 {(campaignsQ.data ?? []).map((c) => <option key={c.id} value={c.id} style={{ background: "var(--color-surface-raised)" }}>{c.name}</option>)}
               </select>
             </label>
@@ -101,8 +102,8 @@ export function AnglesManager() {
                 ))}
               </div>
               {imgTab === "hook"
-                ? <AssetLibrary country={country} kind="hook" title="Fotos hook (imagen 1)" hint="Subí las fotos de la primera imagen del anuncio." />
-                : <AssetLibrary country={country} kind="proof" title="Proofs de pago (imagen 2)" hint="Subí las capturas reales de pago." />}
+                ? <AssetLibrary country={country} kind="hook" title={tr("Fotos hook (imagen 1)")} hint="Subí las fotos de la primera imagen del anuncio." />
+                : <AssetLibrary country={country} kind="proof" title={tr("Proofs de pago (imagen 2)")} hint="Subí las capturas reales de pago." />}
             </div>
           ) : (
             <KbSection country={country} />
@@ -119,7 +120,7 @@ export function AnglesManager() {
           <div className="w-full max-w-lg rounded-2xl" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
             <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
               <SlidersHorizontal className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Condicionar ángulos</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{tr("Condicionar ángulos")}</p>
               <button type="button" onClick={() => setGuideOpen(false)} className="ml-auto" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-3 p-4">
@@ -127,15 +128,15 @@ export function AnglesManager() {
                 Instrucciones extra que Gemini va a respetar al generar (sin romper el tono natural). Ej: enfocá en madres jóvenes, mencioná que se juega en ratos libres, tono más directo, evitá prometer montos exactos.
               </p>
               <textarea value={guidance} onChange={(e) => setGuidance(e.target.value)} rows={6} autoFocus maxLength={2000}
-                placeholder="Escribí acá cómo querés condicionar los ángulos…"
+                placeholder={tr("Escribí acá cómo querés condicionar los ángulos…")}
                 className="w-full resize-y rounded-md px-3 py-2 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
               <div className="flex items-center gap-2">
                 {guidance.trim() && (
                   <button type="button" onClick={() => setGuidance("")} className="rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                    style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>Limpiar</button>
+                    style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>{tr("Limpiar")}</button>
                 )}
                 <button type="button" onClick={() => setGuideOpen(false)} className="ml-auto rounded-md px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
-                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>Listo</button>
+                  style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>{tr("Listo")}</button>
               </div>
             </div>
           </div>
@@ -177,7 +178,7 @@ function AngleView({ data }: { data: Loaded }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Creativos guardados:</span>
+        <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{tr("Creativos guardados:")}</span>
         <AngleMediaStrip angleId={data.id} />
       </div>
       {editorAngle && (
@@ -223,7 +224,7 @@ function AngleView({ data }: { data: Loaded }) {
             )}
             <Copyable label={`Proof (texto sobre tu imagen)${es ? " · ES" : ""}`} value={t.proof_text} />
             <Copyable label={`Caption + CTA${es ? " · ES" : ""}`} value={t.caption} />
-            {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>Por qué funciona:</span> {a.why_it_works}</p>}
+            {a.why_it_works && <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}><span style={{ color: "var(--color-muted-foreground)" }}>{tr("Por qué funciona:")}</span> {a.why_it_works}</p>}
             <button type="button" onClick={() => setEditorAngle(a)}
               className="mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90"
               style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
@@ -251,7 +252,7 @@ function AngleFeedback({ angleId, angleName }: { angleId: string; angleName: str
     return (
       <div className="mt-2.5 flex items-start gap-1.5 rounded-md px-3 py-2 text-[11px]" style={{ background: "var(--color-success-bg)", border: "1px solid var(--color-border)" }}>
         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-success)" }} />
-        <span style={{ color: "var(--color-foreground)" }}><span style={{ color: "var(--color-success)" }}>Aprendizaje agregado a la base:</span> {fb.data.entry}</span>
+        <span style={{ color: "var(--color-foreground)" }}><span style={{ color: "var(--color-success)" }}>{tr("Aprendizaje agregado a la base:")}</span> {fb.data.entry}</span>
       </div>
     );
   }
@@ -259,7 +260,7 @@ function AngleFeedback({ angleId, angleName }: { angleId: string; angleName: str
   return (
     <div className="mt-2.5 rounded-md px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Feedback</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>{tr("Feedback")}</span>
         <button type="button" onClick={() => setOutcome("worked")} className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium"
           style={{ border: `1px solid ${outcome === "worked" ? "var(--color-success)" : "var(--color-border)"}`, color: outcome === "worked" ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
           <ThumbsUp className="h-3 w-3" /> Funcionó
@@ -272,7 +273,7 @@ function AngleFeedback({ angleId, angleName }: { angleId: string; angleName: str
       {outcome && (
         <div className="mt-2 flex flex-col gap-2">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
-            placeholder="Nota opcional: qué viste (métricas, comentarios, público…). Gemini lo resume como aprendizaje."
+            placeholder={tr("Nota opcional: qué viste (métricas, comentarios, público…). Gemini lo resume como aprendizaje.")}
             className="w-full resize-none rounded-md px-2.5 py-2 text-xs outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
           <button type="button" disabled={fb.isPending} onClick={() => fb.mutate({ angleId, angleName, outcome, note: note.trim() || undefined })}
             className="inline-flex w-fit items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
@@ -289,7 +290,7 @@ function AngleMediaStrip({ angleId }: { angleId: string }) {
   const q = api.angles.mediaList.useQuery({ angleId });
   const remove = api.angles.mediaRemove.useMutation({ onSuccess: () => void utils.angles.mediaList.invalidate() });
   const items = q.data ?? [];
-  if (!items.length) return <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Sin creativos guardados.</span>;
+  if (!items.length) return <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{tr("Sin creativos guardados.")}</span>;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {items.map((m) => (
@@ -322,7 +323,7 @@ function Copyable({ label, value, small }: { label: string; value: string; small
       {!small && <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>{label}</p>}
       <div className="flex items-start gap-2 rounded-md px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
         <span className="min-w-0 flex-1 text-xs leading-relaxed" style={{ color: small ? "var(--color-muted-foreground)" : "var(--color-foreground)" }}>{small ? `${label}: ` : ""}{value}</span>
-        <button type="button" title="Copiar" onClick={() => { navigator.clipboard.writeText(value).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        <button type="button" title={tr("Copiar")} onClick={() => { navigator.clipboard.writeText(value).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
           className="shrink-0" style={{ color: copied ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
@@ -395,7 +396,7 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
                   <>
                     <AlertTriangle className="h-4 w-4" style={{ color: "#fca5a5" }} />
                     <span className="text-[9px] leading-tight" style={{ color: "#fca5a5" }}>{pp.error}</span>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); setPending((p) => p.filter((x) => x.id !== pp.id)); }} className="text-[9px] underline" style={{ color: "#fff" }}>quitar</button>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setPending((p) => p.filter((x) => x.id !== pp.id)); }} className="text-[9px] underline" style={{ color: "#fff" }}>{tr("quitar")}</button>
                   </>
                 ) : <Loader2 className="h-5 w-5 animate-spin" style={{ color: "#fff" }} />}
               </div>
@@ -405,7 +406,7 @@ function AssetLibrary({ country, kind, title, hint }: { country: string; kind: "
             <div key={p.id} className="relative overflow-hidden rounded-lg" style={{ border: "1px solid var(--color-border)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.url} alt={p.label ?? ""} onClick={() => setLightbox(p.url)} className="aspect-[3/4] w-full cursor-zoom-in object-cover" />
-              <button type="button" title="Eliminar" disabled={remove.isPending} onClick={(e) => { e.stopPropagation(); remove.mutate({ id: p.id }); }}
+              <button type="button" title={tr("Eliminar")} disabled={remove.isPending} onClick={(e) => { e.stopPropagation(); remove.mutate({ id: p.id }); }}
                 className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-md" style={{ background: "rgba(0,0,0,0.7)", color: "#fff" }}>
                 <Trash2 className="h-3 w-3" />
               </button>
@@ -451,12 +452,12 @@ function KbSection({ country }: { country: string }) {
       <div className="mb-3 flex items-center gap-2">
         <Brain className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
         <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Base de conocimientos · {country}</p>
-        <span className="ml-auto inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--color-subtle)" }}><Sparkles className="h-3 w-3" /> manual o automática (feedback de ángulos)</span>
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--color-subtle)" }}><Sparkles className="h-3 w-3" /> {tr("manual o automática (feedback de ángulos)")}</span>
       </div>
       <div className="mb-3 flex flex-wrap items-end gap-2">
-        <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="Aprendizaje: qué ángulo/persona/juego convierte acá…"
+        <input value={entry} onChange={(e) => setEntry(e.target.value)} placeholder={tr("Aprendizaje: qué ángulo/persona/juego convierte acá…")}
           className="min-w-0 flex-1 rounded-md px-3 py-2 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
-        <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="tags (coma)"
+        <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder={tr("tags (coma)")}
           className="w-28 rounded-md px-3 py-2 text-xs outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
         <button type="button" disabled={!entry.trim() || add.isPending} onClick={() => add.mutate({ country, entry, tags: tags.split(",").map((t) => t.trim()).filter(Boolean) })}
           className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs font-medium disabled:opacity-40" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
@@ -490,7 +491,7 @@ function History({ onLoad }: { onLoad: (l: Loaded) => void }) {
     <section className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
       <div className="mb-3 flex items-center gap-2">
         <Clock className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
-        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Generados</p>
+        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{tr("Generados")}</p>
       </div>
       <ul className="space-y-1.5">
         {items.map((r) => (
@@ -499,7 +500,7 @@ function History({ onLoad }: { onLoad: (l: Loaded) => void }) {
             <span style={{ color: "var(--color-foreground)" }}>{r.country}</span>
             <span style={{ color: "var(--color-subtle)" }}>{new Date(r.createdAt).toLocaleDateString("es")}</span>
             <button type="button" onClick={() => onLoad({ id: r.id, country: r.country, market: r.market as Market, angles: r.angles as Angle[] })}
-              className="ml-auto rounded-md px-2 py-1 text-[11px] font-medium" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>Ver</button>
+              className="ml-auto rounded-md px-2 py-1 text-[11px] font-medium" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>{tr("Ver")}</button>
             <button type="button" onClick={() => remove.mutate({ id: r.id })} style={{ color: "var(--color-subtle)" }}><Trash2 className="h-3 w-3" /></button>
           </li>
         ))}

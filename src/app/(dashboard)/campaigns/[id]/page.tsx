@@ -11,6 +11,7 @@ import { SpendPanel, type LinkedCard } from "./_components/spend-panel";
 import { CopyLink } from "./_components/copy-link";
 import { ChevronLeft, Pencil, ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
 
+import { getT } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -91,6 +92,7 @@ function PnlChart({ data }: { data: PnlPoint[] }) {
 }
 
 export default async function CampaignOverviewPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const { id } = await params;
   const campaign = await db.campaign.findUnique({ where: { id } });
   if (!campaign) notFound();
@@ -146,8 +148,8 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-2">
         <CopyLink domain={campaign.domain} slug={campaign.slug} />
-        <a href={campaign.domain ? `https://${campaign.domain}/${campaign.slug}` : `/landing/${campaign.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title="Ver landing"><ExternalLink className="h-3.5 w-3.5" /></a>
-        <Link href={`/campaigns/${campaign.id}/edit`} className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title="Editar"><Pencil className="h-3.5 w-3.5" /></Link>
+        <a href={campaign.domain ? `https://${campaign.domain}/${campaign.slug}` : `/landing/${campaign.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title={t("Ver landing")}><ExternalLink className="h-3.5 w-3.5" /></a>
+        <Link href={`/campaigns/${campaign.id}/edit`} className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }} title={t("Editar")}><Pencil className="h-3.5 w-3.5" /></Link>
         </div>
       </header>
 
@@ -167,7 +169,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
                   </p>
                 </div>
                 <p className="mt-3 font-mono text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-                  ingresos <span style={{ color: "var(--color-success)" }}>{usd(revenue)}</span> − gasto <span style={{ color: "var(--color-error)" }}>{usd(spend)}</span>
+                  ingresos <span style={{ color: "var(--color-success)" }}>{usd(revenue)}</span> {t("− gasto")} <span style={{ color: "var(--color-error)" }}>{usd(spend)}</span>
                 </p>
                 <div className="mt-5">
                   <PnlChart data={pnl} />
@@ -189,7 +191,7 @@ export default async function CampaignOverviewPage({ params }: { params: Promise
           {/* ── Conversiones ── */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>Conversiones</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>{t("Conversiones")}</span>
               <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
                 {loc?.countryCode ? (
                   <ReactCountryFlag countryCode={loc.countryCode} svg style={{ width: "1.15em", height: "0.85em", borderRadius: 2 }} title={loc.label} />

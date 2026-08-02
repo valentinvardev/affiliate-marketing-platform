@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { api } from "@/trpc/react";
 
+import { t } from "@/lib/i18n-client";
 /* ─── Service ID ranges (de panel-thingy) ─── */
 const RANGES = {
   comments: [20744, 20745, 20746],
@@ -256,7 +257,7 @@ export default function InteractionsPage() {
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
         <Heart className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Interacciones</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Interacciones")}</h1>
         <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>SMM World</span>
       </header>
 
@@ -267,7 +268,7 @@ export default function InteractionsPage() {
             {/* Balance + link */}
             <div className="grid gap-4 sm:grid-cols-2">
               <Card>
-                <CardLabel>Balance</CardLabel>
+                <CardLabel>{t("Balance")}</CardLabel>
                 <div className="mt-2 flex items-center gap-3">
                   <span className="flex-1 truncate font-mono text-lg font-bold tabular-nums" style={{ color: "var(--color-foreground)" }}>
                     {balance ?? "—"}
@@ -286,7 +287,7 @@ export default function InteractionsPage() {
               </Card>
 
               <Card>
-                <CardLabel>Link de la publicación</CardLabel>
+                <CardLabel>{t("Link de la publicación")}</CardLabel>
                 <input
                   value={link}
                   onChange={(e) => persistLink(e.target.value)}
@@ -301,7 +302,7 @@ export default function InteractionsPage() {
               <div className="flex items-start gap-3 rounded-xl p-4" style={{ background: "var(--color-error-bg)", border: "1px solid color-mix(in oklch, var(--color-error) 25%, transparent)" }}>
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--color-error)" }} />
                 <div>
-                  <p className="text-sm font-medium" style={{ color: "var(--color-error)" }}>No se pudo cargar el catálogo</p>
+                  <p className="text-sm font-medium" style={{ color: "var(--color-error)" }}>{t("No se pudo cargar el catálogo")}</p>
                   <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{svcError}</p>
                 </div>
               </div>
@@ -313,7 +314,7 @@ export default function InteractionsPage() {
               <Card>
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" style={{ color: "#a78bfa" }} />
-                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Comentarios</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Comentarios")}</p>
                 </div>
                 <ServiceSelect loading={loadingSvc} value={commentsSvc} onChange={setCommentsSvc} options={svcOptions(RANGES.comments)} label={svcLabel} />
                 <textarea
@@ -327,56 +328,56 @@ export default function InteractionsPage() {
                 <p className="mt-1 text-[10px]" style={{ color: "var(--color-subtle)" }}>
                   {commentsText.split("\n").filter((l) => l.trim()).length} comentarios
                 </p>
-                <OrderButton onClick={() => requestOrder("comments")}>Enviar comentarios</OrderButton>
+                <OrderButton onClick={() => requestOrder("comments")}>{t("Enviar comentarios")}</OrderButton>
               </Card>
 
               {/* Likes */}
               <Card>
                 <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4" style={{ color: "#4ade80" }} />
-                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Likes</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Likes")}</p>
                 </div>
                 <ServiceSelect loading={loadingSvc} value={likesSvc} onChange={setLikesSvc} options={svcOptions(RANGES.likes)} label={svcLabel} />
                 <input
                   type="number"
                   value={likesQty}
                   onChange={(e) => setLikesQty(e.target.value)}
-                  placeholder="Cantidad"
+                  placeholder={t("Cantidad")}
                   className="mt-2 w-full rounded-md px-3 py-2 text-sm outline-none"
                   style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
                 />
-                <OrderButton onClick={() => requestOrder("likes")}>Enviar likes</OrderButton>
+                <OrderButton onClick={() => requestOrder("likes")}>{t("Enviar likes")}</OrderButton>
               </Card>
 
               {/* Saves */}
               <Card>
                 <div className="flex items-center gap-2">
                   <Bookmark className="h-4 w-4" style={{ color: "#60a5fa" }} />
-                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Saves</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Saves")}</p>
                 </div>
                 <ServiceSelect loading={loadingSvc} value={savesSvc} onChange={setSavesSvc} options={svcOptions(RANGES.saves)} label={svcLabel} />
                 <input
                   type="number"
                   value={savesQty}
                   onChange={(e) => setSavesQty(e.target.value)}
-                  placeholder="Cantidad"
+                  placeholder={t("Cantidad")}
                   className="mt-2 w-full rounded-md px-3 py-2 text-sm outline-none"
                   style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
                 />
-                <OrderButton onClick={() => requestOrder("saves")}>Enviar saves</OrderButton>
+                <OrderButton onClick={() => requestOrder("saves")}>{t("Enviar saves")}</OrderButton>
               </Card>
             </div>
 
             {/* Status check */}
             <Card>
-              <CardLabel>Estado de órdenes</CardLabel>
+              <CardLabel>{t("Estado de órdenes")}</CardLabel>
               <div className="mt-2 flex gap-2">
                 <div className="flex flex-1 items-center gap-2 rounded-md px-3 py-2" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
                   <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
                   <input
                     value={statusInput}
                     onChange={(e) => setStatusInput(e.target.value)}
-                    placeholder="ID(s) separados por coma…"
+                    placeholder={t("ID(s) separados por coma…")}
                     className="flex-1 bg-transparent text-sm outline-none"
                     style={{ color: "var(--color-foreground)" }}
                   />
@@ -403,7 +404,7 @@ export default function InteractionsPage() {
           {/* ── Historial reciente ── */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Recientes</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{t("Recientes")}</p>
               {recent.length > 0 && (
                 <button type="button" onClick={clearRecent} className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--color-subtle)" }}>
                   <Trash2 className="h-3 w-3" /> Limpiar
@@ -413,7 +414,7 @@ export default function InteractionsPage() {
             <div className="space-y-2">
               {recent.length === 0 ? (
                 <div className="rounded-xl py-8 text-center" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
-                  <p className="text-xs" style={{ color: "var(--color-subtle)" }}>Sin órdenes todavía.</p>
+                  <p className="text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin órdenes todavía.")}</p>
                 </div>
               ) : recent.map((r) => {
                 const meta = KIND_META[r.kind];
@@ -462,10 +463,10 @@ export default function InteractionsPage() {
           <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" style={{ color: "var(--color-warning)" }} />
-              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Confirmar orden</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Confirmar orden")}</p>
             </div>
             <p className="mt-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
-              {KIND_META[confirm.kind].label} · servicio <span className="font-mono">{confirm.service}</span> · cantidad <span className="font-semibold tabular-nums">{confirm.count}</span>
+              {KIND_META[confirm.kind].label} · servicio <span className="font-mono">{confirm.service}</span> {t("· cantidad")} <span className="font-semibold tabular-nums">{confirm.count}</span>
             </p>
             <p className="mt-1 break-all text-[11px]" style={{ color: "var(--color-subtle)" }}>{link}</p>
             <p className="mt-3 text-[11px]" style={{ color: "var(--color-warning)" }}>
@@ -547,7 +548,7 @@ function ServiceSelect({
         className="w-full rounded-md px-3 py-2 text-xs outline-none"
         style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
       >
-        {loading && <option>Cargando…</option>}
+        {loading && <option>{t("Cargando…")}</option>}
         {!loading && options.map((s) => (
           <option key={s.service} value={s.service}>{label(s)}</option>
         ))}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function CampaignCopyUrl({ slug, domain }: { slug: string; domain?: string | null }) {
   const [copied, setCopied] = useState(false);
 
@@ -15,7 +16,7 @@ export function CampaignCopyUrl({ slug, domain }: { slug: string; domain?: strin
 
   return (
     <button
-      title="Copiar link de la landing"
+      title={t("Copiar link de la landing")}
       onClick={copy}
       className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors"
       style={{ color: copied ? "var(--color-success)" : "var(--color-muted-foreground)" }}

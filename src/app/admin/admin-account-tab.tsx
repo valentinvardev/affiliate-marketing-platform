@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { Loader2, KeyRound, Check, AlertCircle, Eye, EyeOff } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function AdminAccountTab() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -29,7 +30,7 @@ export function AdminAccountTab() {
     <div className="rounded-xl p-6" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       <div className="mb-4 flex items-center gap-2">
         <KeyRound className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Cambiar mi contraseña</h2>
+        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Cambiar mi contraseña")}</h2>
       </div>
 
       <form onSubmit={submit} className="max-w-sm space-y-4">

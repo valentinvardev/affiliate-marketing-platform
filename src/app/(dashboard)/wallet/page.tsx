@@ -2,6 +2,7 @@ import { db } from "@/server/db";
 import { getScope, convWhere } from "@/lib/scope";
 import { Wallet, ArrowDownToLine, Clock, HardHat } from "lucide-react";
 
+import { getT } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Billetera" };
 
@@ -10,6 +11,7 @@ const fmt = new Intl.NumberFormat("en-US", {
 });
 
 export default async function WalletPage() {
+  const t = await getT();
   // Conectado a los fondos reales del usuario (sus conversiones)
   const { slugs } = await getScope();
   const agg = await db.conversion.aggregate({ where: convWhere(slugs), _sum: { price: true }, _count: { id: true } });
@@ -86,7 +88,7 @@ export default async function WalletPage() {
               className="rounded-xl py-10 text-center"
               style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
             >
-              <p className="text-sm" style={{ color: "var(--color-subtle)" }}>Sin movimientos todavía.</p>
+              <p className="text-sm" style={{ color: "var(--color-subtle)" }}>{t("Sin movimientos todavía.")}</p>
             </div>
           </div>
         </div>

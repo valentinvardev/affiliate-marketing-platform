@@ -250,7 +250,7 @@ export default async function OverviewPage() {
               {/* Top campañas */}
               <div className="rounded-2xl p-5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>Campañas</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--color-subtle)" }}>{t("Campañas")}</span>
                   <Link href="/campaigns" className="text-[11px] transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>Todas</Link>
                 </div>
                 {topCampaigns.length === 0 ? (
@@ -292,7 +292,7 @@ export default async function OverviewPage() {
                   style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}
                 >
                   <Trophy className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-                  <span className="text-xs font-medium" style={{ color: "var(--color-foreground)" }}>Leaderboard</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--color-foreground)" }}>{t("Leaderboard")}</span>
                   <span className="text-[10px]" style={{ color: "var(--color-subtle)" }}>Sé mejor que ayer</span>
                 </Link>
               </div>

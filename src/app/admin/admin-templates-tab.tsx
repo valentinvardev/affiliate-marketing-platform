@@ -1,22 +1,24 @@
 import { LANDING_TEMPLATES } from "@/lib/landing-templates";
 import { ExternalLink, Layout } from "lucide-react";
 
+import { getT } from "@/lib/i18n-server";
 const LOCS = [
   { code: "sv", label: "🇸🇪 SV" }, { code: "en", label: "🇬🇧 EN" }, { code: "de", label: "🇩🇪 DE" },
   { code: "fr", label: "🇫🇷 FR" }, { code: "nl", label: "🇳🇱 NL" }, { code: "no", label: "🇳🇴 NO" },
   { code: "fi", label: "🇫🇮 FI" }, { code: "pl", label: "🇵🇱 PL" }, { code: "it", label: "🇮🇹 IT" },
 ];
 
-export function AdminTemplatesTab() {
+export async function AdminTemplatesTab() {
+  const t = await getT();
   return (
     <div className="space-y-6">
       <div className="rounded-xl p-6" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
         <div className="mb-1 flex items-center gap-2">
           <Layout className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-          <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Plantillas de landing</h2>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Plantillas de landing")}</h2>
         </div>
         <p className="mb-4 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
-          Elegís la plantilla por campaña (en el formulario de creación/edición, campo <b>Plantilla</b>). Acá previsualizás cada una en cada idioma con datos de ejemplo.
+          Elegís la plantilla por campaña (en el formulario de creación/edición, campo <b>{t("Plantilla")}</b>). Acá previsualizás cada una en cada idioma con datos de ejemplo.
         </p>
 
         <div className="space-y-3">

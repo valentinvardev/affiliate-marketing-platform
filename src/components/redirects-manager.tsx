@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { RouterOutputs } from "@/trpc/react";
 
+import { t } from "@/lib/i18n-client";
 type Redirect = RouterOutputs["redirects"]["list"][number];
 
 export function RedirectsManager() {
@@ -37,7 +38,7 @@ export function RedirectsManager() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 shrink-0 items-center px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Redirecciones</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Redirecciones")}</h1>
         <span className="ml-2.5 rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
           style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
           {items.length}
@@ -46,7 +47,7 @@ export function RedirectsManager() {
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 md:px-8">
         <p className="mb-5 text-xs leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
-          Cada redirector vive en un <strong>dominio/ruta</strong> (ej. <span className="font-mono" style={{ color: "var(--color-foreground)" }}>dealdrop.lat/1</span>)
+          Cada redirector vive en un <strong>{t("dominio/ruta")}</strong> (ej. <span className="font-mono" style={{ color: "var(--color-foreground)" }}>dealdrop.lat/1</span>)
           con un switch: <strong>cloaking</strong> prendido rota una lista de páginas; apagado manda a la landing de una campaña.
         </p>
 
@@ -55,7 +56,7 @@ export function RedirectsManager() {
 
         {/* Nuevo redirector */}
         <div className="mb-6 rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
-          <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Nuevo redirector</p>
+          <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>{t("Nuevo redirector")}</p>
           {domains.length === 0 ? (
             <p className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
               {isAdmin ? "Agregá un dominio arriba para empezar." : "Todavía no hay dominios. Pedile al admin que agregue uno."}
@@ -92,8 +93,8 @@ export function RedirectsManager() {
         ) : items.length === 0 ? (
           <div className="rounded-xl py-16 text-center" style={{ border: "1px dashed var(--color-border)" }}>
             <Shuffle className="mx-auto h-6 w-6" style={{ color: "var(--color-subtle)" }} />
-            <p className="mt-3 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Sin redirectores</p>
-            <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Creá uno arriba eligiendo dominio y ruta.</p>
+            <p className="mt-3 text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Sin redirectores")}</p>
+            <p className="mt-1 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Creá uno arriba eligiendo dominio y ruta.")}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -117,14 +118,14 @@ function DomainsAdmin() {
 
   return (
     <div className="mb-6 rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
-      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Dominios disponibles · admin</p>
+      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>{t("Dominios disponibles · admin")}</p>
       {domains.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {domains.map((d) => (
             <span key={d.id} className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono"
               style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
               {d.domain}
-              <button type="button" title="Eliminar dominio y sus redirectores"
+              <button type="button" title={t("Eliminar dominio y sus redirectores")}
                 onClick={() => { if (confirm(`¿Eliminar ${d.domain} y todos sus redirectores?`)) remove.mutate({ id: d.id }); }}
                 style={{ color: "var(--color-subtle)" }}><X className="h-3 w-3" /></button>
             </span>
@@ -180,11 +181,11 @@ function RedirectCard({ redirect: r }: { redirect: Redirect }) {
       <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
         <Shuffle className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-muted-foreground)" }} />
         <span className="min-w-0 flex-1 truncate font-mono text-sm" style={{ color: "var(--color-foreground)" }}>{fullPath}</span>
-        <a href={`https://${fullPath}`} target="_blank" rel="noopener noreferrer" title="Abrir"
+        <a href={`https://${fullPath}`} target="_blank" rel="noopener noreferrer" title={t("Abrir")}
           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
-        <button type="button" title="Eliminar" disabled={remove.isPending}
+        <button type="button" title={t("Eliminar")} disabled={remove.isPending}
           onClick={() => { if (confirm(`¿Eliminar el redirector ${fullPath}?`)) remove.mutate({ id: r.id }); }}
           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
           {remove.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -206,7 +207,7 @@ function RedirectCard({ redirect: r }: { redirect: Redirect }) {
         </div>
 
         {/* Panel whitepages (ON) */}
-        <Panel active={cloakOn} icon={<ListPlus className="h-3.5 w-3.5" />} title="Whitepages (cloak prendido)">
+        <Panel active={cloakOn} icon={<ListPlus className="h-3.5 w-3.5" />} title={t("Whitepages (cloak prendido)")}>
           <textarea
             value={pages} onChange={(e) => setPages(e.target.value)} rows={4}
             placeholder={"https://safe-page-1.com\nhttps://safe-page-2.com"}
@@ -217,7 +218,7 @@ function RedirectCard({ redirect: r }: { redirect: Redirect }) {
         </Panel>
 
         {/* Panel landing (OFF) */}
-        <Panel active={!cloakOn} icon={<Target className="h-3.5 w-3.5" />} title="Landing de campaña (cloak apagado)">
+        <Panel active={!cloakOn} icon={<Target className="h-3.5 w-3.5" />} title={t("Landing de campaña (cloak apagado)")}>
           <div className="flex items-center gap-2">
             <input
               value={targetUrl} onChange={(e) => { setCampaignId(null); setTargetUrl(e.target.value); }}
@@ -242,7 +243,7 @@ function RedirectCard({ redirect: r }: { redirect: Redirect }) {
             {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Guardar
           </button>
-          {saved && <span className="text-xs" style={{ color: "var(--color-success)" }}>Guardado ✓</span>}
+          {saved && <span className="text-xs" style={{ color: "var(--color-success)" }}>{t("Guardado ✓")}</span>}
           {save.error && <span className="text-xs" style={{ color: "var(--color-error)" }}>{save.error.message}</span>}
         </div>
       </div>
@@ -310,7 +311,7 @@ function CampaignPickerModal({ onClose, onSelect }: { onClose: () => void; onSel
         style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", opacity: show ? 1 : 0, transform: show ? "scale(1)" : "scale(0.97)", transition: "opacity .2s ease, transform .25s cubic-bezier(0.22,1,0.36,1)" }}>
         <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
           <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar campaña…"
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Buscar campaña…")}
             className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--color-foreground)" }} />
           <button type="button" onClick={onClose} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
         </div>
@@ -318,7 +319,7 @@ function CampaignPickerModal({ onClose, onSelect }: { onClose: () => void; onSel
           {campaignsQ.isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
           ) : list.length === 0 ? (
-            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Sin campañas.</p>
+            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin campañas.")}</p>
           ) : list.map((c) => {
             const url = landingUrl(c);
             return (

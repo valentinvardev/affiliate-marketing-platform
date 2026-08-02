@@ -20,6 +20,7 @@ import { AdminAccountTab } from "./admin-account-tab";
 import { AdminDistributionTab } from "./admin-distribution-tab";
 import { AdminLimitsTab } from "./admin-limits-tab";
 
+import { getT } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage({
@@ -27,6 +28,7 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const t = await getT();
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "admin") redirect("/campaigns");
 
@@ -88,7 +90,7 @@ export default async function AdminPage({
             <span className="text-base font-bold" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>TapSur</span>
           </Link>
           <span style={{ color: "var(--color-border)" }}>/</span>
-          <span className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>Admin</span>
+          <span className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>{t("Admin")}</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
@@ -137,9 +139,9 @@ export default async function AdminPage({
         {tab === "users" && (
           <div className="space-y-6">
             {/* Pending */}
-            <AdminCard title="Pendientes de aprobación" count={pendingUsers.length}>
+            <AdminCard title={t("Pendientes de aprobación")} count={pendingUsers.length}>
               {pendingUsers.length === 0 ? (
-                <Empty>Sin usuarios pendientes.</Empty>
+                <Empty>{t("Sin usuarios pendientes.")}</Empty>
               ) : (
                 <UserTable
                   users={pendingUsers}
@@ -147,7 +149,7 @@ export default async function AdminPage({
                     <>
                       <form action={approveUser}>
                         <input type="hidden" name="id" value={u.id} />
-                        <button type="submit" title="Aprobar"
+                        <button type="submit" title={t("Aprobar")}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
                           style={{ color: "var(--color-success)", border: "1px solid var(--color-border)" }}>
                           <Check className="h-3.5 w-3.5" />
@@ -155,7 +157,7 @@ export default async function AdminPage({
                       </form>
                       <form action={rejectUser}>
                         <input type="hidden" name="id" value={u.id} />
-                        <button type="submit" title="Rechazar"
+                        <button type="submit" title={t("Rechazar")}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
                           style={{ color: "var(--color-error)", border: "1px solid var(--color-border)" }}>
                           <X className="h-3.5 w-3.5" />
@@ -168,16 +170,16 @@ export default async function AdminPage({
             </AdminCard>
 
             {/* Active */}
-            <AdminCard title="Usuarios activos" count={activeUsers.length}>
+            <AdminCard title={t("Usuarios activos")} count={activeUsers.length}>
               {activeUsers.length === 0 ? (
-                <Empty>Sin usuarios aprobados todavía.</Empty>
+                <Empty>{t("Sin usuarios aprobados todavía.")}</Empty>
               ) : (
                 <UserTable
                   users={activeUsers}
                   actions={(u) => (
                     <form action={rejectUser}>
                       <input type="hidden" name="id" value={u.id} />
-                      <button type="submit" title="Eliminar"
+                      <button type="submit" title={t("Eliminar")}
                         className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
                         style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -220,14 +222,14 @@ export default async function AdminPage({
         {tab === "colors" && (
           <div className="space-y-6">
             {/* Add form */}
-            <AdminCard title="Agregar preset de color">
+            <AdminCard title={t("Agregar preset de color")}>
               <form action={createColorPreset} className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
-                  <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Nombre</label>
-                  <AdminInput name="name" placeholder="Ej: Azul marino" required />
+                  <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Nombre")}</label>
+                  <AdminInput name="name" placeholder={t("Ej: Azul marino")} required />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Color principal</label>
+                  <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Color principal")}</label>
                   <div className="flex gap-2">
                     <input type="color" name="colorPrimaryHex" defaultValue="#888888"
                       className="h-9 w-10 shrink-0 cursor-pointer rounded-md p-0.5"
@@ -236,7 +238,7 @@ export default async function AdminPage({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Color de fondo</label>
+                  <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Color de fondo")}</label>
                   <div className="flex gap-2">
                     <input type="color" name="colorBgHex" defaultValue="#111111"
                       className="h-9 w-10 shrink-0 cursor-pointer rounded-md p-0.5"
@@ -255,9 +257,9 @@ export default async function AdminPage({
             </AdminCard>
 
             {/* List */}
-            <AdminCard title="Presets actuales" count={colorPresets.length}>
+            <AdminCard title={t("Presets actuales")} count={colorPresets.length}>
               {colorPresets.length === 0 ? (
-                <Empty>Sin presets de color todavía.</Empty>
+                <Empty>{t("Sin presets de color todavía.")}</Empty>
               ) : (
                 <div className="space-y-2">
                   {colorPresets.map((p) => (
@@ -271,7 +273,7 @@ export default async function AdminPage({
                       <span className="flex-1 text-sm" style={{ color: "var(--color-foreground)" }}>{p.name}</span>
                       <form action={deleteColorPreset}>
                         <input type="hidden" name="id" value={p.id} />
-                        <button type="submit" title="Eliminar"
+                        <button type="submit" title={t("Eliminar")}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
                           style={{ color: "var(--color-muted-foreground)" }}>
                           <Trash2 className="h-3.5 w-3.5" />
@@ -288,13 +290,13 @@ export default async function AdminPage({
         {/* ── LOGOS TAB ── */}
         {tab === "logos" && (
           <div className="space-y-6">
-            <AdminCard title="Subir logo preset">
+            <AdminCard title={t("Subir logo preset")}>
               <LogoPresetUploader />
             </AdminCard>
 
-            <AdminCard title="Logos guardados" count={logoPresets.length}>
+            <AdminCard title={t("Logos guardados")} count={logoPresets.length}>
               {logoPresets.length === 0 ? (
-                <Empty>Sin logos guardados todavía.</Empty>
+                <Empty>{t("Sin logos guardados todavía.")}</Empty>
               ) : (
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                   {logoPresets.map((lp) => (
@@ -330,11 +332,11 @@ export default async function AdminPage({
             </p>
 
             {tapRainOffers.length === 0 ? (
-              <AdminCard title="Offers de TapRain">
-                <Empty>No se pudieron cargar las offers. Verificá la API key.</Empty>
+              <AdminCard title={t("Offers de TapRain")}>
+                <Empty>{t("No se pudieron cargar las offers. Verificá la API key.")}</Empty>
               </AdminCard>
             ) : (
-              <AdminCard title="Offers de TapRain" count={tapRainOffers.length}>
+              <AdminCard title={t("Offers de TapRain")} count={tapRainOffers.length}>
                 <AdminOffersTab
                   offers={tapRainOffers}
                   configs={offerConfigs}

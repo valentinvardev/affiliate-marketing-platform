@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { Loader2, Coins, Plus, Trash2, Check, AlertCircle, Pencil } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 type EditRow = { beneficiaryUserId: string; percent: string };
 
 const money = (n: number) =>
@@ -54,17 +55,17 @@ export function AdminDistributionTab() {
     <div className="rounded-xl p-6" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       <div className="mb-1 flex items-center gap-2">
         <Coins className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Distribución de ganancias</h2>
+        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Distribución de ganancias")}</h2>
       </div>
       <p className="mb-4 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}>
-        Se reparte <strong>revenue − gasto de VCC</strong> de cada persona. Las filas deben sumar <strong>100%</strong>
+        Se reparte <strong>{t("revenue − gasto de VCC")}</strong> {t("de cada persona. Las filas deben sumar")} <strong>100%</strong>
         {" "}(incluí al usuario y al admin; agregá estrategistas u otros).
       </p>
 
       {summaryQ.isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
       ) : sources.length === 0 ? (
-        <p className="py-6 text-center text-sm" style={{ color: "var(--color-muted-foreground)" }}>Sin usuarios todavía.</p>
+        <p className="py-6 text-center text-sm" style={{ color: "var(--color-muted-foreground)" }}>{t("Sin usuarios todavía.")}</p>
       ) : (
         <div className="space-y-3">
           {sources.map((u) => {
@@ -80,7 +81,7 @@ export function AdminDistributionTab() {
                   <span className="text-sm font-semibold tabular-nums" style={{ color: u.splitBase >= 0 ? "var(--color-success)" : "var(--color-error)" }}>
                     {money(u.splitBase)}
                   </span>
-                  <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>a repartir</span>
+                  <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("a repartir")}</span>
                   {!isEditing && (
                     <button type="button" onClick={() => startEdit(u.userId, u.splits)}
                       className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium"
@@ -94,7 +95,7 @@ export function AdminDistributionTab() {
                 {!isEditing && (
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                     {u.splits.length === 0 ? (
-                      <span className="text-xs" style={{ color: "var(--color-subtle)" }}>Sin reparto definido (todo al usuario).</span>
+                      <span className="text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin reparto definido (todo al usuario).")}</span>
                     ) : u.splits.map((s) => (
                       <span key={s.beneficiaryUserId} className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                         {s.beneficiaryName} <span style={{ color: "var(--color-subtle)" }}>{s.percent}%</span>
@@ -115,7 +116,7 @@ export function AdminDistributionTab() {
                           className="min-w-0 flex-1 rounded-md px-2 py-1.5 text-xs outline-none"
                           style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
                         >
-                          <option value="">Elegí…</option>
+                          <option value="">{t("Elegí…")}</option>
                           {users.map((opt) => (
                             <option key={opt.id} value={opt.id}>
                               {opt.username}{opt.id === u.userId ? " (usuario)" : opt.role === "admin" ? " (admin)" : opt.role === "estrategista" ? " (estrategista)" : ""}
@@ -146,7 +147,7 @@ export function AdminDistributionTab() {
                         Suma: {sum}% {sumOk ? "✓" : "(tiene que ser 100%)"}
                       </span>
                       <div className="ml-auto flex items-center gap-2">
-                        <button type="button" onClick={() => setEditing(null)} className="rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+                        <button type="button" onClick={() => setEditing(null)} className="rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
                         <button type="button" onClick={() => save(u.userId)} disabled={!sumOk || setSplit.isPending}
                           className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
                           style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>

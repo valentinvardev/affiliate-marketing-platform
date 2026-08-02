@@ -5,6 +5,7 @@ import { Search, X, ExternalLink, Check, Loader2, ChevronDown, Monitor, Smartpho
 import ReactCountryFlag from "react-country-flag";
 import type { Offer, OffersResponse } from "@/lib/taprain";
 
+import { t } from "@/lib/i18n-client";
 /* ─── Types ─── */
 type Props = {
   open: boolean;
@@ -191,7 +192,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
             <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
             <input
               autoFocus
-              placeholder="Buscar oferta…"
+              placeholder={t("Buscar oferta…")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 bg-transparent text-sm outline-none"
@@ -367,7 +368,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
                       <input
                         value={s1}
                         onChange={(e) => setS1(e.target.value)}
-                        placeholder="ej: my-campaign-slug"
+                        placeholder={t("ej: my-campaign-slug")}
                         className="w-full rounded-md px-3 py-1.5 text-xs outline-none"
                         style={{
                           background: "var(--color-surface-overlay)",
@@ -381,7 +382,7 @@ export function OfferPickerModal({ open, onClose, onSelect, defaultS1 = "" }: Pr
                       <input
                         value={s2}
                         onChange={(e) => setS2(e.target.value)}
-                        placeholder="placement, variante…"
+                        placeholder={t("placement, variante…")}
                         className="w-full rounded-md px-3 py-1.5 text-xs outline-none"
                         style={{
                           background: "var(--color-surface-overlay)",

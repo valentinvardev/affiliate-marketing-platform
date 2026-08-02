@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { OfferPickerModal } from "@/components/offer-picker-modal";
 
+import { t } from "@/lib/i18n-client";
 /* ─── Types ─── */
 type UrlStatus = "idle" | "checking" | "valid" | "invalid";
 
@@ -189,9 +190,9 @@ function PreviewFrame({ url }: { url: string }) {
     <div className="relative overflow-hidden"
       style={{ width: 320, height: 640, borderRadius: 40, border: "9px solid #1a1a1a", boxShadow: "0 0 0 2px #2a2a2a, 0 30px 60px rgba(0,0,0,0.6)", background: "#000" }}>
       {url ? (
-        <iframe src={url} title="Preview de la landing" style={{ width: "100%", height: "100%", border: "none", display: "block" }} />
+        <iframe src={url} title={t("Preview de la landing")} style={{ width: "100%", height: "100%", border: "none", display: "block" }} />
       ) : (
-        <div className="flex h-full items-center justify-center text-xs" style={{ color: "var(--color-subtle)" }}>Completá la campaña…</div>
+        <div className="flex h-full items-center justify-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Completá la campaña…")}</div>
       )}
     </div>
   );
@@ -244,7 +245,7 @@ function SavedUrlDropdown({ items, onSelect, onDelete }: { items: SavedUrl[]; on
                   <span className="flex-1 truncate font-medium">{item.name}</span>
                   <span className="max-w-[140px] truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>{item.url}</span>
                 </button>
-                <button type="button" onClick={() => onDelete(item.id)} className="shrink-0 transition-opacity hover:opacity-70" title="Eliminar" style={{ color: "var(--color-subtle)" }}>
+                <button type="button" onClick={() => onDelete(item.id)} className="shrink-0 transition-opacity hover:opacity-70" title={t("Eliminar")} style={{ color: "var(--color-subtle)" }}>
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -484,7 +485,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
               <polyline points="7,18 15,26 29,10" stroke="var(--color-background)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ strokeDasharray: 50, strokeDashoffset: 50, animation: "checkDraw 0.4s ease 0.35s forwards" }} />
             </svg>
           </div>
-          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>¡Campaña creada!</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("¡Campaña creada!")}</p>
         </div>
       )}
 
@@ -505,7 +506,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                 <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--color-foreground)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Check className="h-7 w-7" style={{ color: "var(--color-background)" }} />
                 </div>
-                <p className="mt-3 text-base font-semibold" style={{ color: "var(--color-foreground)" }}>Cambios guardados</p>
+                <p className="mt-3 text-base font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Cambios guardados")}</p>
                 <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                   {savedInfo.domain ? "La landing ya está actualizada." : "Asignale un dominio para publicarla en dominio/slug."}
                 </p>
@@ -513,12 +514,12 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
               {/* URL + copiar */}
               <div className="mt-5">
-                <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>Link de la campaña</label>
+                <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Link de la campaña")}</label>
                 <div className="mt-1.5 flex items-center gap-2">
                   <input readOnly value={url} onFocus={(e) => e.currentTarget.select()}
                     className="min-w-0 flex-1 rounded-md px-3 py-2 text-xs outline-none"
                     style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }} />
-                  <button type="button" onClick={copy} title="Copiar"
+                  <button type="button" onClick={copy} title={t("Copiar")}
                     className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
                     style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)", color: copiedSaved ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
                     {copiedSaved ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -574,7 +575,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
             <div className="mx-auto max-w-xl space-y-5">
               {active === "identidad" && (
                 <>
-                  <StepHead title="Identidad" sub="Elegí una oferta para autocompletar todo, o cargá los datos a mano." />
+                  <StepHead title={t("Identidad")} sub="Elegí una oferta para autocompletar todo, o cargá los datos a mano." />
 
                   {/* Empezar desde una oferta — autocompleta colores, logo, fuentes, apps y dominio */}
                   {!campaign && offerPkgs.length > 0 && (
@@ -584,8 +585,8 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                           <Package className="h-4 w-4" style={{ color: "var(--color-background)" }} />
                         </span>
                         <div>
-                          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Empezar desde una oferta</p>
-                          <p className="text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>Autocompleta colores, logo, fuentes, apps y dominio.</p>
+                          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Empezar desde una oferta")}</p>
+                          <p className="text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>{t("Autocompleta colores, logo, fuentes, apps y dominio.")}</p>
                         </div>
                       </div>
                       <Dropdown
@@ -621,7 +622,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
               {active === "mercado" && (
                 <>
-                  <StepHead title="Mercado" sub="Idioma/país y moneda. El preview se actualiza al instante." />
+                  <StepHead title={t("Mercado")} sub="Idioma/país y moneda. El preview se actualiza al instante." />
                   <Field label="Idioma / País"><Dropdown value={values.locale} onChange={handleLocaleChange} options={LOCALES.map((l) => ({ value: l.code, label: l.label, countryCode: l.countryCode }))} /></Field>
                   <Field label="Moneda" hint={`Símbolo: ${values.currencySymbol}`}><Dropdown value={values.currencyCode} onChange={handleCurrencyChange} options={CURRENCIES.map((c) => ({ value: c.code, label: c.label, meta: c.symbol }))} /></Field>
                 </>
@@ -629,24 +630,24 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
               {active === "oferta" && (
                 <>
-                  <StepHead title="Oferta / CTA" sub="La URL de afiliado a la que apunta el botón. Sin tracking válido la campaña no convierte." />
+                  <StepHead title={t("Oferta / CTA")} sub="La URL de afiliado a la que apunta el botón. Sin tracking válido la campaña no convierte." />
                   <Field label="URL de afiliado">
                     <Input type="url" placeholder="https://taprkr.com/r/..." value={values.ctaUrl} onChange={(e) => set("ctaUrl", e.target.value)} required
                       style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} suffix={<UrlIndicator status={ctaStatus} />} />
                     <div className="mt-2 flex gap-2">
                       <button type="button" disabled={ctaStatus !== "valid"} onClick={() => window.open(values.ctaUrl, "_blank", "noopener,noreferrer")}
                         className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
-                        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><ExternalLink className="h-3.5 w-3.5" />Abrir</button>
+                        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><ExternalLink className="h-3.5 w-3.5" />{t("Abrir")}</button>
                       <button type="button" disabled={ctaStatus !== "valid"} onClick={() => { setSavingUrl(true); setSaveName(""); }}
                         className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
-                        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><Bookmark className="h-3.5 w-3.5" />Guardar</button>
+                        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><Bookmark className="h-3.5 w-3.5" />{t("Guardar")}</button>
                       <button type="button" onClick={() => setOfferModalOpen(true)}
                         className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                        style={{ background: "var(--color-foreground)", border: "1px solid var(--color-border)", color: "var(--color-background)" }}><Search className="h-3.5 w-3.5" />Buscar oferta</button>
+                        style={{ background: "var(--color-foreground)", border: "1px solid var(--color-border)", color: "var(--color-background)" }}><Search className="h-3.5 w-3.5" />{t("Buscar oferta")}</button>
                     </div>
                     {savingUrl && (
                       <div className="mt-2 flex items-center gap-2">
-                        <Input autoFocus placeholder="Nombre para esta URL…" value={saveName} onChange={(e) => setSaveName(e.target.value)}
+                        <Input autoFocus placeholder={t("Nombre para esta URL…")} value={saveName} onChange={(e) => setSaveName(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter" && saveName.trim()) { saveUrl(saveName.trim(), values.ctaUrl); setSavingUrl(false); } if (e.key === "Escape") setSavingUrl(false); }} />
                         <button type="button" disabled={!saveName.trim()} onClick={() => { saveUrl(saveName.trim(), values.ctaUrl); setSavingUrl(false); }}
                           className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md disabled:opacity-40" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}><Check className="h-3.5 w-3.5" /></button>
@@ -685,10 +686,10 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                       <div className="mt-2 flex gap-2">
                         <button type="button" disabled={underStatus !== "valid"} onClick={() => window.open(values.ctaUrlUnder, "_blank", "noopener,noreferrer")}
                           className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity disabled:opacity-40"
-                          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><ExternalLink className="h-3.5 w-3.5" />Abrir</button>
+                          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}><ExternalLink className="h-3.5 w-3.5" />{t("Abrir")}</button>
                         <button type="button" onClick={() => setOfferModalUnderOpen(true)}
                           className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-                          style={{ background: "var(--color-foreground)", border: "1px solid var(--color-border)", color: "var(--color-background)" }}><Search className="h-3.5 w-3.5" />Buscar oferta</button>
+                          style={{ background: "var(--color-foreground)", border: "1px solid var(--color-border)", color: "var(--color-background)" }}><Search className="h-3.5 w-3.5" />{t("Buscar oferta")}</button>
                       </div>
                       {savedUrls.length > 0 && <SavedUrlDropdown items={savedUrls} onSelect={(url) => set("ctaUrlUnder", url)} onDelete={deleteUrl} />}
                     </Field>
@@ -715,7 +716,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
               {active === "marca" && (
                 <>
-                  <StepHead title="Marca" sub="Logo y colores. El color principal también pinta el CTA del preview." />
+                  <StepHead title={t("Marca")} sub="Logo y colores. El color principal también pinta el CTA del preview." />
                   {/* Logo */}
                   <div className="flex items-start gap-4">
                     <div className="flex items-center gap-3 shrink-0">
@@ -761,7 +762,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                       })}
                     </div>
                   ) : (
-                    <p className="text-xs" style={{ color: "var(--color-subtle)" }}>Sin presets. El admin puede agregar en <a href="/admin?tab=colors" className="underline" style={{ color: "var(--color-muted-foreground)" }}>/admin → Colores</a>.</p>
+                    <p className="text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin presets. El admin puede agregar en")} <a href="/admin?tab=colors" className="underline" style={{ color: "var(--color-muted-foreground)" }}>/admin → Colores</a>.</p>
                   )}
                   <div className="grid grid-cols-2 gap-4">
                     <Field label="Color principal">
@@ -818,7 +819,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
               {active === "apps" && hasStacks && (
                 <>
-                  <StepHead title="Aplicaciones" sub="Elegí un stack de apps para mostrar en la landing. Se aplica al guardar." />
+                  <StepHead title={t("Aplicaciones")} sub="Elegí un stack de apps para mostrar en la landing. Se aplica al guardar." />
                   <div className="flex flex-wrap gap-2">
                     {stacks.map((s) => {
                       const on = pendingStackId === s.id;
@@ -837,7 +838,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
               {active === "lanzar" && (
                 <>
-                  <StepHead title="Lanzar" sub="Revisá y creá la campaña." />
+                  <StepHead title={t("Lanzar")} sub="Revisá y creá la campaña." />
                   <div className="grid grid-cols-2 gap-3">
                     <ReviewItem label="Nombre" value={values.name || "—"} />
                     <ReviewItem label="Slug" value={values.slug || "—"} mono />
@@ -845,7 +846,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     <ReviewItem label="CTA" value={ctaStatus === "valid" ? "válida ✓" : ctaStatus === "invalid" ? "inválida ✗" : "—"} />
                     <ReviewItem label="Apps" value={pendingStackId ? `${stacks.find((s) => s.id === pendingStackId)?.items.length ?? 0}` : "default"} />
                     <div className="rounded-lg p-3" style={{ border: "1px solid var(--color-border)" }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Color</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{t("Color")}</p>
                       <div className="mt-1.5 flex gap-1"><span className="h-4 w-4 rounded" style={{ background: values.colorPrimary }} /><span className="h-4 w-4 rounded" style={{ background: values.colorBg }} /></div>
                     </div>
                   </div>
@@ -855,7 +856,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-                        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Primera tarjeta (VCC)</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Primera tarjeta (VCC)")}</p>
                       </div>
                       <p className="mt-1 text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
                         Al crear, se genera <span className="font-mono" style={{ color: "var(--color-foreground)" }}>{(values.name || "campaña")} 1</span> con este límite. Vacío = no crear ninguna.
@@ -895,7 +896,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
           <button type="button" onClick={() => setMobilePreview(true)} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium ${isEdit ? "" : "lg:hidden"}`} style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}>
             <Smartphone className="h-3.5 w-3.5" />Preview
           </button>
-          <button type="button" onClick={() => router.back()} className="rounded-md px-3 py-2 text-sm transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+          <button type="button" onClick={() => router.back()} className="rounded-md px-3 py-2 text-sm transition-opacity hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
           {!isEdit && !isLanzar ? (
             <button key="next" type="button" disabled={!stepValid(active)} onClick={() => next && setActive(next.key)}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-40 sm:flex-none"

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
+import { t } from "@/lib/i18n-client";
 import {
   Network, Plus, Copy, Check, Loader2, Trash2, RefreshCw, KeyRound, AlertTriangle, Server, Globe,
 } from "lucide-react";
@@ -29,7 +30,7 @@ export function ProxiesManager() {
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Network className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Proxies</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Proxies")}</h1>
         <span className="ml-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>ISP · IPRoyal</span>
       </header>
 
@@ -50,7 +51,7 @@ export function ProxiesManager() {
             {claim.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
             Reclamar proxy
           </button>
-          {atLimit && <p className="w-full text-[11px]" style={{ color: "var(--color-warning)" }}>Llegaste a tu límite. Soltá uno para tomar otro.</p>}
+          {atLimit && <p className="w-full text-[11px]" style={{ color: "var(--color-warning)" }}>{t("Llegaste a tu límite. Soltá uno para tomar otro.")}</p>}
           {available === 0 && !atLimit && <p className="w-full text-[11px]" style={{ color: "var(--color-subtle)" }}>No hay proxies libres ahora. {isAdmin ? "Sincronizá desde IPRoyal." : "Pedile al admin que sincronice."}</p>}
         </div>
 
@@ -60,8 +61,8 @@ export function ProxiesManager() {
         ) : held === 0 ? (
           <div className="rounded-xl py-14 text-center" style={{ border: "1px dashed var(--color-border)" }}>
             <Server className="mx-auto h-6 w-6" style={{ color: "var(--color-subtle)" }} />
-            <p className="mt-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>Todavía no tenés proxies</p>
-            <p className="mt-1 text-xs" style={{ color: "var(--color-subtle)" }}>Reclamá uno del pool arriba.</p>
+            <p className="mt-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>{t("Todavía no tenés proxies")}</p>
+            <p className="mt-1 text-xs" style={{ color: "var(--color-subtle)" }}>{t("Reclamá uno del pool arriba.")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -84,7 +85,7 @@ function ProxyCard({ p }: { p: MineItem }) {
         <span className="font-mono text-sm" style={{ color: "var(--color-foreground)" }}>{p.host}</span>
         {p.country && <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--color-subtle)" }}><Globe className="h-3 w-3" />{p.country}</span>}
         {p.label && <span className="truncate text-[11px]" style={{ color: "var(--color-subtle)" }}>· {p.label}</span>}
-        <button type="button" title="Soltar" disabled={release.isPending}
+        <button type="button" title={t("Soltar")} disabled={release.isPending}
           onClick={() => { if (confirm("¿Soltar este proxy? Vuelve al pool.")) release.mutate({ proxyId: p.id }); }}
           className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:opacity-70" style={{ color: "var(--color-muted-foreground)" }}>
           {release.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -105,7 +106,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-center gap-2 rounded-md px-2.5 py-1.5" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>{label}</span>
       <span className="min-w-0 flex-1 truncate font-mono text-[11px]" style={{ color: "var(--color-foreground)" }}>{value}</span>
-      <button type="button" title="Copiar" onClick={() => { navigator.clipboard.writeText(value).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      <button type="button" title={t("Copiar")} onClick={() => { navigator.clipboard.writeText(value).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
         style={{ color: copied ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
         {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
@@ -130,7 +131,7 @@ function AdminPanel() {
 
   return (
     <div className="mb-6 rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "linear-gradient(180deg, var(--color-surface-overlay), transparent)" }}>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>Pool · admin</p>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-subtle)" }}>{t("Pool · admin")}</p>
 
       {/* Stats */}
       <div className="mb-4 grid grid-cols-3 gap-2">
@@ -161,7 +162,7 @@ function AdminPanel() {
       {/* Límite + Sync */}
       <div className="flex flex-wrap items-end gap-2">
         <div>
-          <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>Proxies por usuario</label>
+          <label className="text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Proxies por usuario")}</label>
           <div className="mt-1 flex items-center gap-2">
             <input value={limitVal} onChange={(e) => setLimitVal(e.target.value)} type="number" min={1} max={100}
               className="w-20 rounded-md px-3 py-2 text-sm tabular-nums outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />

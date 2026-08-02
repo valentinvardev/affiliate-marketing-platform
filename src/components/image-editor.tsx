@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { api } from "@/trpc/react";
 import { X, Download, Save, Plus, Trash2, Loader2, Type, Smile, Sparkles, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 type Align = "left" | "center" | "right";
 // xPct/yPct = centro del bloque de texto (0-100). size = fracción del ancho de la imagen.
 // wPct = ancho máximo del cuadro (para el wrap), fracción del ancho de la imagen.
@@ -270,7 +271,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
       <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Type className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
         <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Editor de creativo · {country}</p>
-        <button type="button" title="Editar con Gemini (próximamente)" disabled className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md opacity-40" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}><Sparkles className="h-4 w-4" /></button>
+        <button type="button" title={t("Editar con Gemini (próximamente)")} disabled className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md opacity-40" style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}><Sparkles className="h-4 w-4" /></button>
         <button type="button" onClick={onClose} className="inline-flex h-8 w-8 items-center justify-center rounded-md" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
       </div>
 
@@ -282,7 +283,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
             {img ? (
               <canvas ref={canvasRef} className="block w-full rounded-xl" style={{ background: "#111", height: "auto", aspectRatio: `${img.naturalWidth}/${img.naturalHeight}` }} />
             ) : (
-              <div className="flex items-center justify-center rounded-xl text-xs" style={{ aspectRatio: "9/16", background: "#111", color: "var(--color-subtle)" }}>Elegí una imagen abajo</div>
+              <div className="flex items-center justify-center rounded-xl text-xs" style={{ aspectRatio: "9/16", background: "#111", color: "var(--color-subtle)" }}>{t("Elegí una imagen abajo")}</div>
             )}
             {img && layers.map((l) => {
               const box = boxes[l.id]; if (!box) return null;
@@ -296,9 +297,9 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
                   }}>
                   {isSel && (
                     <>
-                      <span onPointerDown={(e) => startHandle(e, l.id, "width")} title="Ancho"
+                      <span onPointerDown={(e) => startHandle(e, l.id, "width")} title={t("Ancho")}
                         style={{ position: "absolute", right: -7, top: "50%", transform: "translateY(-50%)", width: 12, height: 12, borderRadius: 3, background: "var(--color-success)", border: "1.5px solid #000", cursor: "ew-resize" }} />
-                      <span onPointerDown={(e) => startHandle(e, l.id, "scale")} title="Tamaño"
+                      <span onPointerDown={(e) => startHandle(e, l.id, "scale")} title={t("Tamaño")}
                         style={{ position: "absolute", right: -7, bottom: -7, width: 13, height: 13, borderRadius: 3, background: "var(--color-success)", border: "1.5px solid #000", cursor: "nwse-resize" }} />
                     </>
                   )}
@@ -348,7 +349,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
                   </button>
                 ))}
                 {(slot === "hook" ? presets.hook : presets.proof).length === 0 && (
-                  <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Sin texto para este slot.</p>
+                  <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("Sin texto para este slot.")}</p>
                 )}
               </div>
             </div>
@@ -369,7 +370,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
                   className="w-full resize-y rounded-md px-2.5 py-1.5 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
                 <div className="flex items-center gap-2">
                   <input type="color" value={selLayer.color} onChange={(e) => patch(selLayer.id, { color: e.target.value })} className="h-7 w-8 cursor-pointer rounded" style={{ border: "1px solid var(--color-border)", background: "transparent" }} />
-                  <input type="range" min={0.03} max={0.3} step={0.005} value={selLayer.size} onChange={(e) => patch(selLayer.id, { size: parseFloat(e.target.value) })} className="flex-1" title="Tamaño" />
+                  <input type="range" min={0.03} max={0.3} step={0.005} value={selLayer.size} onChange={(e) => patch(selLayer.id, { size: parseFloat(e.target.value) })} className="flex-1" title={t("Tamaño")} />
                   <div className="flex gap-0.5">
                     {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Ic]) => (
                       <button key={a} type="button" onClick={() => patch(selLayer.id, { align: a })} className="inline-flex h-7 w-7 items-center justify-center rounded" style={{ background: selLayer.align === a ? "var(--color-surface-overlay)" : "transparent", color: "var(--color-muted-foreground)" }}><Ic className="h-3.5 w-3.5" /></button>
@@ -378,15 +379,15 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
                   {layers.length > 1 && <button type="button" onClick={() => { setLayers((ls) => ls.filter((x) => x.id !== selLayer.id)); setSel(null); }} className="inline-flex h-7 w-7 items-center justify-center rounded" style={{ color: "var(--color-error)" }}><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-12 shrink-0 text-[10px]" style={{ color: "var(--color-subtle)" }}>Ancho</span>
+                  <span className="w-12 shrink-0 text-[10px]" style={{ color: "var(--color-subtle)" }}>{t("Ancho")}</span>
                   <input type="range" min={0.12} max={1.5} step={0.02} value={selLayer.wPct} onChange={(e) => patch(selLayer.id, { wPct: parseFloat(e.target.value) })} className="flex-1" />
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  <span className="mr-1 inline-flex items-center text-[11px]" style={{ color: "var(--color-subtle)" }}><Smile className="mr-1 h-3.5 w-3.5" />Emoji</span>
+                  <span className="mr-1 inline-flex items-center text-[11px]" style={{ color: "var(--color-subtle)" }}><Smile className="mr-1 h-3.5 w-3.5" />{t("Emoji")}</span>
                   {EMOJIS.map((e) => <button key={e} type="button" onClick={() => patch(selLayer.id, { text: selLayer.text + e })} className="rounded px-1 text-base leading-none hover:opacity-70">{e}</button>)}
                 </div>
               </div>
-            ) : <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>Tocá un texto para editarlo. Arrastralo para moverlo; usá los tiradores para el tamaño y el ancho.</p>}
+            ) : <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("Tocá un texto para editarlo. Arrastralo para moverlo; usá los tiradores para el tamaño y el ancho.")}</p>}
           </div>
 
           {/* Export */}

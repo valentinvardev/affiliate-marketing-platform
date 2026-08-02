@@ -8,6 +8,7 @@ import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
 import { LOCALES, getLocaleByCode } from "@/lib/locales";
 import { tiktokEmbedSrc } from "@/lib/tiktok";
+import { t } from "@/lib/i18n-client";
 import {
   Sparkles, Plus, Play, Star, Check, Loader2, X, Trash2, Pencil,
   Zap, MessageSquare, Package, AlertTriangle, EyeOff, Flag,
@@ -30,7 +31,7 @@ export function SparksManager() {
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Sparkles className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Sparks</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Sparks")}</h1>
         {isAdmin && (
           <nav className="ml-2 flex gap-1 rounded-lg p-0.5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
             {([["catalog", "Catálogo"], ["manage", "Gestión"]] as const).map(([k, label]) => (
@@ -161,8 +162,8 @@ function ManageGrid({ kind, onPlay }: { kind: "WH" | "BH"; onPlay: (s: AnySpark)
                   <Act onClick={() => setUsable.mutate({ id: s.id, usable: disabled })}
                     icon={disabled ? <Check className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                     label={disabled ? "Reactivar" : "No usable"} />
-                  <button type="button" title="Editar" onClick={() => setEditing(s)} className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}><Pencil className="h-3.5 w-3.5" /></button>
-                  <button type="button" title="Borrar" onClick={() => { if (confirm(`¿Borrar "${s.title}"?`)) remove.mutate({ id: s.id }); }} className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button type="button" title={t("Editar")} onClick={() => setEditing(s)} className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}><Pencil className="h-3.5 w-3.5" /></button>
+                  <button type="button" title={t("Borrar")} onClick={() => { if (confirm(`¿Borrar "${s.title}"?`)) remove.mutate({ id: s.id }); }} className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             </Card>
@@ -227,7 +228,7 @@ function Thumb({ spark, onPlay }: { spark: { thumbnailUrl?: string | null; autho
           </span>
         </span>
       )}
-      {spark.isCarousel && <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase" style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}>carrusel</span>}
+      {spark.isCarousel && <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase" style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}>{t("carrusel")}</span>}
       {spark.authorName && <span className="absolute bottom-1.5 left-2 truncate text-[10px]" style={{ color: "rgba(255,255,255,0.85)", maxWidth: "80%" }}>@{spark.authorName}</span>}
     </button>
   );
@@ -306,7 +307,7 @@ function PlayerModal({ spark, onClose }: { spark: AnySpark; onClose: () => void 
           <iframe src={src} title={spark.title} allow="encrypted-media; fullscreen" allowFullScreen
             style={{ width: "100%", height: "72vh", border: "none", borderRadius: 12, background: "#000" }} />
         ) : (
-          <p className="py-10 text-center text-sm" style={{ color: "var(--color-subtle)" }}>Este spark no tiene link de TikTok.</p>
+          <p className="py-10 text-center text-sm" style={{ color: "var(--color-subtle)" }}>{t("Este spark no tiene link de TikTok.")}</p>
         )}
       </div>
     </Modal>
@@ -352,8 +353,8 @@ function SparkFormModal({ onClose, edit, defaultKind = "WH" }: { onClose: () => 
           </div>
         </Field>
         <Field label="Título"><Inp value={title} onChange={setTitle} placeholder="Hook de Martina" /></Field>
-        <Field label="Descripción (opcional)"><Inp value={description} onChange={setDescription} placeholder="Notas para el usuario" /></Field>
-        {!edit && <Field label="URL del TikTok (opcional)"><Inp value={tiktokUrl} onChange={setTiktokUrl} placeholder="Dejar vacío si no aplica" mono /></Field>}
+        <Field label="Descripción (opcional)"><Inp value={description} onChange={setDescription} placeholder={t("Notas para el usuario")} /></Field>
+        {!edit && <Field label="URL del TikTok (opcional)"><Inp value={tiktokUrl} onChange={setTiktokUrl} placeholder={t("Dejar vacío si no aplica")} mono /></Field>}
         <Field label="Spark code"><Inp value={sparkCode} onChange={setSparkCode} placeholder="#TT..." mono /></Field>
         <Field label="Mercado (idioma / país)">
           <select value={language} onChange={(e) => setLanguage(e.target.value)}
@@ -364,7 +365,7 @@ function SparkFormModal({ onClose, edit, defaultKind = "WH" }: { onClose: () => 
         {err && <p className="inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2 px-5 py-3" style={{ borderTop: "1px solid var(--color-border)" }}>
-        <button type="button" onClick={onClose} className="ml-auto rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+        <button type="button" onClick={onClose} className="ml-auto rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
         <button type="button" disabled={!valid || pending} onClick={submit}
           className="inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition-opacity disabled:opacity-40"
           style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
@@ -417,7 +418,7 @@ function BoostModal({ spark, onClose }: { spark: ManageItem; onClose: () => void
         {err && <p className="inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3.5 w-3.5" /> {err}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2 px-5 py-3" style={{ borderTop: "1px solid var(--color-border)" }}>
-        <button type="button" onClick={onClose} className="ml-auto rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+        <button type="button" onClick={onClose} className="ml-auto rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
         <button type="button" disabled={boost.isPending} onClick={submit}
           className="inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition-opacity disabled:opacity-40"
           style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
@@ -437,7 +438,7 @@ function FeedbackModal({ spark, onClose }: { spark: ManageItem; onClose: () => v
       <ModalHead title={`Feedback · ${spark.title}`} onClose={onClose} />
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         {q.isLoading ? <Spinner /> : items.length === 0 ? (
-          <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Sin ratings todavía.</p>
+          <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin ratings todavía.")}</p>
         ) : (
           <ul className="space-y-3">
             {items.map((r) => (
@@ -474,7 +475,7 @@ function ReportModal({ sparkId, title, onClose }: { sparkId: string; title: stri
       <ModalHead title={`Reportar · ${title}`} onClose={onClose} />
       <div className="space-y-3 px-5 py-4">
         {done ? (
-          <p className="py-6 text-center text-sm font-medium" style={{ color: "var(--color-success)" }}>Reporte enviado ✓</p>
+          <p className="py-6 text-center text-sm font-medium" style={{ color: "var(--color-success)" }}>{t("Reporte enviado ✓")}</p>
         ) : (
           <>
             <Field label="Motivo">
@@ -489,7 +490,7 @@ function ReportModal({ sparkId, title, onClose }: { sparkId: string; title: stri
                 ))}
               </div>
             </Field>
-            <Field label="Detalle (opcional)"><Inp value={note} onChange={setNote} placeholder="Qué pasó…" /></Field>
+            <Field label="Detalle (opcional)"><Inp value={note} onChange={setNote} placeholder={t("Qué pasó…")} /></Field>
             <button type="button" disabled={report.isPending} onClick={() => report.mutate({ sparkId, reason, note })}
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-md py-2 text-sm font-semibold transition-opacity disabled:opacity-40"
               style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
@@ -512,7 +513,7 @@ function ReportsModal({ spark, onClose }: { spark: ManageItem; onClose: () => vo
       <ModalHead title={`Reportes · ${spark.title}`} onClose={onClose} />
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         {q.isLoading ? <Spinner /> : items.length === 0 ? (
-          <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Sin reportes.</p>
+          <p className="py-6 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin reportes.")}</p>
         ) : (
           <ul className="space-y-2.5">
             {items.map((r) => (

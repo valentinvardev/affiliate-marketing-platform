@@ -4,6 +4,7 @@ import { useState, useRef, useLayoutEffect, useEffect, useId, type ReactNode } f
 import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 type Side = "top" | "bottom" | "left" | "right";
 type Coords = { top: number; left: number; side: Side; arrow: number };
 
@@ -182,7 +183,7 @@ export function InfoTooltip({
     <Tooltip content={content} side={side}>
       <button
         type="button"
-        aria-label="Más información"
+        aria-label={t("Más información")}
         className={className}
         onClick={(e) => e.preventDefault()}
         style={{

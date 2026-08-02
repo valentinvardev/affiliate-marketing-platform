@@ -3,6 +3,7 @@
 import { createContext, useContext, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { DEFAULT_LANG, LANG_COOKIE, makeT, type AppLang } from "@/lib/i18n";
+import { setClientLang } from "@/lib/i18n-client";
 
 type Ctx = { lang: AppLang; t: (s: string) => string; setLang: (l: AppLang) => void };
 
@@ -18,6 +19,10 @@ const I18nCtx = createContext<Ctx>({
  */
 export function I18nProvider({ lang, children }: { lang: AppLang; children: ReactNode }) {
   const router = useRouter();
+
+  // Sincrónico y antes de renderizar los hijos: así el `t` de módulo
+  // (i18n-client) ya tiene el idioma correcto en el primer render.
+  setClientLang(lang);
 
   const setLang = useCallback((next: AppLang) => {
     // Cookie a un año, en la raíz, para que también la vean los server components.

@@ -6,6 +6,7 @@ import { api } from "@/trpc/react";
 import { CreditCard, Plus, Loader2, ChevronDown, Wallet } from "lucide-react";
 import { VccWallet } from "@/components/vcc-wallet";
 
+import { t } from "@/lib/i18n-client";
 export type LinkedCard = { vccId: string; cardName: string; last4: string; currentSpend: number; spendLimit: number };
 
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
@@ -40,7 +41,7 @@ export function SpendPanel({ campaignId, campaignName, linked }: { campaignId: s
     <div className="rounded-2xl p-5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       <div className="mb-4 flex items-center gap-2">
         <CreditCard className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--color-subtle)" }}>Gasto rastreado</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--color-subtle)" }}>{t("Gasto rastreado")}</span>
         {linked.length > 0 && (
           <span className="ml-auto font-mono text-xs tabular-nums" style={{ color: "var(--color-error)" }}>{usd(totalSpend)}</span>
         )}
@@ -94,9 +95,9 @@ export function SpendPanel({ campaignId, campaignName, linked }: { campaignId: s
         {open && (
           <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-lg" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 12px 40px rgba(0,0,0,0.6)" }}>
             {!connected ? (
-              <p className="px-3 py-3 text-xs" style={{ color: "var(--color-subtle)" }}>Conectá la suite en <a href="/cards" className="underline">Tarjetas</a>.</p>
+              <p className="px-3 py-3 text-xs" style={{ color: "var(--color-subtle)" }}>{t("Conectá la suite en")} <a href="/cards" className="underline">{t("Tarjetas")}</a>.</p>
             ) : available.length === 0 ? (
-              <p className="px-3 py-3 text-xs" style={{ color: "var(--color-subtle)" }}>No hay tarjetas disponibles.</p>
+              <p className="px-3 py-3 text-xs" style={{ color: "var(--color-subtle)" }}>{t("No hay tarjetas disponibles.")}</p>
             ) : (
               <div className="max-h-56 overflow-y-auto py-1">
                 {available.map((c) => (
@@ -107,7 +108,7 @@ export function SpendPanel({ campaignId, campaignName, linked }: { campaignId: s
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                     <span className="font-mono" style={{ color: "var(--color-foreground)" }}>•••• {(c as { last4?: string }).last4 ?? "????"}</span>
                     <span className="truncate">{(c as { cardName?: string }).cardName ?? ""}</span>
-                    {(c as { campaignId?: string | null }).campaignId && <span className="ml-auto text-[10px]" style={{ color: "var(--color-warning)" }}>vinculada</span>}
+                    {(c as { campaignId?: string | null }).campaignId && <span className="ml-auto text-[10px]" style={{ color: "var(--color-warning)" }}>{t("vinculada")}</span>}
                   </button>
                 ))}
               </div>

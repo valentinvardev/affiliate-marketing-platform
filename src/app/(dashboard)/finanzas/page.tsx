@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { Coins, Loader2, Pencil, Check, X, Plus, Trash2 } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 const usd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n);
 
@@ -43,7 +44,7 @@ export default function FinanzasPage() {
     <div className="flex flex-col min-h-screen">
       <header className="flex h-14 shrink-0 items-center gap-2 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Coins className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Finanzas</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Finanzas")}</h1>
       </header>
 
       <main className="flex-1 px-4 py-6 md:px-8">
@@ -52,7 +53,7 @@ export default function FinanzasPage() {
             <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
           ) : data.length === 0 ? (
             <div className="rounded-2xl py-16 text-center" style={{ border: "1px dashed var(--color-border)" }}>
-              <p className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>Sin datos todavía.</p>
+              <p className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>{t("Sin datos todavía.")}</p>
             </div>
           ) : data.map((u) => {
             const up = u.profit >= 0;
@@ -68,7 +69,7 @@ export default function FinanzasPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Profit</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{t("Profit")}</p>
                     <p className="text-xl font-bold tabular-nums" style={{ color: up ? "var(--color-success)" : "var(--color-error)", fontFamily: "var(--font-brand)" }}>
                       {usd(u.profit)}
                     </p>
@@ -80,7 +81,7 @@ export default function FinanzasPage() {
                   {!isEditing ? (
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                       {u.splits.length === 0 ? (
-                        <span className="text-xs" style={{ color: "var(--color-subtle)" }}>Sin reparto configurado</span>
+                        <span className="text-xs" style={{ color: "var(--color-subtle)" }}>{t("Sin reparto configurado")}</span>
                       ) : u.splits.map((s) => (
                         <span key={s.beneficiaryUserId} className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
                           {s.beneficiaryName} <span style={{ color: "var(--color-subtle)" }}>{s.percent}%</span>{" "}
@@ -104,7 +105,7 @@ export default function FinanzasPage() {
                             className="flex-1 rounded-md px-2 py-1.5 text-xs outline-none"
                             style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
                           >
-                            <option value="">Beneficiario…</option>
+                            <option value="">{t("Beneficiario…")}</option>
                             {(usersQ.data ?? []).map((opt) => <option key={opt.id} value={opt.id}>{opt.username}</option>)}
                           </select>
                           <input

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
+import { t } from "@/lib/i18n-client";
 import {
   Plus, Trash2, ChevronUp, ChevronDown,
   Loader2, Upload, Pencil, Check, X,
@@ -175,16 +176,16 @@ function OfferRow({
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <IconBtn title="Subir" onClick={onMoveUp} disabled={isFirst}>
+          <IconBtn title={t("Subir")} onClick={onMoveUp} disabled={isFirst}>
             <ChevronUp className="h-3.5 w-3.5" />
           </IconBtn>
-          <IconBtn title="Bajar" onClick={onMoveDown} disabled={isLast}>
+          <IconBtn title={t("Bajar")} onClick={onMoveDown} disabled={isLast}>
             <ChevronDown className="h-3.5 w-3.5" />
           </IconBtn>
-          <IconBtn title="Editar" onClick={() => setOpen((o) => !o)} active={open}>
+          <IconBtn title={t("Editar")} onClick={() => setOpen((o) => !o)} active={open}>
             <Pencil className="h-3.5 w-3.5" />
           </IconBtn>
-          <IconBtn title="Eliminar" onClick={onDelete} danger>
+          <IconBtn title={t("Eliminar")} onClick={onDelete} danger>
             <Trash2 className="h-3.5 w-3.5" />
           </IconBtn>
         </div>
@@ -259,7 +260,7 @@ function OfferEditor({
     <div className="grid gap-4 p-4 sm:grid-cols-2">
       {/* Name */}
       <div className="space-y-1.5">
-        <FieldLabel>Nombre de la app</FieldLabel>
+        <FieldLabel>{t("Nombre de la app")}</FieldLabel>
         <EditorInput
           value={values.name}
           onChange={(e) => set("name", e.target.value)}
@@ -269,7 +270,7 @@ function OfferEditor({
 
       {/* Image */}
       <div className="space-y-1.5">
-        <FieldLabel>Imagen</FieldLabel>
+        <FieldLabel>{t("Imagen")}</FieldLabel>
         <div className="flex gap-2 items-center">
           {values.imageUrl && (
             <Image src={values.imageUrl} alt="" width={32} height={32}
@@ -284,7 +285,7 @@ function OfferEditor({
           <EditorInput
             value={values.imageUrl}
             onChange={(e) => set("imageUrl", e.target.value)}
-            placeholder="URL de imagen"
+            placeholder={t("URL de imagen")}
             className="flex-1 text-xs"
           />
         </div>
@@ -292,7 +293,7 @@ function OfferEditor({
 
       {/* Tag */}
       <div className="space-y-1.5">
-        <FieldLabel>Tag (tarea/tiempo)</FieldLabel>
+        <FieldLabel>{t("Tag (tarea/tiempo)")}</FieldLabel>
         <EditorInput
           value={values.tag}
           onChange={(e) => set("tag", e.target.value)}
@@ -350,7 +351,7 @@ function OfferEditor({
 
       {/* Rating */}
       <div className="space-y-1.5">
-        <FieldLabel>Rating (0–5)</FieldLabel>
+        <FieldLabel>{t("Rating (0–5)")}</FieldLabel>
         <EditorInput
           type="number"
           min="0"
@@ -363,7 +364,7 @@ function OfferEditor({
 
       {/* Note */}
       <div className="space-y-1.5 sm:col-span-2">
-        <FieldLabel>Nota opcional</FieldLabel>
+        <FieldLabel>{t("Nota opcional")}</FieldLabel>
         <EditorInput
           value={values.note}
           onChange={(e) => set("note", e.target.value)}

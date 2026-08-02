@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { Loader2, Plus, Trash2, Upload, Smartphone, AlertCircle } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function AdminAppsTab() {
   const utils = api.useUtils();
   const appsQ = api.apps.list.useQuery();
@@ -43,7 +44,7 @@ export function AdminAppsTab() {
       <div className="rounded-xl p-6" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
         <div className="mb-1 flex items-center gap-2">
           <Plus className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-          <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Agregar app al directorio</h2>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Agregar app al directorio")}</h2>
         </div>
         <p className="mb-4 text-[11px]" style={{ color: "var(--color-subtle)" }}>
           Apps sueltas para usar en ofertas sin stack (ej. teststar, empfohlen).
@@ -85,13 +86,13 @@ export function AdminAppsTab() {
       <div className="rounded-xl p-6" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
         <div className="mb-4 flex items-center gap-2">
           <Smartphone className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-          <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Directorio</h2>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Directorio")}</h2>
           <span className="rounded-full px-2 py-0.5 text-[11px]" style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>{apps.length}</span>
         </div>
         {appsQ.isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
         ) : apps.length === 0 ? (
-          <p className="py-4 text-center text-sm" style={{ color: "var(--color-muted-foreground)" }}>Directorio vacío.</p>
+          <p className="py-4 text-center text-sm" style={{ color: "var(--color-muted-foreground)" }}>{t("Directorio vacío.")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {apps.map((a) => (
@@ -106,7 +107,7 @@ export function AdminAppsTab() {
                   <p className="truncate text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{a.name}</p>
                   <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{a.badge} · ${a.amount}</p>
                 </div>
-                <button type="button" title="Eliminar" disabled={remove.isPending} onClick={() => remove.mutate({ id: a.id })}
+                <button type="button" title={t("Eliminar")} disabled={remove.isPending} onClick={() => remove.mutate({ id: a.id })}
                   className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md disabled:opacity-50" style={{ color: "var(--color-muted-foreground)" }}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

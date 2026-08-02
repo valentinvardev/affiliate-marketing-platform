@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/trpc/react";
+import { t } from "@/lib/i18n-client";
 import {
   X, Eye, EyeOff, RefreshCw, ArrowUpCircle, XCircle, Plus, Loader2, Check,
   AlertTriangle, Copy,
@@ -51,7 +52,7 @@ export function VccWallet({
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
           <div className="min-w-0">
-            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Tarjetas de la campaña</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Tarjetas de la campaña")}</p>
             <p className="truncate text-xs" style={{ color: "var(--color-subtle)" }}>{campaignName} · {cards.length} VCC{cards.length === 1 ? "" : "s"}</p>
           </div>
           <button type="button" onClick={onClose} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
@@ -87,9 +88,9 @@ export function VccWallet({
           {cardsQ.isLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--color-subtle)" }} /></div>
           ) : !cardsQ.data?.connected ? (
-            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Conectá la sesión de TapRain en Tarjetas.</p>
+            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Conectá la sesión de TapRain en Tarjetas.")}</p>
           ) : sorted.length === 0 ? (
-            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>Esta campaña no tiene VCCs. Generá una arriba.</p>
+            <p className="py-8 text-center text-xs" style={{ color: "var(--color-subtle)" }}>{t("Esta campaña no tiene VCCs. Generá una arriba.")}</p>
           ) : (() => {
             const i = Math.min(idx, sorted.length - 1);
             const c = sorted[i]!;
@@ -114,7 +115,7 @@ export function VccWallet({
                 <div className="mt-3.5 rounded-xl p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}>
                   {/* gasto */}
                   <div className="flex items-center justify-between text-xs">
-                    <span style={{ color: "var(--color-muted-foreground)" }}>Gasto</span>
+                    <span style={{ color: "var(--color-muted-foreground)" }}>{t("Gasto")}</span>
                     <span className="font-mono tabular-nums" style={{ color: "var(--color-foreground)" }}>{usd(spent)} / {usd(lim)}</span>
                   </div>
                   <div className="mt-1 h-1 overflow-hidden rounded-full" style={{ background: "var(--color-surface-raised)" }}>
@@ -129,7 +130,7 @@ export function VccWallet({
                     <ActionBtn onClick={() => setLimitFor(limitFor === c.id ? null : c.id)}>
                       <ArrowUpCircle className="h-3.5 w-3.5" /> Subir límite
                     </ActionBtn>
-                    <IconBtn title="Sincronizar gasto" disabled={sync.isPending} onClick={() => sync.mutate({ vccId: c.id })}>
+                    <IconBtn title={t("Sincronizar gasto")} disabled={sync.isPending} onClick={() => sync.mutate({ vccId: c.id })}>
                       <RefreshCw className={`h-3.5 w-3.5 ${sync.isPending ? "animate-spin" : ""}`} />
                     </IconBtn>
                     {!c.closedAt && (
@@ -179,7 +180,7 @@ function CardFace({ card, revealed, dim }: { card: VCC; revealed?: boolean; dim?
         <div className="flex items-center gap-2">
           <p className="tabular-nums" style={{ fontFamily: "var(--font-mono)", fontSize: 15, letterSpacing: 1.5, color: "#ededed" }}>{number}</p>
           {revealed && card.cardNumber && (
-            <button type="button" title="Copiar número"
+            <button type="button" title={t("Copiar número")}
               onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(card.cardNumber!).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
               className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors"
               style={{ background: "rgba(255,255,255,0.08)", color: copied ? "var(--color-success)" : "#ededed" }}>
@@ -204,13 +205,13 @@ function LimitForm({ current, pending, error, onConfirm, onCancel }: { current: 
   const add = parseFloat(val) || 0;
   return (
     <div className="mt-3 rounded-lg p-3" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
-      <p className="mb-1 text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>¿Cuánto sumar? (USD)</p>
+      <p className="mb-1 text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("¿Cuánto sumar? (USD)")}</p>
       <input value={val} onChange={(e) => setVal(e.target.value)} type="number" placeholder="50" autoFocus
         className="w-full rounded-md px-3 py-1.5 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
       <p className="mt-2 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{usd(current)} + {usd(add)} = <strong style={{ color: "var(--color-foreground)" }}>{usd(current + add)}</strong></p>
       {error && <p className="mt-1 flex items-center gap-1 text-[11px]" style={{ color: "var(--color-error)" }}><AlertTriangle className="h-3 w-3" /> {error}</p>}
       <div className="mt-2 flex gap-2">
-        <button type="button" onClick={onCancel} className="rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+        <button type="button" onClick={onCancel} className="rounded-md px-3 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
         <button type="button" onClick={() => add > 0 && onConfirm(add)} disabled={pending || add <= 0}
           className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold disabled:opacity-40" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUpCircle className="h-3.5 w-3.5" />} Subir a {usd(current + add)}
@@ -232,7 +233,7 @@ function GenerateVcc({ campaignName, next, pending, error, onCreate, onCancel }:
       <div className="flex items-center gap-2">
         <input value={val} onChange={(e) => setVal(e.target.value)} type="number" placeholder="50" autoFocus
           className="min-w-0 flex-1 rounded-md px-3 py-1.5 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
-        <button type="button" onClick={onCancel} className="rounded-md px-2 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Cancelar</button>
+        <button type="button" onClick={onCancel} className="rounded-md px-2 py-1.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>{t("Cancelar")}</button>
         <button type="button" onClick={() => lim > 0 && onCreate(lim)} disabled={pending || lim <= 0}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-40" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Generar

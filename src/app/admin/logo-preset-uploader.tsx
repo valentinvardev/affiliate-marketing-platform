@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { createLogoPreset } from "./actions";
 
+import { t } from "@/lib/i18n-client";
 export function LogoPresetUploader() {
   const [name, setName]         = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -59,7 +60,7 @@ export function LogoPresetUploader() {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Nombre del preset</label>
+        <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Nombre del preset")}</label>
         <input
           type="text"
           value={name}

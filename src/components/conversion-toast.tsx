@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { CircleDollarSign, Coins } from "lucide-react";
 import ReactCountryFlag from "react-country-flag";
 
+import { t } from "@/lib/i18n-client";
 /* ─── Types ─── */
 type ConversionPayload = {
   id: string;
@@ -169,7 +170,7 @@ export function ConversionTestButton() {
           receivedAt: new Date().toISOString(),
         });
       }}
-      title="Generar lead de ejemplo"
+      title={t("Generar lead de ejemplo")}
       className="inline-flex items-center justify-center rounded-lg p-1.5 transition-opacity active:opacity-60"
       style={{
         background: "rgba(255,255,255,0.07)",

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 import { useT } from "@/components/i18n-provider";
 
+import { t } from "@/lib/i18n-client";
 const NAV_BASE = [
   { href: "/overview",      icon: LayoutDashboard, label: "Inicio" },
   { href: "/campaigns",     icon: LayoutGrid, label: "Campañas" },
@@ -160,7 +161,7 @@ export function Sidebar() {
           <div className="flex-1 min-w-0">
             <p className="truncate text-xs font-medium" style={{ color: "var(--color-foreground)" }}>{username}</p>
             {isAdmin && (
-              <p className="text-[10px]" style={{ color: "var(--color-subtle)" }}>Admin</p>
+              <p className="text-[10px]" style={{ color: "var(--color-subtle)" }}>{t("Admin")}</p>
             )}
           </div>
           <button

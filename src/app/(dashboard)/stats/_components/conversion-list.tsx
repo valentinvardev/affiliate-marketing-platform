@@ -1,5 +1,6 @@
 import { ConversionReassign } from "./conversion-reassign";
 
+import { getT } from "@/lib/i18n-server";
 type Conversion = {
   id: string;
   price: number;
@@ -13,7 +14,8 @@ type Conversion = {
   receivedAt: Date;
 };
 
-export function ConversionList({ conversions, isAdmin = false }: { conversions: Conversion[]; isAdmin?: boolean }) {
+export async function ConversionList({ conversions, isAdmin = false }: { conversions: Conversion[]; isAdmin?: boolean }) {
+  const t = await getT();
   const cols = isAdmin ? "1fr 80px 60px 100px 120px 40px" : "1fr 80px 60px 100px 120px";
   if (conversions.length === 0) {
     return (
@@ -43,11 +45,11 @@ export function ConversionList({ conversions, isAdmin = false }: { conversions: 
           gridTemplateColumns: cols,
         }}
       >
-        <span>Oferta</span>
-        <span>Pago</span>
-        <span>País</span>
-        <span>Campaña (s1)</span>
-        <span className="text-right">Recibido</span>
+        <span>{t("Oferta")}</span>
+        <span>{t("Pago")}</span>
+        <span>{t("País")}</span>
+        <span>{t("Campaña (s1)")}</span>
+        <span className="text-right">{t("Recibido")}</span>
         {isAdmin && <span />}
       </div>
 
@@ -88,7 +90,7 @@ export function ConversionList({ conversions, isAdmin = false }: { conversions: 
               <div className="flex flex-col gap-1.5 px-4 py-3 md:hidden" style={{ borderBottom: border }}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
-                    {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>Sin oferta</span>}
+                    {c.offerName ?? <span style={{ color: "var(--color-subtle)" }}>{t("Sin oferta")}</span>}
                   </span>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <span className="tabular-nums text-sm font-semibold" style={{ color: "#a78bfa" }}>

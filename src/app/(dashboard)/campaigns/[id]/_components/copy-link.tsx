@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Check, Link as LinkIcon } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 /** Copia el link público de la campaña (path-based: dominio/slug). */
 export function CopyLink({ domain, slug }: { domain: string | null; slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -27,7 +28,7 @@ export function CopyLink({ domain, slug }: { domain: string | null; slug: string
     <button
       type="button"
       onClick={copy}
-      title="Copiar link de la campaña"
+      title={t("Copiar link de la campaña")}
       className="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-colors hover:opacity-80"
       style={{
         border: "1px solid var(--color-border)",

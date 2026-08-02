@@ -8,6 +8,7 @@ import { api } from "@/trpc/react";
 import { LANDING_FONTS } from "@/lib/fonts";
 import type { Offer } from "@/lib/taprain";
 
+import { t } from "@/lib/i18n-client";
 type Config = {
   whitelisted: boolean; imageUrl: string | null; appStackId: string | null;
   colorPresetId: string | null; logoPresetId: string | null; domain: string | null;
@@ -136,7 +137,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           disabled={uploading}
           className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 transition-opacity group-hover:opacity-100"
           style={{ background: "rgba(0,0,0,0.65)" }}
-          title="Cambiar imagen"
+          title={t("Cambiar imagen")}
         >
           <Upload className="h-3.5 w-3.5 text-white" />
         </button>
@@ -193,7 +194,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
               className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
               style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: colorId ? "var(--color-foreground)" : "var(--color-subtle)" }}
             >
-              <option value="">Color</option>
+              <option value="">{t("Color")}</option>
               {colors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -209,7 +210,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
               className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
               style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: logoId ? "var(--color-foreground)" : "var(--color-subtle)" }}
             >
-              <option value="">Logo</option>
+              <option value="">{t("Logo")}</option>
               {logos.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </div>
@@ -225,7 +226,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
               className="rounded-md px-2 py-1 text-xs outline-none max-w-[130px]"
               style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: domain ? "var(--color-foreground)" : "var(--color-subtle)" }}
             >
-              <option value="">Dominio</option>
+              <option value="">{t("Dominio")}</option>
               {hosts.map((h) => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
@@ -237,11 +238,11 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           <select
             value={fontTitle ?? ""}
             onChange={(e) => { const v = e.target.value || null; setFontTitle(v); savePkg({ fontTitle: v }); }}
-            title="Fuente de títulos"
+            title={t("Fuente de títulos")}
             className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
             style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: fontTitle ? "var(--color-foreground)" : "var(--color-subtle)" }}
           >
-            <option value="">Títulos</option>
+            <option value="">{t("Títulos")}</option>
             {LANDING_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </div>
@@ -252,11 +253,11 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
           <select
             value={fontBody ?? ""}
             onChange={(e) => { const v = e.target.value || null; setFontBody(v); savePkg({ fontBody: v }); }}
-            title="Fuente de párrafos"
+            title={t("Fuente de párrafos")}
             className="rounded-md px-2 py-1 text-xs outline-none max-w-[110px]"
             style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: fontBody ? "var(--color-foreground)" : "var(--color-subtle)" }}
           >
-            <option value="">Párrafos</option>
+            <option value="">{t("Párrafos")}</option>
             {LANDING_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </div>
@@ -279,7 +280,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
               color:      stackId ? "var(--color-foreground)" : "var(--color-subtle)",
             }}
           >
-            <option value="">Sin stack</option>
+            <option value="">{t("Sin stack")}</option>
             {stacks.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -299,7 +300,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
             {appsOpen && (
               <div className="absolute right-0 z-30 mt-1 max-h-60 w-56 overflow-y-auto rounded-lg p-1"
                 style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-                <p className="px-2 py-1 text-[10px] uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>Apps sueltas (sin stack)</p>
+                <p className="px-2 py-1 text-[10px] uppercase tracking-widest" style={{ color: "var(--color-subtle)" }}>{t("Apps sueltas (sin stack)")}</p>
                 {dirApps.map((a) => {
                   const on = appIds.includes(a.id);
                   return (
@@ -335,7 +336,7 @@ export function OfferConfigRow({ offer, config }: { offer: Offer; config: Config
         {pending
           ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
           : whitelisted
-          ? <><Check className="h-3.5 w-3.5" /> Activa</>
+          ? <><Check className="h-3.5 w-3.5" /> {t("Activa")}</>
           : "Activar"}
       </button>
       </div>{/* /Controles */}

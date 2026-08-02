@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function CampaignDelete({ id, name }: { id: string; name: string }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false); // presente en el DOM
@@ -36,7 +37,7 @@ export function CampaignDelete({ id, name }: { id: string; name: string }) {
   return (
     <>
       <button
-        title="Eliminar"
+        title={t("Eliminar")}
         disabled={del.isPending}
         onClick={open}
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors disabled:opacity-40"
@@ -75,7 +76,7 @@ export function CampaignDelete({ id, name }: { id: string; name: string }) {
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full" style={{ background: "var(--color-error-bg)" }}>
               <AlertTriangle className="h-5 w-5" style={{ color: "var(--color-error)" }} />
             </div>
-            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Eliminar campaña</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Eliminar campaña")}</p>
             <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
               ¿Seguro que querés eliminar <strong style={{ color: "var(--color-foreground)" }}>{name}</strong>? Esta acción no se puede deshacer.
             </p>

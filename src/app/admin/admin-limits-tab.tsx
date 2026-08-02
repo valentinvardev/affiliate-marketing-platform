@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/trpc/react";
 import { Loader2, CreditCard, Check, AlertCircle } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 export function AdminLimitsTab() {
   const utils = api.useUtils();
   const configQ = api.limits.config.useQuery();
@@ -31,10 +32,10 @@ export function AdminLimitsTab() {
     <div className="rounded-xl p-6" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       <div className="mb-1 flex items-center gap-2">
         <CreditCard className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Límites de tarjetas virtuales</h2>
+        <h2 className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Límites de tarjetas virtuales")}</h2>
       </div>
       <p className="mb-5 text-[11px] leading-relaxed" style={{ color: "var(--color-subtle)" }}>
-        Tope de <strong>tarjetas activas simultáneas por usuario</strong> y de <strong>gasto diario</strong>. Al superar
+        Tope de <strong>{t("tarjetas activas simultáneas por usuario")}</strong> y de <strong>{t("gasto diario")}</strong>. Al superar
         el gasto, las VCC del usuario se pausan y aparece el aviso en el topbar. Aplican a todos los usuarios.
       </p>
 
@@ -75,7 +76,7 @@ export function AdminLimitsTab() {
               {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               Guardar límites
             </button>
-            {saved && <span className="text-xs" style={{ color: "var(--color-success)" }}>Guardado ✓</span>}
+            {saved && <span className="text-xs" style={{ color: "var(--color-success)" }}>{t("Guardado ✓")}</span>}
             {save.error && (
               <span className="inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--color-error)" }}>
                 <AlertCircle className="h-3.5 w-3.5" /> {save.error.message}

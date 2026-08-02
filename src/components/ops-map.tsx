@@ -7,6 +7,7 @@ import ReactCountryFlag from "react-country-flag";
 import { X, Plus, Search, Clock } from "lucide-react";
 import { TARGET_COUNTRIES, localClock, isOperable, OP_LABEL, type TargetCountry } from "@/lib/target-countries";
 
+import { t } from "@/lib/i18n-client";
 type Geometry = { type: "Polygon" | "MultiPolygon"; coordinates: number[][][] | number[][][][] };
 type Feature = { id: string; properties: { name: string }; geometry: Geometry };
 type FC = { features: Feature[] };
@@ -115,7 +116,7 @@ export function OpsMap() {
       {/* ── Globo ── */}
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8" style={{ borderBottom: "1px solid var(--color-border)" }}>
-          <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Mapa de operaciones</h1>
+          <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Mapa de operaciones")}</h1>
           <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
             style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--color-success)" }} />
@@ -126,7 +127,7 @@ export function OpsMap() {
 
         <div className="flex flex-1 items-center justify-center p-4 md:p-8">
           <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full select-none" style={{ maxHeight: "74vh", touchAction: "none", cursor: drag.current ? "grabbing" : "grab" }}
-            role="img" aria-label="Globo de países objetivo"
+            role="img" aria-label={t("Globo de países objetivo")}
             onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
             <defs>
               <radialGradient id="ocean" cx="38%" cy="32%" r="75%">
@@ -178,7 +179,7 @@ export function OpsMap() {
       <aside className="shrink-0 lg:w-72 lg:overflow-y-auto" style={{ borderTop: "1px solid var(--color-border)", borderLeft: "1px solid var(--color-border)", background: "var(--color-surface)" }}>
         <div className="flex h-14 items-center gap-2 px-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
           <Clock className="h-3.5 w-3.5" style={{ color: "var(--color-muted-foreground)" }} />
-          <span className="text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--color-subtle)" }}>Hora local</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--color-subtle)" }}>{t("Hora local")}</span>
         </div>
         <ul>
           {rows.map(({ c, label, open }) => (

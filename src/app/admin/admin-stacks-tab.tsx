@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { Plus, Trash2, ChevronDown, ChevronRight, Check, X, Loader2, Upload, Image as ImageIcon } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 type Stack = {
   id: string;
   name: string;
@@ -123,7 +124,7 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
         Nueva aplicación
       </p>
       <label className="col-span-2 flex flex-col gap-1">
-        <span className="text-[10px]" style={{ color: "var(--color-subtle)" }}>Elegí de la lista de apps (prellena los campos) o cargá una manual abajo</span>
+        <span className="text-[10px]" style={{ color: "var(--color-subtle)" }}>{t("Elegí de la lista de apps (prellena los campos) o cargá una manual abajo")}</span>
         <select
           defaultValue=""
           onChange={(e) => { pickApp(e.target.value); }}
@@ -140,10 +141,10 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
           ))}
         </select>
       </label>
-      <Input placeholder="Nombre (ej: Block Blast)" value={f.name} onChange={(e) => setF(p => ({ ...p, name: e.target.value }))} required />
-      <Input placeholder="Monto (ej: 12)" type="number" step="0.01" value={f.amount} onChange={(e) => setF(p => ({ ...p, amount: e.target.value }))} required />
-      <Input placeholder="Tag (ej: 1 hr)" value={f.tag} onChange={(e) => setF(p => ({ ...p, tag: e.target.value }))} />
-      <Input placeholder="Badge (ej: TOP, HOT)" value={f.badge} onChange={(e) => setF(p => ({ ...p, badge: e.target.value }))} />
+      <Input placeholder={t("Nombre (ej: Block Blast)")} value={f.name} onChange={(e) => setF(p => ({ ...p, name: e.target.value }))} required />
+      <Input placeholder={t("Monto (ej: 12)")} type="number" step="0.01" value={f.amount} onChange={(e) => setF(p => ({ ...p, amount: e.target.value }))} required />
+      <Input placeholder={t("Tag (ej: 1 hr)")} value={f.tag} onChange={(e) => setF(p => ({ ...p, tag: e.target.value }))} />
+      <Input placeholder={t("Badge (ej: TOP, HOT)")} value={f.badge} onChange={(e) => setF(p => ({ ...p, badge: e.target.value }))} />
       <div className="col-span-2 flex items-center gap-3">
         <div
           className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg"
@@ -182,7 +183,7 @@ function AddItemForm({ stackId, onDone }: { stackId: string; onDone: () => void 
           {add.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
           Agregar
         </Btn>
-        <Btn onClick={onDone}>Cancelar</Btn>
+        <Btn onClick={onDone}>{t("Cancelar")}</Btn>
       </div>
     </form>
   );
@@ -223,7 +224,7 @@ function StackRow({ stack }: { stack: Stack }) {
           type="button"
           onClick={(e) => { e.stopPropagation(); del.mutate({ id: stack.id }); }}
           disabled={del.isPending}
-          title="Eliminar stack"
+          title={t("Eliminar stack")}
           className="ml-2 shrink-0 rounded-md p-1 transition-opacity hover:opacity-70 disabled:opacity-40"
           style={{ color: "var(--color-subtle)" }}
         >
@@ -311,7 +312,7 @@ export function AdminStacksTab() {
           <div className="flex gap-2">
             <Input
               autoFocus
-              placeholder="Nombre del stack (ej: UK Gaming 2025)"
+              placeholder={t("Nombre del stack (ej: UK Gaming 2025)")}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => {
@@ -348,7 +349,7 @@ export function AdminStacksTab() {
       {/* List */}
       <div className="rounded-xl p-5" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
         <div className="mb-3 flex items-center gap-2">
-          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Stacks definidos</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Stacks definidos")}</p>
           <span className="rounded-full px-2 py-0.5 text-[11px]"
             style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
             {stacks.length}

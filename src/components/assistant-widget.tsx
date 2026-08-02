@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
 import { Bot, X, Send, Wrench, AlertTriangle, Sparkles, Loader2, SquarePen } from "lucide-react";
 
+import { t } from "@/lib/i18n-client";
 const AngleModal = dynamic(() => import("@/components/angles-manager").then((m) => m.AngleModal), { ssr: false });
 
 type PendingAction = { type: "pause_vccs"; count: number } | null;
@@ -189,7 +190,7 @@ export function AssistantWidget() {
   return (
     <>
       {!open && (
-        <button type="button" onClick={() => { setMounted(true); setOpen(true); }} title="Asistente"
+        <button type="button" onClick={() => { setMounted(true); setOpen(true); }} title={t("Asistente")}
           className="fixed bottom-5 right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105"
           style={{ background: "var(--color-foreground)", color: "var(--color-background)", boxShadow: "0 8px 30px rgba(0,0,0,0.5)", animation: "aiPop 0.2s ease" }}>
           <Bot className="h-5 w-5" />
@@ -216,16 +217,16 @@ export function AssistantWidget() {
           }}>
           <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
             <Bot className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Asistente</p>
-            <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>tu segundo cerebro</span>
+            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Asistente")}</p>
+            <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("tu segundo cerebro")}</span>
             <div className="ml-auto flex items-center gap-1">
               {msgs.length > 0 && (
-                <button type="button" onClick={() => clear.mutate()} disabled={clear.isPending} title="Nueva conversación"
+                <button type="button" onClick={() => clear.mutate()} disabled={clear.isPending} title={t("Nueva conversación")}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-subtle)" }}>
                   {clear.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SquarePen className="h-4 w-4" />}
                 </button>
               )}
-              <button type="button" onClick={() => setOpen(false)} title="Cerrar" className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setOpen(false)} title={t("Cerrar")} className="inline-flex h-7 w-7 items-center justify-center rounded-md" style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
             </div>
           </div>
 
@@ -284,7 +285,7 @@ export function AssistantWidget() {
           <div className="flex shrink-0 items-end gap-2 p-3" style={{ borderTop: "1px solid var(--color-border)" }}>
             <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={1}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void onSend(); } }}
-              placeholder="Escribí algo…"
+              placeholder={t("Escribí algo…")}
               className="max-h-28 min-h-[40px] flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
               style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }} />
             <button type="button" onClick={() => void onSend()} disabled={!input.trim() || send.isPending}

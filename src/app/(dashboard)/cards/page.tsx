@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { api } from "@/trpc/react";
 
+import { t } from "@/lib/i18n-client";
 /* Shape real de /api/suite/vcc */
 type VCC = {
   id: string;
@@ -168,7 +169,7 @@ export default function CardsPage() {
       >
         <div className="flex items-center gap-2">
           <CreditCard className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
-          <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Tarjetas virtuales</h1>
+          <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Tarjetas virtuales")}</h1>
         </div>
         {connected && (
           <div className="flex items-center gap-2">
@@ -177,7 +178,7 @@ export default function CardsPage() {
               onClick={() => setForceReconnect(true)}
               className="hidden text-[11px] transition-opacity hover:opacity-70 sm:inline"
               style={{ color: "var(--color-subtle)" }}
-              title="Actualizar cookie de sesión"
+              title={t("Actualizar cookie de sesión")}
             >
               Reconectar
             </button>
@@ -186,7 +187,7 @@ export default function CardsPage() {
               onClick={load}
               className="inline-flex h-7 w-7 items-center justify-center rounded-md"
               style={{ border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
-              title="Refrescar"
+              title={t("Refrescar")}
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </button>
@@ -218,7 +219,7 @@ export default function CardsPage() {
               <div className="mx-auto max-w-xs">
                 <CardVisual />
               </div>
-              <h2 className="mt-6 text-center text-lg font-bold" style={{ color: "var(--color-foreground)" }}>Conectá tu sesión de TapRain</h2>
+              <h2 className="mt-6 text-center text-lg font-bold" style={{ color: "var(--color-foreground)" }}>{t("Conectá tu sesión de TapRain")}</h2>
               <p className="mt-2 text-center text-sm leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>
                 La Ads Suite usa sesión (no API key). Pegá la cookie de sesión de tu cuenta de TapRain.
               </p>
@@ -227,7 +228,7 @@ export default function CardsPage() {
                   value={cookieInput}
                   onChange={(e) => setCookieInput(e.target.value)}
                   rows={3}
-                  placeholder="cookie de sesión (DevTools → Application → Cookies)…"
+                  placeholder={t("cookie de sesión (DevTools → Application → Cookies)…")}
                   className="w-full resize-none rounded-md px-3 py-2 text-xs outline-none"
                   style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }}
                 />
@@ -242,12 +243,12 @@ export default function CardsPage() {
                 </button>
               </form>
               <details className="mt-4 text-xs" style={{ color: "var(--color-subtle)" }}>
-                <summary className="cursor-pointer select-none">¿Cómo obtengo la cookie?</summary>
+                <summary className="cursor-pointer select-none">{t("¿Cómo obtengo la cookie?")}</summary>
                 <ol className="mt-2 list-decimal space-y-1 pl-4 leading-relaxed">
-                  <li>Logueate en taprain.com en el navegador.</li>
-                  <li>DevTools (F12) → pestaña <span className="font-mono">Application</span> → <span className="font-mono">Cookies</span> → taprain.com.</li>
-                  <li>Copiá el/los valores de sesión como <span className="font-mono">nombre=valor; nombre2=valor2</span>.</li>
-                  <li>Pegalos arriba y Conectar. Si expira, repetí el paso.</li>
+                  <li>{t("Logueate en taprain.com en el navegador.")}</li>
+                  <li>DevTools (F12) → pestaña <span className="font-mono">Application</span> → <span className="font-mono">{t("Cookies")}</span> → taprain.com.</li>
+                  <li>{t("Copiá el/los valores de sesión como")} <span className="font-mono">nombre=valor; nombre2=valor2</span>.</li>
+                  <li>{t("Pegalos arriba y Conectar. Si expira, repetí el paso.")}</li>
                 </ol>
               </details>
             </div>
@@ -266,7 +267,7 @@ export default function CardsPage() {
             cards.length === 0 ? (
               <div className="rounded-2xl py-16 text-center" style={{ border: "1px dashed var(--color-border)" }}>
                 <CreditCard className="mx-auto mb-3 h-6 w-6" style={{ color: "var(--color-subtle)" }} />
-                <p className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>Sin tarjetas todavía.</p>
+                <p className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>{t("Sin tarjetas todavía.")}</p>
                 <button type="button" onClick={() => setCreating(true)} className="mt-4 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold" style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}>
                   <Plus className="h-3.5 w-3.5" /> Crear la primera
                 </button>
@@ -300,8 +301,8 @@ export default function CardsPage() {
                         {/* dueño / cerrada por (visible para admin) */}
                         {(c.ownerUsername || c.closedByUsername) && (
                           <p className="mt-1.5 text-[10px]" style={{ color: "var(--color-subtle)" }}>
-                            {c.ownerUsername && <>dueño: <span style={{ color: "var(--color-muted-foreground)" }}>{c.ownerUsername}</span></>}
-                            {c.closedByUsername && <> · cerrada por <span style={{ color: "var(--color-error)" }}>{c.closedByUsername}</span></>}
+                            {c.ownerUsername && <>{t("dueño:")} <span style={{ color: "var(--color-muted-foreground)" }}>{c.ownerUsername}</span></>}
+                            {c.closedByUsername && <> {t("· cerrada por")} <span style={{ color: "var(--color-error)" }}>{c.closedByUsername}</span></>}
                           </p>
                         )}
                         {/* progress */}
@@ -354,7 +355,7 @@ export default function CardsPage() {
             style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Nueva tarjeta</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Nueva tarjeta")}</p>
               <button type="button" onClick={() => setCreating(false)} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-3">
@@ -369,7 +370,7 @@ export default function CardsPage() {
                   <Input value={form.bin} onChange={(v) => setForm((f) => ({ ...f, bin: v }))} placeholder="auto" />
                 </Field>
                 <Field label="Campaña (opcional)">
-                  <Input value={form.campaign} onChange={(v) => setForm((f) => ({ ...f, campaign: v }))} placeholder="id / nombre" icon={<LinkIcon className="h-3 w-3" />} />
+                  <Input value={form.campaign} onChange={(v) => setForm((f) => ({ ...f, campaign: v }))} placeholder={t("id / nombre")} icon={<LinkIcon className="h-3 w-3" />} />
                 </Field>
               </div>
             </div>
@@ -410,18 +411,18 @@ export default function CardsPage() {
                 <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--color-success)", display: "flex", alignItems: "center", justifyContent: "center", animation: "cardPop .45s cubic-bezier(0.175,0.885,0.32,1.275)" }}>
                   <Check className="h-7 w-7" style={{ color: "#000" }} />
                 </div>
-                <p className="mt-3 text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>¡Límite actualizado!</p>
+                <p className="mt-3 text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("¡Límite actualizado!")}</p>
                 <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>Nuevo límite {usd(newTotal)}</p>
               </div>
             ) : (
               <>
                 <div className="mb-1 flex items-center justify-between">
-                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Sumar al límite</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Sumar al límite")}</p>
                   <button type="button" onClick={() => setLimitModal(null)} style={{ color: "var(--color-subtle)" }}><X className="h-4 w-4" /></button>
                 </div>
                 <p className="mb-4 truncate text-xs" style={{ color: "var(--color-muted-foreground)" }}>{limitModal.name}</p>
 
-                <label className="mb-1 block text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>¿Cuánto querés sumar? (USD)</label>
+                <label className="mb-1 block text-[11px] font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("¿Cuánto querés sumar? (USD)")}</label>
                 <Input value={limitValue} onChange={(v) => { setLimitValue(v); if (limitStatus === "error") setLimitStatus("idle"); }} placeholder="50" type="number" />
 
                 {/* Cálculo en vivo */}
@@ -467,7 +468,7 @@ export default function CardsPage() {
           <div className="w-full max-w-xs rounded-2xl p-5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
             <div className="flex items-center gap-2">
               <XCircle className="h-4 w-4" style={{ color: "var(--color-error)" }} />
-              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Cerrar tarjeta</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Cerrar tarjeta")}</p>
             </div>
             <p className="mt-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
               Vas a cerrar <span className="font-medium" style={{ color: "var(--color-foreground)" }}>{closeModal.name}</span>. Se pausa y deja de aparecer en tu lista. Queda registrado que la cerraste vos.

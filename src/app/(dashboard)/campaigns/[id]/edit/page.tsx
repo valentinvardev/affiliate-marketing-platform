@@ -5,6 +5,7 @@ import { api } from "@/trpc/server";
 import { HydrateClient } from "@/trpc/server";
 import { CampaignForm } from "@/components/campaign-form";
 
+import { getT } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function EditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const { id } = await params;
   let campaign;
   try {
@@ -35,7 +37,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
             {campaign.name}
           </Link>
           <span style={{ color: "var(--color-border)" }}>/</span>
-          <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Editar</span>
+          <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Editar")}</span>
         </header>
 
         <main className="flex-1 px-4 py-8 md:px-8">

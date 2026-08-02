@@ -5,6 +5,7 @@ import { Search, Loader2, Monitor, Smartphone, Copy, Check, ExternalLink, Chevro
 import ReactCountryFlag from "react-country-flag";
 import type { Offer, OffersResponse } from "@/lib/taprain";
 
+import { t } from "@/lib/i18n-client";
 const TYPE_OPTIONS = [
   { value: "",          label: "Todos los tipos" },
   { value: "cpi",       label: "CPI" },
@@ -166,7 +167,7 @@ export default function OffersPage() {
         className="flex h-14 shrink-0 items-center gap-3 px-4 md:px-8"
         style={{ borderBottom: "1px solid var(--color-border)" }}
       >
-        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>Ofertas</h1>
+        <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Ofertas")}</h1>
         {!loading && (
           <span
             className="rounded-full px-2 py-0.5 text-[11px] tabular-nums"
@@ -187,7 +188,7 @@ export default function OffersPage() {
         >
           <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--color-subtle)" }} />
           <input
-            placeholder="Buscar por nombre…"
+            placeholder={t("Buscar por nombre…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-sm outline-none"
@@ -239,7 +240,7 @@ export default function OffersPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Filtros</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Filtros")}</p>
               <button type="button" onClick={() => setFiltersOpen(false)} style={{ color: "var(--color-subtle)" }}>
                 <X className="h-4 w-4" />
               </button>
@@ -247,11 +248,11 @@ export default function OffersPage() {
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Tipo</label>
+                <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Tipo")}</label>
                 <SimpleSelect value={type} onChange={setType} options={TYPE_OPTIONS} fullWidth dropUp />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>Dispositivo</label>
+                <label className="text-xs font-medium" style={{ color: "var(--color-muted-foreground)" }}>{t("Dispositivo")}</label>
                 <SimpleSelect value={device} onChange={setDevice} options={DEVICE_OPTIONS} fullWidth dropUp />
               </div>
             </div>
@@ -286,7 +287,7 @@ export default function OffersPage() {
         )}
 
         {!error && !loading && offers.length === 0 && (
-          <p className="text-sm" style={{ color: "var(--color-subtle)" }}>Sin resultados.</p>
+          <p className="text-sm" style={{ color: "var(--color-subtle)" }}>{t("Sin resultados.")}</p>
         )}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

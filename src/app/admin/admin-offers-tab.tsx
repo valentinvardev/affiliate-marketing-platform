@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { OfferConfigRow } from "./offer-config-row";
 import type { Offer } from "@/lib/taprain";
 
+import { t } from "@/lib/i18n-client";
 type Config = { offerId: string; whitelisted: boolean; imageUrl: string | null; appStackId: string | null; colorPresetId: string | null; logoPresetId: string | null; domain: string | null; fontTitle: string | null; fontBody: string | null; appIds: string[] };
 
 export function AdminOffersTab({
@@ -47,7 +48,7 @@ export function AdminOffersTab({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar offer…"
+            placeholder={t("Buscar offer…")}
             className="flex-1 bg-transparent text-sm outline-none"
             style={{ color: "var(--color-foreground)" }}
           />
