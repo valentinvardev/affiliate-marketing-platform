@@ -116,6 +116,50 @@ model User {
   campaigns Campaign[]
   cards     CardOwner[]
   spend     SpendLog[]
+  tutorialComments TutorialComment[]
+}
+
+/// Video tutorial (recurso de ayuda). El archivo vive en Supabase Storage.
+model Tutorial {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  videoUrl    String
+  posterUrl   String?
+  durationSec Int? // se completa al subir, leyendo la metadata del video
+  category    String?
+  position    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chapters TutorialChapter[]
+  comments TutorialComment[]
+
+  @@index([position])
+}
+
+/// Marca de tiempo con título — el índice que se muestra a la derecha del reproductor.
+model TutorialChapter {
+  id         String   @id @default(cuid())
+  tutorialId String
+  tutorial   Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+  timeSec    Int
+  title      String
+
+  @@index([tutorialId, timeSec])
+}
+
+model TutorialComment {
+  id         String   @id @default(cuid())
+  tutorialId String
+  tutorial   Tutorial @relation(fields: [tutorialId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([tutorialId, createdAt])
 }
 
 // Mapea cada VCC de TapRain (id de la card) a su usuario dueño

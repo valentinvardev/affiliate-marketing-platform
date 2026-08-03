@@ -8,3 +8,6 @@ export const supabaseAdmin = createClient(
 );
 
 export const LOGOS_BUCKET = "bucket";
+
+/** Bucket separado para los videos de tutoriales (público, solo lectura). */
+export const TUTORIALS_BUCKET = "tutorials";

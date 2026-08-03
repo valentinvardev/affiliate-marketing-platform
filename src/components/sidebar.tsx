@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users, Globe, Shuffle, Sparkles, Network, Brain } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users, Globe, Shuffle, Sparkles, Network, Brain, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 import { useT } from "@/components/i18n-provider";
@@ -25,6 +25,7 @@ const NAV_BASE = [
   { href: "/cards",        icon: CreditCard, label: "Tarjetas" },
   { href: "/finanzas",     icon: Coins,      label: "Finanzas" },
   { href: "/wallet",       icon: Wallet,     label: "Billetera" },
+  { href: "/tutoriales",   icon: GraduationCap, label: "Tutoriales" },
 ];
 
 export function Sidebar() {
