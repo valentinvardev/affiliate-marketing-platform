@@ -117,6 +117,70 @@ model User {
   cards     CardOwner[]
   spend     SpendLog[]
   tutorialComments TutorialComment[]
+  feedPosts        FeedPost[]
+  feedLikes        FeedLike[]
+  feedComments     FeedComment[]
+}
+
+/// Post de la feed interna. Solo el admin publica; el resto comenta y da like.
+/// El cuerpo se ve como un post de red social; el ángulo (diapositivas +
+/// descripción) se abre aparte en un modal.
+model FeedPost {
+  id             String  @id @default(cuid())
+  authorId       String
+  author         User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body           String
+  countryCode    String? // ISO-2 del ángulo, para la bandera
+  /// Archivo adjunto visible en el post (imagen).
+  attachmentUrl  String?
+  attachmentName String?
+  /// Descripción del ángulo que se muestra dentro del modal.
+  description    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slides   FeedSlide[]
+  likes    FeedLike[]
+  comments FeedComment[]
+
+  @@index([createdAt])
+}
+
+/// Diapositivas del ángulo, en orden, que se ven al abrir el post.
+model FeedSlide {
+  id       String   @id @default(cuid())
+  postId   String
+  post     FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url      String
+  caption  String?
+  position Int      @default(0)
+
+  @@index([postId, position])
+}
+
+model FeedLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+model FeedComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
 }
 
 /// Video tutorial (recurso de ayuda). El archivo vive en Supabase Storage.

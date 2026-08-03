@@ -487,6 +487,25 @@ const EN: Record<string, string> = {
   "Falló la compresión": "Compression failed",
   "Comprimido quedó en {size} MB, todavía sobre el límite de {max} MB. Probá con una URL externa.": "Compressed to {size} MB, still over the {max} MB limit. Try an external URL.",
 
+  // -- Feed --
+  "Feed": "Feed",
+  "Todavía no hay posts": "No posts yet",
+  "Publicá el primer ángulo desde el cuadro de arriba.": "Publish the first angle from the box above.",
+  "El admin todavía no publicó ángulos.": "The admin has not published any angles yet.",
+  "Compartí un ángulo con el equipo…": "Share an angle with the team…",
+  "País del ángulo": "Angle country",
+  "Descripción del ángulo (se ve al abrirlo)…": "Angle description (shown when opened)…",
+  "Adjunto": "Attachment",
+  "Diapositivas": "Slides",
+  "Diapositiva": "Slide",
+  "Publicar": "Post",
+  "Quitar": "Remove",
+  "¿Eliminar este post?": "Delete this post?",
+  "Sin descripción.": "No description.",
+  "Sin comentarios todavía.": "No comments yet.",
+  "Anterior": "Previous",
+  "Siguiente": "Next",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };

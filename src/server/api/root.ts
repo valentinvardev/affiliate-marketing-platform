@@ -20,10 +20,12 @@ import { anglesRouter } from "@/server/api/routers/angles";
 import { assistantRouter } from "@/server/api/routers/assistant";
 import { knowledgeRouter } from "@/server/api/routers/knowledge";
 import { tutorialRouter } from "@/server/api/routers/tutorial";
+import { feedRouter } from "@/server/api/routers/feed";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 export const appRouter = createTRPCRouter({
   tutorial: tutorialRouter,
+  feed: feedRouter,
   campaign: campaignRouter,
   offer: offerRouter,
   preset: presetRouter,

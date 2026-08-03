@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users, Globe, Shuffle, Sparkles, Network, Brain, GraduationCap } from "lucide-react";
+import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users, Globe, Shuffle, Sparkles, Network, Brain, GraduationCap, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConversionTestButton } from "@/components/conversion-toast";
 import { useT } from "@/components/i18n-provider";
@@ -16,6 +16,7 @@ const NAV_BASE = [
   { href: "/campaigns/new", icon: BookOpen,   label: "Nueva campaña" },
   { href: "/offers",        icon: Package,    label: "Ofertas" },
   { href: "/sparks",        icon: Sparkles,   label: "Sparks" },
+  { href: "/feed",          icon: Newspaper,  label: "Feed" },
   { href: "/proxies",       icon: Network,    label: "Proxies" },
   { href: "/redirecciones", icon: Shuffle,    label: "Redirecciones" },
   { href: "/mapa",          icon: Globe,      label: "Mapa" },

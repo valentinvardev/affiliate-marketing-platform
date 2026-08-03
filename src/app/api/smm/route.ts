@@ -4,11 +4,24 @@ import { authOptions } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
 
-const API_URL = "https://smmworld.org/api/v2";
-const ALLOWED = new Set(["balance", "services", "status", "add"]);
+const API_URL = process.env.SMM_API_URL ?? "https://dripfeedpanel.com/api/v2";
 
 /**
- * Proxy a SMM World. La API key vive en el servidor (env SMM_KEY) y nunca
+ * Acciones del estándar de paneles SMM v2. DripFeed soporta además refill y
+ * cancel, que el panel anterior no tenía.
+ */
+const ALLOWED = new Set([
+  "balance",
+  "services",
+  "status",
+  "add",
+  "refill",
+  "refill_status",
+  "cancel",
+]);
+
+/**
+ * Proxy al panel SMM. La API key vive en el servidor (env SMM_KEY) y nunca
  * se expone al cliente. Solo se permiten las acciones whitelisteadas.
  */
 export async function POST(req: NextRequest) {
@@ -17,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
 
-  const key = process.env.SMM_KEY ?? "";
+  const key = (process.env.SMM_KEY ?? "").trim().replace(/^["']|["']$/g, "");
   if (!key) {
     return NextResponse.json(
       { error: "SMM_KEY no está configurada en el servidor." },
@@ -58,7 +71,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Error de red hacia SMM World" },
+      { error: e instanceof Error ? e.message : "Error de red hacia el panel SMM" },
       { status: 502 },
     );
   }

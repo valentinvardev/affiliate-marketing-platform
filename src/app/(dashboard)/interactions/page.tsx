@@ -258,7 +258,7 @@ export default function InteractionsPage() {
       >
         <Heart className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
         <h1 className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Interacciones")}</h1>
-        <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>SMM World</span>
+        <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>DripFeed</span>
       </header>
 
       <main className="flex-1 px-4 py-6 md:px-8">
