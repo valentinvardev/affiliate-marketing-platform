@@ -26,15 +26,28 @@ export type S3Config = {
  * Mismos nombres de variables que media-seller-platform, para poder reusar los
  * valores del .env de ese proyecto sin traducir nada.
  */
+/**
+ * Lee una variable tratando "" (y espacios) como ausente.
+ *
+ * Es imprescindible: en el .env las opcionales quedan como VAR="", y `??` solo
+ * cae al siguiente valor con null/undefined — un string vacío pasa. Si eso
+ * ocurre con la región, el host sale `bucket.s3..amazonaws.com` y la subida
+ * muere con un error de red que no dice nada.
+ */
+function envStr(v: string | undefined): string | undefined {
+  const s = v?.trim();
+  return s ? s : undefined;
+}
+
 export function getS3Config(): S3Config | null {
-  const region = process.env.AWS_S3_REGION ?? process.env.AWS_REGION ?? "us-east-2";
-  const bucket = process.env.AWS_S3_BUCKET;
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  const cfDomain = process.env.CLOUDFRONT_DOMAIN;
+  const region = envStr(process.env.AWS_S3_REGION) ?? envStr(process.env.AWS_REGION) ?? "us-east-2";
+  const bucket = envStr(process.env.AWS_S3_BUCKET);
+  const accessKeyId = envStr(process.env.AWS_ACCESS_KEY_ID);
+  const secretAccessKey = envStr(process.env.AWS_SECRET_ACCESS_KEY);
+  const cfDomain = envStr(process.env.CLOUDFRONT_DOMAIN);
   if (!bucket || !accessKeyId || !secretAccessKey || !cfDomain) return null;
 
-  const raw = process.env.AWS_S3_PREFIX;
+  const raw = envStr(process.env.AWS_S3_PREFIX);
   const prefix = raw ? raw.replace(/^\/+/, "").replace(/\/?$/, "/") : "";
   return {
     region,
@@ -69,6 +82,15 @@ function encPath(key: string): string {
 }
 
 function hostFor(cfg: S3Config): string {
+  // Falla fuerte y claro: una región vacía o con formato raro produciría
+  // `bucket.s3..amazonaws.com`, que no resuelve por DNS y llega al navegador
+  // como un "error de red" sin ninguna pista del motivo.
+  if (!/^[a-z0-9-]+$/.test(cfg.region)) {
+    throw new Error(`AWS_REGION inválida: "${cfg.region}". Revisá el .env del servidor.`);
+  }
+  if (!/^[a-z0-9.\-_]+$/i.test(cfg.bucket)) {
+    throw new Error(`AWS_S3_BUCKET inválido: "${cfg.bucket}".`);
+  }
   // us-east-1 usa el host sin región (así lo firman los ejemplos de AWS).
   return cfg.region === "us-east-1"
     ? `${cfg.bucket}.s3.amazonaws.com`
