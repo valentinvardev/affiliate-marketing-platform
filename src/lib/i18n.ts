@@ -467,6 +467,26 @@ const EN: Record<string, string> = {
   "Máximo": "Maximum",
   "El archivo pesa {size} MB y el storage acepta hasta {max} MB. Comprimí el video o usá una URL externa.": "The file is {size} MB and storage accepts up to {max} MB. Compress the video or use an external URL.",
 
+  // -- Compresion de video --
+  "El video supera el límite": "The video exceeds the limit",
+  "máximo": "maximum",
+  "Resolución": "Resolution",
+  "Bitrate": "Bitrate",
+  "Calidad": "Quality",
+  "buena": "good",
+  "media": "medium",
+  "baja": "low",
+  "Estimado final": "Estimated result",
+  "No se pudo leer la duración del video, así que no puedo calcular la compresión.": "Could not read the video duration, so the compression cannot be planned.",
+  "Archivo muy grande: el navegador puede quedarse sin memoria al comprimirlo. Si falla, comprimilo con ffmpeg en tu máquina o usá una URL externa.": "Very large file: the browser may run out of memory while compressing. If it fails, compress it with ffmpeg locally or use an external URL.",
+  "Cargando compresor…": "Loading compressor…",
+  "Descargando motor (32 MB, solo la primera vez)…": "Downloading engine (32 MB, first time only)…",
+  "Comprimiendo…": "Compressing…",
+  "Se procesa en tu navegador. No cierres esta pestaña.": "Processed in your browser. Do not close this tab.",
+  "Comprimir ahora": "Compress now",
+  "Falló la compresión": "Compression failed",
+  "Comprimido quedó en {size} MB, todavía sobre el límite de {max} MB. Probá con una URL externa.": "Compressed to {size} MB, still over the {max} MB limit. Try an external URL.",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };

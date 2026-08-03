@@ -2,11 +2,12 @@
 
 import { useRef, useState } from "react";
 import {
-  GraduationCap, Upload, Loader2, X, Plus, Trash2, ListVideo, Check, Film, Clock,
+  GraduationCap, Upload, Loader2, X, Plus, Trash2, ListVideo, Check, Film, Clock, Wand2, AlertTriangle,
 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { fmtTime } from "@/components/tutorials/video-player";
 import { t } from "@/lib/i18n-client";
+import { planCompression, compressVideo, SAFE_INPUT_BYTES, type Plan } from "@/lib/video-compress";
 
 type Draft = { timeSec: number; title: string };
 
@@ -100,6 +101,12 @@ export function AdminTutorialsTab() {
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  // Compresion en el navegador (ffmpeg.wasm)
+  const [oversize, setOversize] = useState<File | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [cmpPct, setCmpPct] = useState<number | null>(null);
+  const [cmpStage, setCmpStage] = useState<string | null>(null);
+
   // Edición del índice de un video ya subido
   const [editing, setEditing] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Draft[]>([]);
@@ -108,6 +115,7 @@ export function AdminTutorialsTab() {
     setFile(null); setTitle(""); setDesc(""); setCat("");
     setChaptersDraft([]); setPct(null); setDur(0); setErr(null);
     setPoster(null); setExtUrl("");
+    setOversize(null); setPlan(null); setCmpPct(null); setCmpStage(null);
     setPosterPreview((u) => { if (u) URL.revokeObjectURL(u); return null; });
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -117,21 +125,43 @@ export function AdminTutorialsTab() {
     if (!f) return;
     // Cortar aca: mandar cientos de MB para que el storage los rechace al final
     // desperdicia la subida entera y da un 400 sin contexto.
-    if (maxBytes && f.size > maxBytes) {
-      setFile(null);
-      setErr(
-        t("El archivo pesa {size} MB y el storage acepta hasta {max} MB. Comprimí el video o usá una URL externa.")
-          .replace("{size}", (f.size / 1024 / 1024).toFixed(0))
-          .replace("{max}", String(maxMb ?? 0)),
-      );
-      return;
-    }
-    setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "));
     const { durationSec, poster: frame } = await probeVideo(f);
     setDur(durationSec);
     setPoster(frame);
     setPosterPreview((u) => { if (u) URL.revokeObjectURL(u); return frame ? URL.createObjectURL(frame) : null; });
+
+    // Pasa el limite: no se rechaza, se ofrece comprimir con el plan calculado.
+    if (maxBytes && f.size > maxBytes) {
+      setFile(null);
+      setOversize(f);
+      setPlan(durationSec > 0 ? planCompression(durationSec, maxBytes) : null);
+      return;
+    }
+    setOversize(null); setPlan(null);
+    setFile(f);
+  }
+
+  async function runCompress() {
+    if (!oversize || !plan) return;
+    setErr(null); setCmpPct(0);
+    try {
+      const out = await compressVideo(oversize, plan, setCmpPct, setCmpStage);
+      setCmpStage(null); setCmpPct(null);
+      if (maxBytes && out.size > maxBytes) {
+        setErr(
+          t("Comprimido quedó en {size} MB, todavía sobre el límite de {max} MB. Probá con una URL externa.")
+            .replace("{size}", (out.size / 1024 / 1024).toFixed(0))
+            .replace("{max}", String(maxMb ?? 0)),
+        );
+        return;
+      }
+      setOversize(null); setPlan(null);
+      setFile(out);
+    } catch (e) {
+      setCmpPct(null); setCmpStage(null);
+      setErr(e instanceof Error ? e.message : t("Falló la compresión"));
+    }
   }
 
   async function submit() {
@@ -256,6 +286,86 @@ export function AdminTutorialsTab() {
             </>
           )}
         </label>
+        )}
+
+        {/* Archivo demasiado grande -> comprimir en el navegador */}
+        {oversize && (
+          <div className="enter-down mt-3 rounded-xl p-4" style={{ border: "1px solid var(--color-border-focus)", background: "var(--color-surface-overlay)" }}>
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--color-warning)" }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+                  {t("El video supera el límite")}
+                </p>
+                <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+                  {(oversize.size / 1024 / 1024).toFixed(0)} MB · {t("máximo")} {maxMb} MB
+                  {dur > 0 ? ` · ${fmtTime(dur)}` : ""}
+                </p>
+
+                {plan ? (
+                  <>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <Stat label={t("Resolución")} value={`${plan.height}p`} />
+                      <Stat label={t("Bitrate")} value={`${plan.videoKbps} kbps`} />
+                      <Stat label={t("Calidad")} value={t(plan.quality)} />
+                    </div>
+                    <p className="mt-2 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+                      {t("Estimado final")}: ~{(plan.estimatedBytes / 1024 / 1024).toFixed(0)} MB
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-[11px]" style={{ color: "var(--color-warning)" }}>
+                    {t("No se pudo leer la duración del video, así que no puedo calcular la compresión.")}
+                  </p>
+                )}
+
+                {oversize.size > SAFE_INPUT_BYTES && (
+                  <p className="mt-2 rounded-md px-2.5 py-2 text-[11px]" style={{ background: "var(--color-warning-bg)", color: "var(--color-warning)" }}>
+                    {t("Archivo muy grande: el navegador puede quedarse sin memoria al comprimirlo. Si falla, comprimilo con ffmpeg en tu máquina o usá una URL externa.")}
+                  </p>
+                )}
+
+                {cmpPct !== null ? (
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-[11px]" style={{ color: "var(--color-muted-foreground)" }}>
+                      <span>
+                        {cmpStage === "script" ? t("Cargando compresor…")
+                          : cmpStage === "core" ? t("Descargando motor (32 MB, solo la primera vez)…")
+                          : t("Comprimiendo…")}
+                      </span>
+                      {cmpStage === "encode" && <span className="tabular-nums">{cmpPct}%</span>}
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--color-surface-raised)" }}>
+                      <div style={{ width: cmpStage === "encode" ? `${cmpPct}%` : "100%", height: "100%", background: "var(--color-foreground)", transition: "width .2s ease", opacity: cmpStage === "encode" ? 1 : 0.4 }} />
+                    </div>
+                    <p className="mt-1.5 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+                      {t("Se procesa en tu navegador. No cierres esta pestaña.")}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void runCompress()}
+                      disabled={!plan}
+                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity disabled:opacity-40"
+                      style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+                    >
+                      <Wand2 className="h-3.5 w-3.5" /> {t("Comprimir ahora")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setOversize(null); setPlan(null); setMode("url"); }}
+                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                      style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+                    >
+                      {t("Usar URL externa")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {(file || (mode === "url" && extUrl.trim())) && (
@@ -480,6 +590,15 @@ function ChapterEditor({
           <Plus className="h-3.5 w-3.5" />
         </button>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md px-2.5 py-1.5" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>
+      <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--color-subtle)" }}>{label}</p>
+      <p className="mt-0.5 text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>{value}</p>
     </div>
   );
 }
