@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/api/trpc";
 import { supabaseAdmin, TUTORIALS_BUCKET } from "@/lib/supabase";
+import { getS3Config, presign, publicUrl, withPrefix } from "@/lib/s3";
 
 /** Extensiones aceptadas: video (las que reproduce <video> sin transcodificar) + poster. */
 const UPLOAD_EXT: Record<string, { ext: string; dir: string }> = {
@@ -89,11 +90,15 @@ export const tutorialRouter = createTRPCRouter({
    * hardcodeado: así la UI puede avisar antes de subir y no después del 400.
    */
   uploadLimits: adminProcedure.query(async () => {
+    // Con S3 no hay techo práctico (5 GB por PUT simple), así que no se
+    // informa límite y la UI no ofrece comprimir.
+    if (getS3Config()) return { maxBytes: null, storage: "s3" as const };
+
     try {
       await supabaseAdmin.storage.createBucket(TUTORIALS_BUCKET, { public: true });
     } catch { /* ya existe */ }
     const { data } = await supabaseAdmin.storage.getBucket(TUTORIALS_BUCKET);
-    return { maxBytes: data?.file_size_limit ?? null };
+    return { maxBytes: data?.file_size_limit ?? null, storage: "supabase" as const };
   }),
 
   /**
@@ -115,11 +120,25 @@ export const tutorialRouter = createTRPCRouter({
         });
       }
 
+      const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${kind.ext}`;
+      const path = `tutoriales/${kind.dir}/${name}`;
+
+      // S3 + CloudFront si está configurado: sin tope práctico de tamaño.
+      const s3 = getS3Config();
+      if (s3) {
+        return {
+          signedUrl: presign(s3, "PUT", withPrefix(s3, path), 3600),
+          path,
+          publicUrl: publicUrl(s3, path),
+          storage: "s3" as const,
+        };
+      }
+
+      // Fallback: Supabase Storage.
       try {
         await supabaseAdmin.storage.createBucket(TUTORIALS_BUCKET, { public: true });
       } catch { /* ya existe */ }
 
-      const path = `${kind.dir}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${kind.ext}`;
       const { data, error } = await supabaseAdmin.storage
         .from(TUTORIALS_BUCKET)
         .createSignedUploadUrl(path);
@@ -129,7 +148,7 @@ export const tutorialRouter = createTRPCRouter({
       }
 
       const { data: pub } = supabaseAdmin.storage.from(TUTORIALS_BUCKET).getPublicUrl(path);
-      return { signedUrl: data.signedUrl, token: data.token, path, publicUrl: pub.publicUrl };
+      return { signedUrl: data.signedUrl, path, publicUrl: pub.publicUrl, storage: "supabase" as const };
     }),
 
   create: adminProcedure
@@ -184,7 +203,14 @@ export const tutorialRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const tut = await ctx.db.tutorial.findUniqueOrThrow({ where: { id: input.id } });
-      // Borrar también el archivo del storage (best-effort).
+      // Borrar también el archivo del storage (best-effort en ambos backends).
+      const s3 = getS3Config();
+      if (s3 && tut.videoUrl.includes(s3.cfDomain)) {
+        try {
+          const key = decodeURIComponent(new URL(tut.videoUrl).pathname.replace(/^\//, ""));
+          await fetch(presign(s3, "DELETE", key, 300), { method: "DELETE" });
+        } catch { /* el registro se borra igual */ }
+      }
       try {
         const marker = `/${TUTORIALS_BUCKET}/`;
         const i = tut.videoUrl.indexOf(marker);

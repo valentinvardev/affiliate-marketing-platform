@@ -86,6 +86,7 @@ export function AdminTutorialsTab() {
   const limits = api.tutorial.uploadLimits.useQuery();
   const maxBytes = limits.data?.maxBytes ?? null;
   const maxMb = maxBytes ? Math.floor(maxBytes / 1024 / 1024) : null;
+  const storage = limits.data?.storage;
 
   const [mode, setMode] = useState<"file" | "url">("file");
   const [extUrl, setExtUrl] = useState("");
@@ -281,7 +282,11 @@ export function AdminTutorialsTab() {
             <>
               <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Arrastrá el video o hacé click")}</span>
               <span className="mt-1 text-[11px]" style={{ color: "var(--color-subtle)" }}>
-                {maxMb ? `${t("Máximo")} ${maxMb} MB` : t("Cargando…")}
+                {maxMb
+                  ? `${t("Máximo")} ${maxMb} MB`
+                  : storage === "s3"
+                    ? t("S3 + CloudFront · sin límite de tamaño")
+                    : t("Cargando…")}
               </span>
             </>
           )}
