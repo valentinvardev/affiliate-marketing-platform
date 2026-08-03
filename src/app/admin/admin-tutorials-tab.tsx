@@ -10,7 +10,12 @@ import { t } from "@/lib/i18n-client";
 
 type Draft = { timeSec: number; title: string };
 
-/** Sube el archivo directo a Supabase con la URL firmada, reportando progreso. */
+/**
+ * Sube el archivo directo a Supabase con la URL firmada, reportando progreso.
+ * Ante un fallo devuelve el mensaje del cuerpo de la respuesta (ahí Supabase
+ * explica el motivo real, p. ej. que el objeto excede el tamaño permitido);
+ * quedarse solo con el código HTTP no dice nada.
+ */
 function putWithProgress(url: string, file: File, onProgress: (pct: number) => void) {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -19,8 +24,16 @@ function putWithProgress(url: string, file: File, onProgress: (pct: number) => v
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`HTTP ${xhr.status}`)));
-    xhr.onerror = () => reject(new Error("network"));
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve();
+      let detail = xhr.responseText?.slice(0, 300) ?? "";
+      try {
+        const j = JSON.parse(xhr.responseText) as { message?: string; error?: string };
+        detail = j.message ?? j.error ?? detail;
+      } catch { /* no era JSON */ }
+      reject(new Error(detail ? `HTTP ${xhr.status} — ${detail}` : `HTTP ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("Error de red durante la subida"));
     xhr.send(file);
   });
 }
@@ -69,6 +82,12 @@ export function AdminTutorialsTab() {
     onSuccess: async () => { setEditing(null); await utils.tutorial.list.invalidate(); },
   });
 
+  const limits = api.tutorial.uploadLimits.useQuery();
+  const maxBytes = limits.data?.maxBytes ?? null;
+  const maxMb = maxBytes ? Math.floor(maxBytes / 1024 / 1024) : null;
+
+  const [mode, setMode] = useState<"file" | "url">("file");
+  const [extUrl, setExtUrl] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -88,7 +107,7 @@ export function AdminTutorialsTab() {
   function reset() {
     setFile(null); setTitle(""); setDesc(""); setCat("");
     setChaptersDraft([]); setPct(null); setDur(0); setErr(null);
-    setPoster(null);
+    setPoster(null); setExtUrl("");
     setPosterPreview((u) => { if (u) URL.revokeObjectURL(u); return null; });
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -96,6 +115,17 @@ export function AdminTutorialsTab() {
   async function pick(f: File | null) {
     setErr(null);
     if (!f) return;
+    // Cortar aca: mandar cientos de MB para que el storage los rechace al final
+    // desperdicia la subida entera y da un 400 sin contexto.
+    if (maxBytes && f.size > maxBytes) {
+      setFile(null);
+      setErr(
+        t("El archivo pesa {size} MB y el storage acepta hasta {max} MB. Comprimí el video o usá una URL externa.")
+          .replace("{size}", (f.size / 1024 / 1024).toFixed(0))
+          .replace("{max}", String(maxMb ?? 0)),
+      );
+      return;
+    }
     setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "));
     const { durationSec, poster: frame } = await probeVideo(f);
@@ -105,8 +135,24 @@ export function AdminTutorialsTab() {
   }
 
   async function submit() {
-    if (!file || !title.trim() || pct !== null) return;
+    if (!title.trim() || pct !== null) return;
     setErr(null);
+
+    // Modo URL: no hay subida, se guarda el link tal cual.
+    if (mode === "url") {
+      if (!/^https?:\/\/\S+$/i.test(extUrl.trim())) { setErr(t("URL inválida")); return; }
+      create.mutate({
+        title: title.trim(),
+        description: desc.trim() || null,
+        category: cat.trim() || null,
+        videoUrl: extUrl.trim(),
+        durationSec: null,
+        chapters: chapters.filter((c) => c.title.trim()).map((c) => ({ ...c, title: c.title.trim() })),
+      });
+      return;
+    }
+
+    if (!file) return;
     try {
       setPct(0);
       const { signedUrl, publicUrl } = await signUrl.mutateAsync({
@@ -155,7 +201,26 @@ export function AdminTutorialsTab() {
           {t("El archivo va directo a Supabase, no pasa por el servidor. MP4, WEBM o MOV.")}
         </p>
 
-        {/* Dropzone */}
+        {/* Origen del video */}
+        <div className="mb-3 flex gap-1.5">
+          <ModeChip on={mode === "file"} onClick={() => { setMode("file"); setErr(null); }}>{t("Subir archivo")}</ModeChip>
+          <ModeChip on={mode === "url"} onClick={() => { setMode("url"); setErr(null); }}>{t("URL externa")}</ModeChip>
+        </div>
+
+        {mode === "url" ? (
+          <div className="space-y-1.5">
+            <input
+              value={extUrl}
+              onChange={(e) => setExtUrl(e.target.value)}
+              placeholder="https://cdn.tu-host.com/tutorial.mp4"
+              className="w-full rounded-md px-3 py-2 text-sm outline-none"
+              style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)", fontSize: 12 }}
+            />
+            <p className="text-[11px]" style={{ color: "var(--color-subtle)" }}>
+              {t("Link directo a un MP4 o WEBM (Bunny, Cloudflare R2, S3…). No sirve un link de YouTube: el reproductor propio necesita el archivo.")}
+            </p>
+          </div>
+        ) : (
         <label
           className="flex cursor-pointer flex-col items-center justify-center rounded-xl px-4 py-8 text-center transition-colors"
           style={{ border: `1px dashed ${file ? "var(--color-border-focus)" : "var(--color-border)"}`, background: "var(--color-surface-overlay)" }}
@@ -185,12 +250,15 @@ export function AdminTutorialsTab() {
           ) : (
             <>
               <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>{t("Arrastrá el video o hacé click")}</span>
-              <span className="mt-1 text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("Sin límite de tamaño del servidor")}</span>
+              <span className="mt-1 text-[11px]" style={{ color: "var(--color-subtle)" }}>
+                {maxMb ? `${t("Máximo")} ${maxMb} MB` : t("Cargando…")}
+              </span>
             </>
           )}
         </label>
+        )}
 
-        {file && (
+        {(file || (mode === "url" && extUrl.trim())) && (
           <div className="mt-4 space-y-3">
             <Field label={t("Título")}>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("Cómo crear tu primera campaña")} />
@@ -231,7 +299,7 @@ export function AdminTutorialsTab() {
               <button
                 type="button"
                 onClick={() => void submit()}
-                disabled={!title.trim() || busy}
+                disabled={!title.trim() || busy || (mode === "file" ? !file : !extUrl.trim())}
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition-opacity disabled:opacity-40"
                 style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
               >
@@ -413,6 +481,23 @@ function ChapterEditor({
         </button>
       </div>
     </div>
+  );
+}
+
+function ModeChip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+      style={{
+        background: on ? "var(--color-surface-overlay)" : "transparent",
+        border: `1px solid ${on ? "var(--color-border-focus)" : "var(--color-border)"}`,
+        color: on ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 

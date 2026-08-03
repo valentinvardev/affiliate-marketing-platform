@@ -457,6 +457,16 @@ const EN: Record<string, string> = {
   "Guardar índice": "Save index",
   "¿Eliminar este tutorial?": "Delete this tutorial?",
 
+  // -- Subida de tutoriales --
+  "Subir archivo": "Upload file",
+  "URL externa": "External URL",
+  "Link directo a un MP4 o WEBM (Bunny, Cloudflare R2, S3…). No sirve un link de YouTube: el reproductor propio necesita el archivo.": "Direct link to an MP4 or WEBM (Bunny, Cloudflare R2, S3…). A YouTube link will not work: the custom player needs the file itself.",
+  "URL invalida": "Invalid URL",
+  "Maximo": "Maximum",
+  "URL inválida": "Invalid URL",
+  "Máximo": "Maximum",
+  "El archivo pesa {size} MB y el storage acepta hasta {max} MB. Comprimí el video o usá una URL externa.": "The file is {size} MB and storage accepts up to {max} MB. Compress the video or use an external URL.",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };

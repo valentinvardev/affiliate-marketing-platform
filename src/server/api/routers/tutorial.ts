@@ -84,6 +84,19 @@ export const tutorialRouter = createTRPCRouter({
   /* ── Admin ── */
 
   /**
+   * Tamaño máximo por archivo que acepta el storage. Sale de la config real del
+   * bucket (o del proyecto si el bucket no tiene una propia), no de un número
+   * hardcodeado: así la UI puede avisar antes de subir y no después del 400.
+   */
+  uploadLimits: adminProcedure.query(async () => {
+    try {
+      await supabaseAdmin.storage.createBucket(TUTORIALS_BUCKET, { public: true });
+    } catch { /* ya existe */ }
+    const { data } = await supabaseAdmin.storage.getBucket(TUTORIALS_BUCKET);
+    return { maxBytes: data?.file_size_limit ?? null };
+  }),
+
+  /**
    * URL firmada para subir el video DIRECTO del navegador a Supabase Storage.
    * El archivo no pasa por el server: un video de cientos de MB reventaría el
    * límite de body de nginx y la RAM del VPS.
