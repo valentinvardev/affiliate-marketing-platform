@@ -35,7 +35,10 @@ export type S3Config = {
  * muere con un error de red que no dice nada.
  */
 function envStr(v: string | undefined): string | undefined {
-  const s = v?.trim();
+  // Se limpian comillas además de espacios: es muy fácil que en el .env quede
+  // una suelta (CLOUDFRONT_DOMAIN=""dominio") y el parser la deje adentro del
+  // valor. Con eso el host sale `https://"dominio/...`, que no resuelve.
+  const s = v?.trim().replace(/^["'\s]+|["'\s]+$/g, "");
   return s ? s : undefined;
 }
 
@@ -153,5 +156,10 @@ export function presign(
 
 /** URL pública por CloudFront para una key ya subida. */
 export function publicUrl(cfg: S3Config, key: string): string {
+  // Igual que con la región: si el dominio trae basura, es mejor romper acá que
+  // guardar en la base una URL que no resuelve y descubrirlo al reproducir.
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(cfg.cfDomain)) {
+    throw new Error(`CLOUDFRONT_DOMAIN inválido: "${cfg.cfDomain}". Debe ser solo el dominio, sin https:// ni comillas.`);
+  }
   return `https://${cfg.cfDomain}${encPath(withPrefix(cfg, key))}`;
 }
