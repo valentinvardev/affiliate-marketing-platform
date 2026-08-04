@@ -506,6 +506,8 @@ const EN: Record<string, string> = {
   "Anterior": "Previous",
   "Siguiente": "Next",
 
+  "no está en el catálogo": "not in the catalog",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };

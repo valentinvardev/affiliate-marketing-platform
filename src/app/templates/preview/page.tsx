@@ -33,6 +33,8 @@ function sampleCampaign(locale: LanderLocale, template: string): LanderCampaign 
     name: quest ? "PlayCash" : "FreeCash",
     slug: null,
     locale,
+    offerName: quest ? "TesterUp CPI" : null,
+    offerImage: null,
     colorPrimary: quest ? "#7C5CFF" : "#22e07a",
     colorBg: quest ? "#0B0821" : "#07080c",
     ctaUrl: "#",

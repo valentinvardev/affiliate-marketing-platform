@@ -45,3 +45,29 @@ export function usesDarkGate(slug?: string | null): boolean {
 export function brandFor(slug?: string | null): string | null {
   return V2_BRANDS[resolveTemplate(slug)] ?? null;
 }
+
+/** Marcas conocidas, para normalizar mayúsculas al detectarlas. */
+const KNOWN_BRANDS = ["FreeCash", "TestStar", "TesterUp", "Empfohlen"];
+
+/** Modelos de pricing que vienen pegados al nombre de la oferta y no son marca. */
+const PRICING = /\b(CPE|CPI|CPA|CPL|CPS|CPM|CPC|SOI|DOI|rev\s*share)\b/gi;
+
+/**
+ * Nombre corto de la marca a partir del nombre de la oferta.
+ * Los nombres reales vienen como "FreeCash CPE" o "TestStar CPI": lo que se
+ * quiere mostrar en la landing es solo la marca, no el modelo de pricing.
+ */
+export function brandFromOffer(offerName?: string | null, fallback?: string | null): string {
+  const raw = (offerName ?? "").trim();
+  if (!raw) return fallback ?? "";
+
+  // Conocida → se devuelve con su capitalización canónica.
+  for (const b of KNOWN_BRANDS) {
+    if (new RegExp(`\\b${b}\\b`, "i").test(raw)) return b;
+  }
+
+  // Genérico: cortar en el primer separador y sacar el modelo de pricing.
+  const head = raw.split(/[|\-–—:(\[]/)[0] ?? raw;
+  const clean = head.replace(PRICING, "").replace(/\s+/g, " ").trim();
+  return clean || fallback || raw;
+}

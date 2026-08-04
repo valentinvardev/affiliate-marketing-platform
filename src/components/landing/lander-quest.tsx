@@ -5,6 +5,7 @@ import { Check, ArrowRight, ArrowLeft, Target, Wallet, Zap, Download, Apple, Sma
 import { resolveLocale, type LanderLocale } from "@/lib/lander-i18n";
 import { getQuestDict, payMethods } from "@/lib/quest-i18n";
 import { googleFontsHref } from "@/lib/fonts";
+import { brandFromOffer } from "@/lib/landing-templates";
 import { formatMoneyFromUsd } from "@/lib/currencies";
 import type { LanderCampaign } from "@/components/landing/lander";
 
@@ -237,7 +238,11 @@ export function LanderQuest({
   const locale = localeOverride ?? resolveLocale(campaign.locale);
   const t = getQuestDict(locale);
   const acc = campaign.colorPrimary || "#7C5CFF";
-  const label = brand ?? campaign.name;
+  // Al lado del logo va la marca corta de la OFERTA (FreeCash, TestStar,
+  // TesterUp…), no el nombre interno de la campaña, que no le dice nada al
+  // visitante. El logo también sale de la oferta cuando existe.
+  const label = brand ?? brandFromOffer(campaign.offerName, campaign.name);
+  const logo = campaign.offerImage ?? campaign.logoUrl;
   const fontsHref = googleFontsHref(["Chakra Petch", "Plus Jakarta Sans"]);
 
   const offers = useMemo(() => campaign.offers.slice(0, 6), [campaign.offers]);
@@ -288,9 +293,9 @@ export function LanderQuest({
           {/* Marca + recompensa siempre visible */}
           <header className="q-top">
             <span className="q-brand">
-              {campaign.logoUrl ? (
+              {logo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={campaign.logoUrl} alt={label} style={{ height: 30, width: "auto", maxWidth: 104, objectFit: "contain", borderRadius: 8 }} />
+                <img src={logo} alt={label} style={{ height: 30, width: "auto", maxWidth: 104, objectFit: "contain", borderRadius: 8 }} />
               ) : (
                 <Tile name={label} size={28} />
               )}

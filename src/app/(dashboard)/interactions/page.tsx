@@ -8,11 +8,11 @@ import {
 import { api } from "@/trpc/react";
 
 import { t } from "@/lib/i18n-client";
-/* ─── Service ID ranges (de panel-thingy) ─── */
+/* ─── IDs de servicio habilitados en DripFeed ─── */
 const RANGES = {
-  comments: [20744, 20745, 20746],
-  likes:    [21472, 21473, 21474, 21475, 21476, 21477],
-  saves:    [20374, 20375],
+  comments: [5824, 5828, 7162, 8976, 9035, 13237, 16386, 16387],
+  likes:    [8615],
+  saves:    [9031],
 };
 
 type Service = {
@@ -160,14 +160,26 @@ export default function InteractionsPage() {
     }
   }
 
+  /**
+   * Devuelve SIEMPRE los IDs configurados, en orden, enriquecidos con los datos
+   * del catálogo cuando existen. Antes se filtraba contra el catálogo y los IDs
+   * que no aparecían se descartaban en silencio, así que no había forma de notar
+   * que un servicio configurado ya no existe en el panel.
+   */
   function svcOptions(ids: number[]) {
-    const matched = services.filter((s) => ids.includes(Number(s.service)));
-    if (matched.length > 0) return matched;
-    return ids.map((id) => ({ service: String(id), name: `Servicio ${id}`, type: "", category: "", rate: "", min: "", max: "" }));
+    return ids.map((id) => {
+      const hit = services.find((s) => Number(s.service) === id);
+      return hit ?? { service: String(id), name: "", type: "", category: "", rate: "", min: "", max: "" };
+    });
   }
 
+  /** `id · nombre · $rate/1k · min–max`. En los paneles SMM el rate es por 1000. */
   function svcLabel(s: Service) {
-    return s.rate ? `${s.service} · ${s.name} · $${s.rate}` : `${s.service} · ${s.name}`;
+    const parts = [s.service];
+    parts.push(s.name || t("no está en el catálogo"));
+    if (s.rate) parts.push(`$${s.rate}/1k`);
+    if (s.min && s.max) parts.push(`${s.min}–${s.max}`);
+    return parts.join(" · ");
   }
 
   /* Place order (after confirm) */

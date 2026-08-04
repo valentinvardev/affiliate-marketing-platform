@@ -31,6 +31,9 @@ export type LanderCampaign = {
   ctaAge?: boolean;
   ctaUrlUnder?: string | null;
   logoUrl: string | null;
+  /** Oferta de la que salió la campaña, ej. "FreeCash CPE" + su logo. */
+  offerName?: string | null;
+  offerImage?: string | null;
   currencySymbol: string;
   currencyCode: string;
   fontTitle: string | null;
