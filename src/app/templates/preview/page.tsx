@@ -29,14 +29,15 @@ function sampleCampaign(locale: LanderLocale, template: string): LanderCampaign 
   const c = CUR[locale] ?? CUR.en!;
   // Acento de ejemplo acorde a la plantilla (en producción sale de la campaña).
   const quest = template === "quest";
+  const store = template === "store";
   return {
-    name: quest ? "PlayCash" : "FreeCash",
+    name: quest ? "PlayCash" : store ? "CashPlay" : "FreeCash",
     slug: null,
     locale,
-    offerName: quest ? "TesterUp CPI" : null,
+    offerName: quest ? "TesterUp CPI" : store ? "FreeCash CPE" : null,
     offerImage: null,
-    colorPrimary: quest ? "#7C5CFF" : "#22e07a",
-    colorBg: quest ? "#0B0821" : "#07080c",
+    colorPrimary: quest ? "#7C5CFF" : store ? "#00ff88" : "#22e07a",
+    colorBg: quest ? "#0B0821" : store ? "#141414" : "#07080c",
     ctaUrl: "#",
     logoUrl: null,
     currencySymbol: c.symbol,

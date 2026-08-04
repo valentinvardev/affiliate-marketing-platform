@@ -1,7 +1,8 @@
 import { Lander, type LanderCampaign } from "@/components/landing/lander";
 import { LanderV2 } from "@/components/landing/lander-v2";
 import { LanderQuest } from "@/components/landing/lander-quest";
-import { isV2Template, isQuestTemplate, brandFor } from "@/lib/landing-templates";
+import { LanderStore } from "@/components/landing/lander-store";
+import { isV2Template, isQuestTemplate, isStoreTemplate, brandFor } from "@/lib/landing-templates";
 import type { LanderLocale } from "@/lib/lander-i18n";
 
 /** Renderiza el lander según la plantilla de la campaña. */
@@ -26,6 +27,9 @@ export function LanderByTemplate({
         offerEndsAt={offerEndsAt}
       />
     );
+  }
+  if (isStoreTemplate(templateSlug)) {
+    return <LanderStore campaign={campaign} localeOverride={localeOverride} brand={brandFor(templateSlug) ?? undefined} />;
   }
   if (isV2Template(templateSlug)) return <LanderV2 campaign={campaign} localeOverride={localeOverride} brand={brandFor(templateSlug) ?? "FreeCash"} />;
   return <Lander campaign={campaign} />;

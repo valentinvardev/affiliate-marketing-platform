@@ -7,6 +7,7 @@ export const LANDING_TEMPLATES: TemplateDef[] = [
   { slug: "teststar-v2", name: "TestStar v2", description: "Misma base SaaS que FreeCash v2, con marca TestStar." },
   { slug: "testerup-v2", name: "TesterUp v2", description: "Misma base SaaS que FreeCash v2, con marca TesterUp." },
   { slug: "quest", name: "Quest (por pasos)", description: "Embudo GPTP en 3 etapas: elegir juego → cómo te pagan → descargar. Base indigo, oro para la recompensa, Chakra Petch. Mobile-first para tráfico de TikTok." },
+  { slug: "store", name: "Store (ficha de app)", description: "Imita la ficha de una app: columna de 430 px, gris casi negro, ticker de pagos arriba y barra fija con App Store / Google Play. El CTA abre un tip de registro antes de salir." },
 ];
 
 export const DEFAULT_TEMPLATE = "classic";
@@ -19,10 +20,11 @@ const V2_BRANDS: Record<string, string> = {
 };
 
 const QUEST = "quest";
+const STORE = "store";
 
 /** Mapea cualquier templateSlug legacy a uno del catálogo (default = clásica). */
 export function resolveTemplate(slug?: string | null): string {
-  if (slug && (slug in V2_BRANDS || slug === QUEST)) return slug;
+  if (slug && (slug in V2_BRANDS || slug === QUEST || slug === STORE)) return slug;
   return "classic";
 }
 
@@ -36,9 +38,14 @@ export function isQuestTemplate(slug?: string | null): boolean {
   return resolveTemplate(slug) === QUEST;
 }
 
+/** ¿Es la plantilla Store (ficha de app con barra de tiendas)? */
+export function isStoreTemplate(slug?: string | null): boolean {
+  return resolveTemplate(slug) === STORE;
+}
+
 /** Plantillas oscuras → el gate de intro usa la variante "v2" en vez de la clásica. */
 export function usesDarkGate(slug?: string | null): boolean {
-  return isV2Template(slug) || isQuestTemplate(slug);
+  return isV2Template(slug) || isQuestTemplate(slug) || isStoreTemplate(slug);
 }
 
 /** Marca fija de la plantilla v2 (null = usa el nombre de la campaña). */
