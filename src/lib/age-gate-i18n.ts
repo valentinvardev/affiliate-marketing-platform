@@ -9,6 +9,7 @@ export const AGE_COPY: Record<LanderLocale, AgeCopy> = {
   fr: { question: "Avez-vous plus de 21 ans ?", yes: "Oui, j'ai 21 ans ou plus", no: "Non, j'ai moins de 21 ans" },
   de: { question: "Bist du über 21 Jahre alt?", yes: "Ja, ich bin 21+", no: "Nein, ich bin unter 21" },
   nl: { question: "Ben je ouder dan 21 jaar?", yes: "Ja, ik ben 21+", no: "Nee, ik ben jonger dan 21" },
+  "nl-BE": { question: "Ben je ouder dan 21 jaar?", yes: "Ja, ik ben 21+", no: "Nee, ik ben jonger dan 21" },
   no: { question: "Er du over 21 år?", yes: "Ja, jeg er 21+", no: "Nei, jeg er under 21" },
   fi: { question: "Oletko yli 21-vuotias?", yes: "Kyllä, olen 21+", no: "En, olen alle 21" },
   pl: { question: "Czy masz ukończone 21 lat?", yes: "Tak, mam 21+", no: "Nie, mam mniej niż 21" },

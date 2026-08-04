@@ -39,6 +39,8 @@ const campaignInput = z.object({
   isActive: z.boolean().default(true),
   gate: z.boolean().default(true),
   cloak: z.boolean().default(false),
+  geoGate: z.boolean().default(false),
+  geoCountries: z.array(z.string().length(2)).max(30).optional(),
   whitepages: z.array(z.string().url()).max(30).optional(),
   domain: z.string().max(120).optional().nullable(),
   fontTitle: z.string().max(40).optional().nullable(),

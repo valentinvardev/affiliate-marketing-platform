@@ -14,6 +14,7 @@ export const LOCALES: AppLocale[] = [
   { code: "no",    label: "Norsk",          flag: "🇳🇴", countryCode: "NO", defaultCurrencyCode: "NOK" },
   { code: "de",    label: "Deutsch",        flag: "🇩🇪", countryCode: "DE", defaultCurrencyCode: "EUR" },
   { code: "nl",    label: "Nederlands",     flag: "🇳🇱", countryCode: "NL", defaultCurrencyCode: "EUR" },
+  { code: "nl-BE", label: "Nederlands (BE)", flag: "🇧🇪", countryCode: "BE", defaultCurrencyCode: "EUR" },
   { code: "fi",    label: "Suomi",          flag: "🇫🇮", countryCode: "FI", defaultCurrencyCode: "EUR" },
   { code: "pl",    label: "Polski",         flag: "🇵🇱", countryCode: "PL", defaultCurrencyCode: "PLN" },
   { code: "cs",    label: "Čeština",        flag: "🇨🇿", countryCode: "CZ", defaultCurrencyCode: "CZK" },
@@ -30,4 +31,16 @@ export const LOCALES: AppLocale[] = [
 
 export function getLocaleByCode(code: string): AppLocale | undefined {
   return LOCALES.find((l) => l.code === code);
+}
+
+/**
+ * Países permitidos por el filtro de geo de una campaña: el del locale más los
+ * extra configurados. Si no se puede resolver el país del locale, devuelve
+ * lista vacía — y con lista vacía el filtro deja pasar a todos, para no
+ * bloquear tráfico por una config incompleta.
+ */
+export function allowedCountries(locale: string, extra: string[] = []): string[] {
+  const base = getLocaleByCode(locale)?.countryCode;
+  const all = [base, ...extra].filter((c): c is string => !!c).map((c) => c.toUpperCase());
+  return [...new Set(all)];
 }

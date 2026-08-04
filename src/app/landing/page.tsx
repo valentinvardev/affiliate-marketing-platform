@@ -6,6 +6,8 @@ import { LanderByTemplate } from "@/components/landing/lander-switch";
 import { LanderGate } from "@/components/landing/lander-gate";
 import { usesDarkGate, brandFor } from "@/lib/landing-templates";
 import { pickWhitepage } from "@/lib/whitepages";
+import { visitorCountry, isBlocked } from "@/lib/geo";
+import { allowedCountries } from "@/lib/locales";
 import { getDict, resolveLocale } from "@/lib/lander-i18n";
 import { getAgeCopy } from "@/lib/age-gate-i18n";
 import { AgeGate } from "@/components/landing/age-gate";
@@ -54,6 +56,15 @@ export default async function LandingByHostPage() {
 
   // Cloaker de campaña: si está ON, redirigimos a una whitepage (ropa) en vez de la landing.
   if (campaign.cloak) redirect(pickWhitepage(campaign.whitepages));
+
+  // Filtro de geo: si está ON, el tráfico fuera del país objetivo va a la
+  // whitepage, igual que con el cloaker. Falla abierto (país desconocido pasa).
+  if (campaign.geoGate) {
+    const allowed = allowedCountries(campaign.locale, campaign.geoCountries);
+    const country = await visitorCountry(await headers());
+    if (isBlocked(country, allowed)) redirect(pickWhitepage(campaign.whitepages));
+  }
+
 
   const locale = resolveLocale(campaign.locale);
   const t = getDict(locale);

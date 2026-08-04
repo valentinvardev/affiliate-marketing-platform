@@ -28,6 +28,28 @@ export type QuestDict = {
   endsIn: string;             // "Termina en"
 };
 
+/** Compartido por nl y nl-BE: en texto escrito no hay diferencia. */
+const nlQuest: QuestDict = {
+    mission: "MISSIE", of: "van",
+    h1a: "Speel de game. ", h1b: "Word betaald.",
+    sub: "Kies een game, haal het doel en laat het geld uitbetalen.",
+    upTo: "tot",
+    stages: ["Kies game", "Zo word je betaald", "Downloaden"],
+    pick: { sub: "Tik op de game die je wilt spelen.", skip: "Al gekozen? Nu downloaden", selected: "Gekozen" },
+    paid: {
+      title: "Zo word je betaald", sub: "Geen abonnement. Geen kaart nodig.",
+      goalLabel: "Jouw doel", goalValue: "Haal de mijlpaal in de game",
+      rewardLabel: "Jouw beloning", payLabel: "Uitbetaling via", speedLabel: "Uitbetaling", speedValue: "Zodra het doel is bevestigd",
+    },
+    go: {
+      title: "Download en begin", sub: "De game is gratis. Je beloning wordt automatisch bijgehouden.",
+      opensIos: "Opent in de App Store", opensAndroid: "Opent in Google Play", opensStore: "Opent in je appstore",
+      cta: "Download de game",
+    },
+    next: "Doorgaan", back: "Terug",
+    payouts24h: "uitbetalingen in de laatste 24 uur", endsIn: "Eindigt over",
+  };
+
 const DICTS: Record<LanderLocale, QuestDict> = {
   en: {
     mission: "MISSION", of: "of",
@@ -129,26 +151,9 @@ const DICTS: Record<LanderLocale, QuestDict> = {
     next: "Weiter", back: "Zurück",
     payouts24h: "Auszahlungen in den letzten 24 Std.", endsIn: "Endet in",
   },
-  nl: {
-    mission: "MISSIE", of: "van",
-    h1a: "Speel de game. ", h1b: "Word betaald.",
-    sub: "Kies een game, haal het doel en laat het geld uitbetalen.",
-    upTo: "tot",
-    stages: ["Kies game", "Zo word je betaald", "Downloaden"],
-    pick: { sub: "Tik op de game die je wilt spelen.", skip: "Al gekozen? Nu downloaden", selected: "Gekozen" },
-    paid: {
-      title: "Zo word je betaald", sub: "Geen abonnement. Geen kaart nodig.",
-      goalLabel: "Jouw doel", goalValue: "Haal de mijlpaal in de game",
-      rewardLabel: "Jouw beloning", payLabel: "Uitbetaling via", speedLabel: "Uitbetaling", speedValue: "Zodra het doel is bevestigd",
-    },
-    go: {
-      title: "Download en begin", sub: "De game is gratis. Je beloning wordt automatisch bijgehouden.",
-      opensIos: "Opent in de App Store", opensAndroid: "Opent in Google Play", opensStore: "Opent in je appstore",
-      cta: "Download de game",
-    },
-    next: "Doorgaan", back: "Terug",
-    payouts24h: "uitbetalingen in de laatste 24 uur", endsIn: "Eindigt over",
-  },
+  nl: nlQuest,
+  // Belgica: mismo texto que Paises Bajos, cambia el rail de cobro.
+  "nl-BE": nlQuest,
   fr: {
     mission: "MISSION", of: "sur",
     h1a: "Joue au jeu. ", h1b: "Sois payé.",
@@ -243,6 +248,7 @@ const PAY_BY_LOCALE: Record<string, string[]> = {
   // Europa occidental
   de: ["PayPal", "Revolut", "N26"],
   nl: ["PayPal", "Revolut", "bunq"],
+  "nl-BE": ["Bancontact", "PayPal", "Revolut"],
   fr: ["PayPal", "Lydia", "Revolut"],
   it: ["PayPal", "Postepay", "Revolut"],
   es: ["Bizum", "PayPal", "Revolut"],

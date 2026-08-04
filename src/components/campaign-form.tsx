@@ -25,7 +25,7 @@ type FormValues = {
   name: string; slug: string; templateSlug: string;
   locale: string; currencyCode: string; currencySymbol: string;
   ctaUrl: string; ctaAge: boolean; ctaUrlUnder: string; tiktokPixel: string; logoUrl: string;
-  colorPrimary: string; colorBg: string; isActive: boolean; gate: boolean;
+  colorPrimary: string; colorBg: string; isActive: boolean; gate: boolean; geoGate: boolean;
   domain: string; fontTitle: string; fontBody: string;
   offerName: string; offerImage: string;
   vccLimit: string; // transitorio: límite inicial de la VCC auto-generada
@@ -35,7 +35,7 @@ type Campaign = {
   id: string; name: string; slug: string; templateSlug: string;
   locale: string; currencyCode: string; currencySymbol: string;
   ctaUrl: string; ctaAge?: boolean; ctaUrlUnder?: string | null; tiktokPixel?: string | null; logoUrl: string | null;
-  colorPrimary: string; colorBg: string; isActive: boolean; gate?: boolean;
+  colorPrimary: string; colorBg: string; isActive: boolean; gate?: boolean; geoGate?: boolean;
   domain?: string | null; fontTitle?: string | null; fontBody?: string | null;
   offerName?: string | null; offerImage?: string | null;
 };
@@ -335,6 +335,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
     colorBg: campaign?.colorBg ?? "oklch(0.16 0.04 265)",
     isActive: campaign?.isActive ?? true,
     gate: campaign?.gate ?? true,
+    geoGate: campaign?.geoGate ?? false,
     domain: campaign?.domain ?? "",
     fontTitle: campaign?.fontTitle ?? "",
     fontBody: campaign?.fontBody ?? "",
@@ -794,6 +795,29 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
                     <Dropdown value={resolveTemplate(values.templateSlug)} onChange={(v) => set("templateSlug", v)}
                       options={LANDING_TEMPLATES.map((t) => ({ value: t.slug, label: t.name }))} />
                   </Field>
+                  {/* Filtro de geo */}
+                  <Field label="Solo tráfico del país objetivo" hint="El tráfico de otros países se redirige a una whitepage, igual que el cloaker. Si no se puede determinar el país, se deja pasar.">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={values.geoGate}
+                      onClick={() => set("geoGate", !values.geoGate)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+                      style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-overlay)" }}
+                    >
+                      <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors"
+                        style={{ background: values.geoGate ? "var(--color-success)" : "var(--color-border)" }}>
+                        <span className="inline-block h-4 w-4 rounded-full bg-white transition-transform"
+                          style={{ transform: values.geoGate ? "translateX(18px)" : "translateX(2px)" }} />
+                      </span>
+                      <span className="text-sm font-medium" style={{ color: "var(--color-foreground)" }}>
+                        {values.geoGate
+                          ? `Solo ${LOCALES.find((l) => l.code === values.locale)?.label ?? values.locale}`
+                          : "Abierto a todos los países"}
+                      </span>
+                    </button>
+                  </Field>
+
                   {/* Intro swipe-up */}
                   <Field label="Intro (swipe up)" hint="Pantalla inicial con “deslizá para ver” antes de la landing. Apagala para mostrar la landing directo.">
                     <button

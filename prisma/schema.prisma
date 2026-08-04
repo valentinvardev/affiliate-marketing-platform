@@ -27,6 +27,8 @@ model Campaign {
   isActive       Boolean         @default(true)
   gate           Boolean         @default(true) // muestra el swipe-up de intro antes de la landing
   cloak          Boolean         @default(false) // si está ON, la landing redirige a una whitepage (ropa)
+  geoGate        Boolean         @default(false) // si está ON, solo entra tráfico del país objetivo
+  geoCountries   String[]        @default([]) // países extra permitidos (vacío = solo el del locale)
   whitepages     String[]        @default([]) // páginas seguras a rotar cuando cloak=ON (vacío = lista por defecto)
   domain         String? // root domain en el que se sirve (path-based: <domain>/<slug>)
   fontTitle      String? // fuente de títulos (Google Font, ej. "Manrope")

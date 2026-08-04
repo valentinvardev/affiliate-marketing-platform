@@ -1,4 +1,4 @@
-export type LanderLocale = "sv" | "fr" | "en" | "de" | "nl" | "no" | "fi" | "pl" | "it";
+export type LanderLocale = "sv" | "fr" | "en" | "de" | "nl" | "nl-BE" | "no" | "fi" | "pl" | "it";
 
 export type LanderDict = {
   htmlLang: string;
@@ -907,7 +907,38 @@ const it: LanderDict = {
   }
 };
 
-const DICTS: Record<LanderLocale, LanderDict> = { sv, fr, en, de, nl, no, fi, pl, it };
+/**
+ * Neerlandes de Belgica (Vlaams). Se deriva de `nl` porque en texto escrito
+ * ambas variantes son casi identicas; solo se sobrescribe lo que de verdad
+ * cambia, para que no se dupliquen ~100 lineas que despues divergen sin querer.
+ *
+ * Diferencias aplicadas:
+ *  - htmlLang nl-BE
+ *  - ciudades belgas en los testimonios (Amsterdam/Rotterdam no aplican)
+ *  - "direct" en vez de "meteen", y "gsm" por "mobiel", que es lo que se usa
+ *  - Bancontact en los metodos de pago: es EL medio de pago belga
+ */
+const nl_BE: LanderDict = {
+  ...nl,
+  htmlLang: "nl-BE",
+  hero: {
+    ...nl.hero,
+    badges: ["Gratis", "Direct uitbetaald", "Onbeperkt aanbod"],
+  },
+  testimonialsBlock: {
+    ...nl.testimonialsBlock,
+    items: nl.testimonialsBlock.items.map((it, i) => ({
+      ...it,
+      city: ["Antwerpen", "Gent", "Brugge"][i] ?? it.city,
+    })),
+  },
+  footer: {
+    ...nl.footer,
+    payments: "Bancontact \u00b7 PayPal \u00b7 Bankoverschrijving \u00b7 Cadeaukaarten",
+  },
+};
+
+const DICTS: Record<LanderLocale, LanderDict> = { sv, fr, en, de, nl, "nl-BE": nl_BE, no, fi, pl, it };
 
 export function getDict(locale: LanderLocale): LanderDict {
   return DICTS[locale] ?? DICTS.en;
@@ -916,7 +947,7 @@ export function getDict(locale: LanderLocale): LanderDict {
 // Mapea el codigo de locale de la campana (ej. "en-US", "de", "da") al dict disponible.
 const LOCALE_MAP: Record<string, LanderLocale> = {
   en: "en", "en-GB": "en", "en-US": "en", "en-AU": "en", "en-CA": "en", "en-NZ": "en",
-  sv: "sv", fr: "fr", de: "de", nl: "nl", no: "no", fi: "fi", pl: "pl", it: "it",
+  sv: "sv", fr: "fr", de: "de", nl: "nl", "nl-BE": "nl-BE", no: "no", fi: "fi", pl: "pl", it: "it",
 };
 export function resolveLocale(code?: string | null): LanderLocale {
   return (code && LOCALE_MAP[code]) || "en";
