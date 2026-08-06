@@ -361,6 +361,19 @@ model AppConfig {
   updatedAt DateTime @updatedAt
 }
 
+/// Lista de comentarios que carga el admin para que los usuarios la elijan
+/// y se autocompleten en el pedido (un comentario por línea).
+model CommentPreset {
+  id          String   @id @default(cuid())
+  name        String
+  comments    String[] @default([])
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
 // ─── Ángulos de TikTok Ads (generados con Gemini, solo admin) ───
 model AdAngle {
   id          String   @id @default(cuid())

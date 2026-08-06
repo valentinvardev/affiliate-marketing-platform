@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Heart, MessageSquare, Bookmark, Loader2, Wallet, Search,
-  RefreshCw, Check, X, AlertTriangle, Trash2,
+  RefreshCw, Check, X, AlertTriangle, Trash2, ClipboardPaste, ListPlus, Plus, Lock,
 } from "lucide-react";
 import { api } from "@/trpc/react";
+import { useSession } from "next-auth/react";
 
 import { t } from "@/lib/i18n-client";
 /* ─── IDs de servicio habilitados en DripFeed ─── */
@@ -60,6 +61,19 @@ function relTime(ts: number) {
 }
 
 export default function InteractionsPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+
+  const utils = api.useUtils();
+  const defaults = api.interactions.defaults.useQuery();
+  const presets = api.interactions.presets.useQuery();
+  const setDefault = api.interactions.setDefault.useMutation({
+    onSuccess: async () => { await utils.interactions.defaults.invalidate(); },
+  });
+
+  const [pasteErr, setPasteErr] = useState<string | null>(null);
+  const [presetId, setPresetId] = useState("");
+
   const [services, setServices] = useState<Service[]>([]);
   const [loadingSvc, setLoadingSvc] = useState(true);
   const [svcError, setSvcError] = useState<string | null>(null);
@@ -122,6 +136,13 @@ export default function InteractionsPage() {
     });
   }, []);
 
+  // Los defaults llegan por query; se leen por ref para no re-disparar la carga
+  // del catalogo cada vez que cambian.
+  const defaultsRef = useRef({ comments: null as string | null, likes: null as string | null, saves: null as string | null });
+  useEffect(() => {
+    if (defaults.data) defaultsRef.current = defaults.data;
+  }, [defaults.data]);
+
   /* Load services catalog */
   useEffect(() => {
     let active = true;
@@ -133,12 +154,14 @@ export default function InteractionsPage() {
         if (!active) return;
         const list = Array.isArray(data) ? data : [];
         setServices(list);
-        // Preselect first service of each range
-        const pick = (ids: number[]) =>
-          list.find((s) => ids.includes(Number(s.service)))?.service ?? String(ids[0]);
-        setCommentsSvc(pick(RANGES.comments));
-        setLikesSvc(pick(RANGES.likes));
-        setSavesSvc(pick(RANGES.saves));
+        // El servicio fijado por el admin manda; si no hay, el primero del rango.
+        const pick = (ids: number[], fixed?: string | null) =>
+          (fixed && ids.includes(Number(fixed)) ? fixed : null) ??
+          list.find((s) => ids.includes(Number(s.service)))?.service ??
+          String(ids[0]);
+        setCommentsSvc(pick(RANGES.comments, defaultsRef.current.comments));
+        setLikesSvc(pick(RANGES.likes, defaultsRef.current.likes));
+        setSavesSvc(pick(RANGES.saves, defaultsRef.current.saves));
       } catch (e) {
         if (active) setSvcError(e instanceof Error ? e.message : "Error cargando servicios");
       } finally {
@@ -147,6 +170,35 @@ export default function InteractionsPage() {
     })();
     return () => { active = false; };
   }, []);
+
+  // Si los defaults llegan despues del catalogo, aplicarlos igual.
+  useEffect(() => {
+    const d = defaults.data;
+    if (!d) return;
+    if (d.comments && RANGES.comments.includes(Number(d.comments))) setCommentsSvc(d.comments);
+    if (d.likes && RANGES.likes.includes(Number(d.likes))) setLikesSvc(d.likes);
+    if (d.saves && RANGES.saves.includes(Number(d.saves))) setSavesSvc(d.saves);
+  }, [defaults.data]);
+
+  /** Pega el link desde el portapapeles. */
+  async function pasteLink() {
+    setPasteErr(null);
+    try {
+      const txt = (await navigator.clipboard.readText()).trim();
+      if (!txt) { setPasteErr(t("El portapapeles está vacío")); return; }
+      persistLink(txt);
+    } catch {
+      // Safari/permiso denegado: no se puede leer el portapapeles por script.
+      setPasteErr(t("El navegador no dejó leer el portapapeles. Pegá con Ctrl+V."));
+    }
+  }
+
+  /** Carga una lista de comentarios del admin en el textarea. */
+  function applyPreset(id: string) {
+    setPresetId(id);
+    const p = presets.data?.find((x) => x.id === id);
+    if (p) setCommentsText(p.comments.join("\n"));
+  }
 
   async function loadBalance() {
     setLoadingBal(true);
@@ -277,8 +329,9 @@ export default function InteractionsPage() {
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           {/* ── Columna principal ── */}
           <div className="space-y-5">
-            {/* Balance + link */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Balance (solo admin) + link */}
+            <div className={`grid gap-4 ${isAdmin ? "sm:grid-cols-2" : ""}`}>
+              {isAdmin && (
               <Card>
                 <CardLabel>{t("Balance")}</CardLabel>
                 <div className="mt-2 flex items-center gap-3">
@@ -297,18 +350,44 @@ export default function InteractionsPage() {
                   </button>
                 </div>
               </Card>
+              )}
 
               <Card>
                 <CardLabel>{t("Link de la publicación")}</CardLabel>
-                <input
-                  value={link}
-                  onChange={(e) => persistLink(e.target.value)}
-                  placeholder="https://www.instagram.com/p/…"
-                  className="mt-2 w-full rounded-md px-3 py-2 text-sm outline-none"
-                  style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
-                />
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    value={link}
+                    onChange={(e) => persistLink(e.target.value)}
+                    placeholder="https://www.instagram.com/p/…"
+                    className="min-w-0 flex-1 rounded-md px-3 py-2 text-sm outline-none"
+                    style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void pasteLink()}
+                    title={t("Pegar del portapapeles")}
+                    className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-80"
+                    style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}
+                  >
+                    <ClipboardPaste className="h-4 w-4" />
+                  </button>
+                  {link && (
+                    <button
+                      type="button"
+                      onClick={() => persistLink("")}
+                      title={t("Limpiar")}
+                      className="inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-80"
+                      style={{ border: "1px solid var(--color-border)", color: "var(--color-subtle)" }}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {pasteErr && <p className="mt-1.5 text-[11px]" style={{ color: "var(--color-warning)" }}>{pasteErr}</p>}
               </Card>
             </div>
+
+            {isAdmin && <PresetManager />}
 
             {svcError && (
               <div className="flex items-start gap-3 rounded-xl p-4" style={{ background: "var(--color-error-bg)", border: "1px solid color-mix(in oklch, var(--color-error) 25%, transparent)" }}>
@@ -328,10 +407,34 @@ export default function InteractionsPage() {
                   <MessageSquare className="h-4 w-4" style={{ color: "#a78bfa" }} />
                   <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Comentarios")}</p>
                 </div>
-                <ServiceSelect loading={loadingSvc} value={commentsSvc} onChange={setCommentsSvc} options={svcOptions(RANGES.comments)} label={svcLabel} />
+                {isAdmin ? (
+                  <>
+                    <ServiceSelect loading={loadingSvc} value={commentsSvc} onChange={(v) => { setCommentsSvc(v); setDefault.mutate({ kind: "comments", service: v }); }} options={svcOptions(RANGES.comments)} label={svcLabel} />
+                    <p className="mt-1 text-[10px]" style={{ color: "var(--color-subtle)" }}>{t("Lo que elijas queda fijado para todos")}</p>
+                  </>
+                ) : (
+                  <FixedService loading={loadingSvc} label={svcLabel(svcOptions(RANGES.comments).find((o) => o.service === commentsSvc) ?? svcOptions(RANGES.comments)[0]!)} />
+                )}
+                {(presets.data?.length ?? 0) > 0 && (
+                  <div className="mt-2">
+                    <select
+                      value={presetId}
+                      onChange={(e) => applyPreset(e.target.value)}
+                      className="w-full rounded-md px-2.5 py-2 text-xs outline-none"
+                      style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+                    >
+                      <option value="">{t("Elegí una lista de comentarios…")}</option>
+                      {presets.data!.map((p) => (
+                        <option key={p.id} value={p.id} style={{ background: "var(--color-surface-raised)" }}>
+                          {p.name} ({p.comments.length})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <textarea
                   value={commentsText}
-                  onChange={(e) => setCommentsText(e.target.value)}
+                  onChange={(e) => { setCommentsText(e.target.value); setPresetId(""); }}
                   placeholder={"Un comentario por línea…"}
                   rows={5}
                   className="mt-2 w-full resize-none rounded-md px-3 py-2 text-xs outline-none"
@@ -349,7 +452,14 @@ export default function InteractionsPage() {
                   <Heart className="h-4 w-4" style={{ color: "#4ade80" }} />
                   <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Likes")}</p>
                 </div>
-                <ServiceSelect loading={loadingSvc} value={likesSvc} onChange={setLikesSvc} options={svcOptions(RANGES.likes)} label={svcLabel} />
+                {isAdmin ? (
+                  <>
+                    <ServiceSelect loading={loadingSvc} value={likesSvc} onChange={(v) => { setLikesSvc(v); setDefault.mutate({ kind: "likes", service: v }); }} options={svcOptions(RANGES.likes)} label={svcLabel} />
+                    <p className="mt-1 text-[10px]" style={{ color: "var(--color-subtle)" }}>{t("Lo que elijas queda fijado para todos")}</p>
+                  </>
+                ) : (
+                  <FixedService loading={loadingSvc} label={svcLabel(svcOptions(RANGES.likes).find((o) => o.service === likesSvc) ?? svcOptions(RANGES.likes)[0]!)} />
+                )}
                 <input
                   type="number"
                   value={likesQty}
@@ -367,7 +477,14 @@ export default function InteractionsPage() {
                   <Bookmark className="h-4 w-4" style={{ color: "#60a5fa" }} />
                   <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Saves")}</p>
                 </div>
-                <ServiceSelect loading={loadingSvc} value={savesSvc} onChange={setSavesSvc} options={svcOptions(RANGES.saves)} label={svcLabel} />
+                {isAdmin ? (
+                  <>
+                    <ServiceSelect loading={loadingSvc} value={savesSvc} onChange={(v) => { setSavesSvc(v); setDefault.mutate({ kind: "saves", service: v }); }} options={svcOptions(RANGES.saves)} label={svcLabel} />
+                    <p className="mt-1 text-[10px]" style={{ color: "var(--color-subtle)" }}>{t("Lo que elijas queda fijado para todos")}</p>
+                  </>
+                ) : (
+                  <FixedService loading={loadingSvc} label={svcLabel(svcOptions(RANGES.saves).find((o) => o.service === savesSvc) ?? svcOptions(RANGES.saves)[0]!)} />
+                )}
                 <input
                   type="number"
                   value={savesQty}
@@ -565,6 +682,109 @@ function ServiceSelect({
           <option key={s.service} value={s.service}>{label(s)}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+/** Servicio fijo: lo que ve un usuario no admin, sin poder cambiarlo. */
+function FixedService({ loading, label }: { loading: boolean; label: string }) {
+  return (
+    <div
+      className="mt-2 flex items-center gap-2 rounded-md px-3 py-2"
+      style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}
+    >
+      <Lock className="h-3 w-3 shrink-0" style={{ color: "var(--color-subtle)" }} />
+      <span className="min-w-0 flex-1 truncate text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+        {loading ? t("Cargando…") : label}
+      </span>
+    </div>
+  );
+}
+
+/** Alta y borrado de listas de comentarios. Solo admin. */
+function PresetManager() {
+  const utils = api.useUtils();
+  const presets = api.interactions.presets.useQuery();
+  const create = api.interactions.createPreset.useMutation({
+    onSuccess: async () => { setName(""); setText(""); setOpen(false); await utils.interactions.presets.invalidate(); },
+  });
+  const del = api.interactions.deletePreset.useMutation({
+    onSuccess: async () => { await utils.interactions.presets.invalidate(); },
+  });
+
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [text, setText] = useState("");
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  return (
+    <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
+      <div className="flex items-center gap-2">
+        <ListPlus className="h-4 w-4" style={{ color: "var(--color-muted-foreground)" }} />
+        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Listas de comentarios")}</p>
+        <span className="rounded-full px-2 py-0.5 text-[10px] tabular-nums"
+          style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}>
+          {presets.data?.length ?? 0}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+          style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+        >
+          <Plus className="h-3 w-3" /> {t("Nueva lista")}
+        </button>
+      </div>
+
+      {open && (
+        <div className="enter-down mt-3 space-y-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("Nombre de la lista")}
+            className="w-full rounded-md px-3 py-2 text-sm outline-none"
+            style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+          />
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={5}
+            placeholder={"Un comentario por línea…"}
+            className="w-full resize-y rounded-md px-3 py-2 text-xs outline-none"
+            style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: "var(--font-mono)" }}
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{lines.length} {t("comentarios")}</span>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={() => create.mutate({ name: name.trim(), comments: lines })}
+              disabled={!name.trim() || lines.length === 0 || create.isPending}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-opacity disabled:opacity-40"
+              style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+            >
+              {create.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              {t("Guardar")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(presets.data?.length ?? 0) > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {presets.data!.map((p) => (
+            <div key={p.id} className="flex items-center gap-2 rounded-md px-2.5 py-1.5"
+              style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+              <span className="min-w-0 flex-1 truncate text-xs" style={{ color: "var(--color-foreground)" }}>{p.name}</span>
+              <span className="shrink-0 text-[10px] tabular-nums" style={{ color: "var(--color-subtle)" }}>{p.comments.length}</span>
+              <button type="button" onClick={() => del.mutate({ id: p.id })} title={t("Eliminar")}
+                className="shrink-0 transition-opacity hover:opacity-70" style={{ color: "var(--color-subtle)" }}>
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

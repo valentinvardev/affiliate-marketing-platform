@@ -508,6 +508,17 @@ const EN: Record<string, string> = {
 
   "no está en el catálogo": "not in the catalog",
 
+  // -- Interacciones --
+  "Pegar del portapapeles": "Paste from clipboard",
+  "El portapapeles está vacío": "The clipboard is empty",
+  "El navegador no dejó leer el portapapeles. Pegá con Ctrl+V.": "The browser blocked clipboard access. Paste with Ctrl+V.",
+  "Lo que elijas queda fijado para todos": "Your choice is locked in for everyone",
+  "Elegí una lista de comentarios…": "Pick a comment list…",
+  "Listas de comentarios": "Comment lists",
+  "Nueva lista": "New list",
+  "Nombre de la lista": "List name",
+  "comentarios": "comments",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };
