@@ -82,6 +82,8 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!api/auth|api/config|api/register|api/admin-setup|api/upload|api/postback|api/click|landing|_next/static|_next/image|favicon\\.ico|login|register|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)",
+    // `manifest.json` va excluido: si el middleware lo redirige a login, el
+    // navegador no puede leerlo y se rompe "Agregar a inicio".
+    "/((?!api/auth|api/config|api/register|api/admin-setup|api/upload|api/postback|api/click|landing|_next/static|_next/image|favicon\\.ico|manifest\\.json|login|register|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)",
   ],
 };
