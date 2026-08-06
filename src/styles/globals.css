@@ -143,9 +143,13 @@
    env() vale 0, así que no cambian nada. */
 .safe-top    { padding-top: env(safe-area-inset-top); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+/* Los insets laterales van por MARGIN, no por padding: como padding chocaban
+   con utilidades de Tailwind del mismo peso (md:pl-60 del sidebar) y, al
+   quedar después en el CSS, las pisaban con env()=0 en escritorio — el
+   contenido terminaba debajo del sidebar. */
 .safe-x {
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  margin-left: env(safe-area-inset-left);
+  margin-right: env(safe-area-inset-right);
 }
 /* Para elementos fijos abajo (FAB del asistente): que no los tape la barra
    de gestos del iPhone. */
