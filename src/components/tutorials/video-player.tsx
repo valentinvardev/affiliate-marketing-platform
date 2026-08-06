@@ -1,10 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, Loader2, RotateCcw, RotateCw } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { t } from "@/lib/i18n-client";
 
 export type Chapter = { id: string; timeSec: number; title: string };
+
+/* Pantalla completa: tres caminos según el navegador.
+   - Estándar: element.requestFullscreen sobre el contenedor (mantiene nuestros controles).
+   - Safari viejo de escritorio: webkitRequestFullscreen.
+   - iPhone: NO permite fullscreen sobre un div, solo sobre el <video>, con
+     webkitEnterFullscreen. Ahí toma el control el reproductor nativo de iOS. */
+type FsElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+type FsVideo = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+  webkitSupportsFullscreen?: boolean;
+};
+type FsDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+
+function fsElement(): Element | null {
+  const d = document as FsDocument;
+  return d.fullscreenElement ?? d.webkitFullscreenElement ?? null;
+}
 
 export function fmtTime(s: number): string {
   if (!isFinite(s) || s < 0) s = 0;
@@ -45,6 +67,7 @@ export function VideoPlayer({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [isFs, setIsFs] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   /* Salto desde el índice */
@@ -76,6 +99,41 @@ export function VideoPlayer({
     v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + delta));
   }, []);
 
+  /* Pantalla completa, con los tres caminos según el navegador. */
+  const toggleFullscreen = useCallback(() => {
+    const wrap = wrapRef.current as FsElement | null;
+    const video = ref.current as FsVideo | null;
+    if (!wrap) return;
+
+    if (fsElement()) {
+      const d = document as FsDocument;
+      if (d.exitFullscreen) void d.exitFullscreen().catch(() => undefined);
+      else d.webkitExitFullscreen?.();
+      return;
+    }
+
+    if (wrap.requestFullscreen) {
+      void wrap.requestFullscreen().catch(() => undefined);
+    } else if (wrap.webkitRequestFullscreen) {
+      wrap.webkitRequestFullscreen();
+    } else if (video?.webkitEnterFullscreen) {
+      // iPhone: solo el <video> puede ir a pantalla completa, y a partir de ahí
+      // manda el reproductor nativo de iOS (perdemos nuestros controles).
+      video.webkitEnterFullscreen();
+    }
+  }, []);
+
+  /* El estado puede cambiar sin pasar por el botón (Esc, gesto de iOS). */
+  useEffect(() => {
+    const sync = () => setIsFs(!!fsElement());
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
+  }, []);
+
   /* Atajos de teclado */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -85,10 +143,11 @@ export function VideoPlayer({
       else if (e.key === "ArrowRight") skip(5);
       else if (e.key === "ArrowLeft") skip(-5);
       else if (e.key === "m") setMuted((m) => { if (ref.current) ref.current.muted = !m; return !m; });
+      else if (e.key === "f") toggleFullscreen();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, skip]);
+  }, [toggle, skip, toggleFullscreen]);
 
   /* Auto-ocultar controles mientras reproduce */
   const bump = useCallback(() => {
@@ -121,7 +180,11 @@ export function VideoPlayer({
       onMouseMove={bump}
       onMouseLeave={() => { if (playing) setShowControls(false); }}
       style={{
-        position: "relative", width: "100%", aspectRatio: "16 / 9",
+        position: "relative", width: "100%",
+        // En pantalla completa el contenedor ocupa todo; sin esto conserva el 16/9
+        // y quedan franjas negras enormes arriba y abajo.
+        aspectRatio: isFs ? "auto" : "16 / 9",
+        height: isFs ? "100%" : undefined,
         background: "#07080c", borderRadius: 14, overflow: "hidden",
         border: "1px solid var(--color-border)",
       }}
@@ -251,16 +314,8 @@ export function VideoPlayer({
             {fmtTime(cur)} / {fmtTime(dur)}
           </span>
           <div style={{ flex: 1 }} />
-          <Ctrl
-            onClick={() => {
-              const el = wrapRef.current;
-              if (!el) return;
-              if (document.fullscreenElement) void document.exitFullscreen();
-              else void el.requestFullscreen?.().catch(() => undefined);
-            }}
-            label={t("Pantalla completa")}
-          >
-            <Maximize className="h-4 w-4" />
+          <Ctrl onClick={toggleFullscreen} label={isFs ? t("Salir de pantalla completa") : t("Pantalla completa")}>
+            {isFs ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Ctrl>
         </div>
       </div>

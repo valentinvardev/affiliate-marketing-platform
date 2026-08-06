@@ -543,6 +543,8 @@ const EN: Record<string, string> = {
   "Se antepone a sus instrucciones. Las reglas de seguridad del chat grupal se mantienen igual.": "Prepended to its instructions. The group chat's safety rules stay unchanged.",
   "Identidad IA": "AI identity",
 
+  "Salir de pantalla completa": "Exit fullscreen",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };
