@@ -326,9 +326,9 @@ export default function InteractionsPage() {
       </header>
 
       <main className="flex-1 px-4 py-6 md:px-8">
-        <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
           {/* ── Columna principal ── */}
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             {/* Balance (solo admin) + link */}
             <div className={`grid gap-4 ${isAdmin ? "sm:grid-cols-2" : ""}`}>
               {isAdmin && (
@@ -400,7 +400,7 @@ export default function InteractionsPage() {
             )}
 
             {/* Order cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid min-w-0 gap-4 md:grid-cols-3">
               {/* Comentarios */}
               <Card>
                 <div className="flex items-center gap-2">
@@ -523,7 +523,10 @@ export default function InteractionsPage() {
                 </button>
               </div>
               {statusOut && (
-                <pre className="mt-3 max-h-48 overflow-auto rounded-md p-3 text-[11px]" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
+                // `overflow-auto` por si solo NO evita que el contenido aporte
+                // su ancho maximo al grid: hace falta min-w-0 y que el texto
+                // pueda cortarse, o el JSON estira toda la columna.
+                <pre className="mt-3 max-h-48 min-w-0 overflow-auto whitespace-pre-wrap break-all rounded-md p-3 text-[11px]" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-muted-foreground)" }}>
                   {statusOut}
                 </pre>
               )}
@@ -632,7 +635,10 @@ export default function InteractionsPage() {
 /* ─── Sub-componentes ─── */
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
+    // min-w-0: sin esto un item de grid/flex nunca baja del ancho de su
+    // contenido, y el <select> (que mide como su opcion mas larga) estira
+    // la columna y rompe el layout en pantallas chicas.
+    <div className="min-w-0 rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       {children}
     </div>
   );
@@ -669,13 +675,13 @@ function ServiceSelect({
   label: (s: Service) => string;
 }) {
   return (
-    <div className="mt-3">
+    <div className="mt-3 min-w-0">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={loading}
         className="w-full rounded-md px-3 py-2 text-xs outline-none"
-        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }}
+        style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", minWidth: 0, maxWidth: "100%" }}
       >
         {loading && <option>{t("Cargando…")}</option>}
         {!loading && options.map((s) => (

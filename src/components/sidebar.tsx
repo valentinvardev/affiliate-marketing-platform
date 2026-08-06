@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LayoutGrid, BookOpen, ShieldCheck, LogOut, CircleUserRound, BarChart2, Package, Trophy, Wallet, Heart, LayoutDashboard, CreditCard, Coins, X, Users, Globe, Shuffle, Sparkles, Network, Brain, GraduationCap, Newspaper, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ConversionTestButton } from "@/components/conversion-toast";
 import { useT } from "@/components/i18n-provider";
 import { t } from "@/lib/i18n-client";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -134,7 +133,6 @@ export function Sidebar() {
         <span className="flex-1 text-base font-bold tracking-tight" style={{ fontFamily: "var(--font-brand)", color: "var(--color-foreground)" }}>
           TapSur
         </span>
-        <ConversionTestButton />
         <button
           type="button"
           onClick={() => setOpen(false)}
