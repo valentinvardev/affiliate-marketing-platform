@@ -9,9 +9,10 @@ import type { RouterOutputs } from "@/trpc/react";
 import { LOCALES, getLocaleByCode } from "@/lib/locales";
 import { tiktokEmbedSrc } from "@/lib/tiktok";
 import { t } from "@/lib/i18n-client";
+import Link from "next/link";
 import {
   Sparkles, Plus, Play, Star, Check, Loader2, X, Trash2, Pencil,
-  Zap, MessageSquare, Package, AlertTriangle, EyeOff, Flag,
+  Zap, MessageSquare, Package, AlertTriangle, EyeOff, Flag, Newspaper,
 } from "lucide-react";
 
 type CatalogItem = RouterOutputs["sparks"]["list"][number];
@@ -54,6 +55,7 @@ export function SparksManager() {
 
       <main className="flex-1 px-4 py-6 md:px-8">
         <KindToggle kind={kind} onChange={setKind} />
+        {kind === "BH" && <BhNotice />}
         {tab === "catalog" && <CatalogGrid kind={kind} onPlay={setPlayer} />}
         {tab === "manage" && isAdmin && <ManageGrid kind={kind} onPlay={setPlayer} />}
       </main>
@@ -544,4 +546,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Inp({ value, onChange, placeholder, mono }: { value: string; onChange: (v: string) => void; placeholder?: string; mono?: boolean }) {
   return <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
     className="w-full rounded-md px-3 py-2 text-sm outline-none" style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)", color: "var(--color-foreground)", fontFamily: mono ? "var(--font-mono)" : undefined }} />;
+}
+
+/** Aviso al pasar a Black Hat: los creativos de BH no viven acá sino en la Feed. */
+function BhNotice() {
+  return (
+    <div
+      className="enter-down mb-4 flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center"
+      style={{ border: "1px solid var(--color-border-focus)", background: "var(--color-surface-overlay)" }}
+    >
+      <Newspaper className="h-4 w-4 shrink-0" style={{ color: "var(--color-muted-foreground)" }} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+          {t("Las imágenes del BH están subidas en Feed")}
+        </p>
+        <p className="mt-0.5 text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+          {t("Los ángulos con sus diapositivas y descripción se publican ahí.")}
+        </p>
+      </div>
+      <Link
+        href="/feed"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+        style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
+      >
+        <Newspaper className="h-3.5 w-3.5" />
+        {t("Ir a Feed")}
+      </Link>
+    </div>
+  );
 }

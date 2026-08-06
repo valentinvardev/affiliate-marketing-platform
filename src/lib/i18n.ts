@@ -519,6 +519,16 @@ const EN: Record<string, string> = {
   "Nombre de la lista": "List name",
   "comentarios": "comments",
 
+  // -- Sidebar / Sparks --
+  "Herramientas": "Tools",
+  "Contenido": "Content",
+  "Análisis": "Analytics",
+  "Inhabilitado por mantenimiento": "Disabled for maintenance",
+  "Inhabilitado": "Disabled",
+  "Las imágenes del BH están subidas en Feed": "The BH images are uploaded in Feed",
+  "Los ángulos con sus diapositivas y descripción se publican ahí.": "The angles, with their slides and description, are published there.",
+  "Ir a Feed": "Go to Feed",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };
