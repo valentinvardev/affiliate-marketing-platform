@@ -161,6 +161,26 @@
   padding-right:  max(1rem, env(safe-area-inset-right));
 }
 
+/* ── Feed: vista previa de diapositivas asomando tras el botón "Abrir" ── */
+/* Cada tarjeta entra desde detrás del botón (sin rotar, escala chica) hasta su
+   posición final en abanico, así se lee como que salen de ahí. */
+@keyframes peekPop {
+  from { opacity: 0; transform: translate(0, 10px) scale(.6) rotate(0deg); }
+  to   { opacity: 1; transform: var(--peek-end); }
+}
+.peek { animation: peekPop .38s cubic-bezier(.2,.9,.3,1.25) both; }
+.peek-1 { --peek-end: translate(-14px, -14px) rotate(-11deg); animation-delay: .06s; }
+.peek-2 { --peek-end: translate(10px, -18px) rotate(9deg);   animation-delay: .14s; }
+/* Al pasar por encima del botón se abren un poco más: sugiere que hay más. */
+.peek-host:hover .peek-1 { transform: translate(-19px, -19px) rotate(-15deg); }
+.peek-host:hover .peek-2 { transform: translate(15px, -24px) rotate(13deg); }
+.peek-1, .peek-2 { transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .peek { animation: none; opacity: 1; transform: var(--peek-end); }
+  .peek-host:hover .peek-1, .peek-host:hover .peek-2 { transform: var(--peek-end); }
+}
+
 /* ── Tutoriales ── */
 @keyframes tutPop { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
 /* Entrar a un video: crece desde la tarjeta */

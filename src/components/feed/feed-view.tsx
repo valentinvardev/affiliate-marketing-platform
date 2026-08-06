@@ -175,22 +175,48 @@ function PostCard({ post, isAdmin, onOpen }: { post: Post; isAdmin: boolean; onO
         </a>
       )}
 
-      {/* Abrir el ángulo */}
+      {/* Abrir el ángulo — con las diapositivas asomando por detrás */}
+      {/* mt-12 porque las tarjetas sobresalen ~42px por encima del botón cuando
+          se despliegan en hover; con menos margen pisarían el texto del post. */}
       {hasAngle && (
-        <button
-          type="button"
-          onClick={onOpen}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
-          style={{ background: "var(--color-foreground)", color: "var(--color-background)" }}
-        >
-          <Layers className="h-3.5 w-3.5" />
-          {t("Abrir")}
-          {post.slides.length > 0 && (
-            <span className="rounded px-1.5 py-0.5 text-[10px] tabular-nums" style={{ background: "rgba(0,0,0,0.15)" }}>
-              {post.slides.length}
+        <div className="peek-host relative mt-12 inline-block">
+          {/* Detrás del botón (z-0) y desplazadas hacia arriba: se leen como un
+              mazo del que el botón es la carta de adelante. */}
+          {post.slides.slice(0, 2).map((s, i) => (
+            <span
+              key={s.id}
+              aria-hidden
+              className={`peek peek-${i + 1} pointer-events-none absolute bottom-1 left-1/2 block overflow-hidden rounded-md`}
+              style={{
+                zIndex: 0,
+                width: 34,
+                height: 46,
+                marginLeft: -17,
+                background: "var(--color-surface-overlay)",
+                border: "1px solid var(--color-border)",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.45)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.url} alt="" className="h-full w-full object-cover" />
             </span>
-          )}
-        </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={onOpen}
+            className="relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+            style={{ zIndex: 1, background: "var(--color-foreground)", color: "var(--color-background)" }}
+          >
+            <Layers className="h-3.5 w-3.5" />
+            {t("Abrir")}
+            {post.slides.length > 0 && (
+              <span className="rounded px-1.5 py-0.5 text-[10px] tabular-nums" style={{ background: "rgba(0,0,0,0.15)" }}>
+                {post.slides.length}
+              </span>
+            )}
+          </button>
+        </div>
       )}
 
       {/* Acciones */}
