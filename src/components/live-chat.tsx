@@ -129,7 +129,12 @@ export function LiveChatProvider() {
   return (
     <>
       {/* Sidebar */}
+      {/* safe-top/bottom: el panel va de borde a borde vertical, así que sin
+          esto el header queda bajo el reloj y el input bajo la barra de gestos.
+          El padding lo absorbe el propio panel, que ya tiene su fondo, así que
+          las franjas se ven continuas con él. */}
       <div
+        className="safe-top safe-bottom"
         style={{
           position:   "fixed",
           top:        0,
