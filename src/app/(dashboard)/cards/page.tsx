@@ -345,7 +345,7 @@ export default function CardsPage() {
       {/* Modal crear */}
       {creating && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center safe-modal"
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onMouseDown={(e) => { if (e.target === e.currentTarget) setCreating(false); }}
         >
@@ -397,7 +397,7 @@ export default function CardsPage() {
         const newTotal = current + add;
         return (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center safe-modal"
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onMouseDown={(e) => { if (e.target === e.currentTarget && !incMut.isPending) setLimitModal(null); }}
         >
@@ -461,7 +461,7 @@ export default function CardsPage() {
       {/* Modal cerrar tarjeta */}
       {closeModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center safe-modal"
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onMouseDown={(e) => { if (e.target === e.currentTarget && !closeMut.isPending) setCloseModal(null); }}
         >

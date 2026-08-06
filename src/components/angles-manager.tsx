@@ -115,7 +115,7 @@ export function AnglesManager() {
 
       {modal && <AngleModal data={modal} onClose={() => setModal(null)} />}
       {guideOpen && createPortal(
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+        <div className="fixed inset-0 z-[80] flex items-center justify-center safe-modal" style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
           onMouseDown={(e) => { if (e.target === e.currentTarget) setGuideOpen(false); }}>
           <div className="w-full max-w-lg rounded-2xl" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
             <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
@@ -156,7 +156,7 @@ export function AngleModal({ data, onClose }: { data: Loaded; onClose: () => voi
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
   }, [onClose]);
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto p-4" style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto safe-modal" style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="my-4 w-full max-w-2xl overflow-hidden rounded-2xl" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
         <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
@@ -428,7 +428,7 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
   }, [onClose]);
   return createPortal(
-    <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(4px)" }} onClick={onClose}>
+    <div className="fixed inset-0 z-[95] flex items-center justify-center safe-modal" style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(4px)" }} onClick={onClose}>
       <button type="button" onClick={onClose} className="absolute right-4 top-4" style={{ color: "#fff" }}><X className="h-6 w-6" /></button>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full rounded-lg object-contain" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.85)" }} />

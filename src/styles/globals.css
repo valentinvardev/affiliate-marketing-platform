@@ -151,6 +151,16 @@
    de gestos del iPhone. */
 .safe-fab { bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
 
+/* Overlays a pantalla completa. Reemplaza al p-4 del contenedor: mantiene el
+   mismo aire de siempre (1rem) y lo agranda solo donde el recorte de pantalla
+   lo pide, así el diálogo nunca toca el borde redondeado ni la Dynamic Island. */
+.safe-modal {
+  padding-top:    max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left:   max(1rem, env(safe-area-inset-left));
+  padding-right:  max(1rem, env(safe-area-inset-right));
+}
+
 /* ── Tutoriales ── */
 @keyframes tutPop { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
 /* Entrar a un video: crece desde la tarjeta */

@@ -46,7 +46,7 @@ export function VccWallet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)" }}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center safe-modal" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)" }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}>
         {/* Header */}

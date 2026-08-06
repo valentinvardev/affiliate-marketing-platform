@@ -499,7 +499,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
           try { await navigator.clipboard.writeText(url); setCopiedSaved(true); setTimeout(() => setCopiedSaved(false), 1600); } catch { /* bloqueado */ }
         };
         return (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}
+          <div className="fixed inset-0 z-[70] flex items-center justify-center safe-modal" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)" }}
             onClick={() => setSavedInfo(null)}>
             <div className="w-full max-w-sm rounded-2xl p-6" onClick={(e) => e.stopPropagation()}
               style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", animation: "successPop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}>
@@ -940,7 +940,7 @@ export function CampaignForm({ campaign }: { campaign?: Campaign }) {
 
       {/* ── Preview sheet ── */}
       {mobilePreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }} onClick={() => setMobilePreview(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center safe-modal" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }} onClick={() => setMobilePreview(false)}>
           <div onClick={(e) => e.stopPropagation()}>
             <PreviewFrame url={previewUrl} />
           </div>

@@ -204,7 +204,7 @@ export function AssistantWidget() {
       )}
 
       {mounted && (
-        <div className="fixed z-[70] flex flex-col overflow-hidden"
+        <div className={`fixed z-[70] flex flex-col overflow-hidden${isMobile ? " safe-top safe-bottom" : ""}`}
           onAnimationEnd={() => { if (!open) setMounted(false); }}
           style={{
             ...(isMobile

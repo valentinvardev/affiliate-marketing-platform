@@ -304,7 +304,7 @@ function CampaignPickerModal({ onClose, onSelect }: { onClose: () => void; onSel
   const list = q ? all.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()) || c.slug.includes(q.toLowerCase())) : all;
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+    <div className="fixed inset-0 z-[80] flex items-center justify-center safe-modal"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{ background: "rgba(0,0,0,0.7)", backdropFilter: show ? "blur(8px)" : "blur(0)", WebkitBackdropFilter: show ? "blur(8px)" : "blur(0)", opacity: show ? 1 : 0, transition: "opacity .2s ease, backdrop-filter .2s ease" }}>
       <div className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-2xl"

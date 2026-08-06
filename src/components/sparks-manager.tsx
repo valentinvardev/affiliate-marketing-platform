@@ -279,7 +279,7 @@ function Modal({ onClose, children, maxW = "max-w-md" }: { onClose: () => void; 
     return () => { cancelAnimationFrame(raf); document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
   }, [onClose]);
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <div className="fixed inset-0 z-[80] flex items-center justify-center safe-modal" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{ background: "rgba(0,0,0,0.7)", backdropFilter: show ? "blur(8px)" : "blur(0)", WebkitBackdropFilter: show ? "blur(8px)" : "blur(0)", opacity: show ? 1 : 0, transition: "opacity .2s ease, backdrop-filter .2s ease" }}>
       <div className={`flex max-h-[90vh] w-full ${maxW} flex-col overflow-hidden rounded-2xl`}
         style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", boxShadow: "0 24px 80px rgba(0,0,0,0.8)", opacity: show ? 1 : 0, transform: show ? "scale(1)" : "scale(0.97)", transition: "opacity .2s ease, transform .25s cubic-bezier(0.22,1,0.36,1)" }}>

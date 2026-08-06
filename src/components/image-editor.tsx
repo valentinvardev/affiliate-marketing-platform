@@ -267,7 +267,7 @@ export function ImageEditor({ angleId, country, presets, onClose }: { angleId: s
   const thumbs = (slot === "hook" ? hooksQ.data : proofsQ.data) ?? [];
 
   return createPortal(
-    <div className="fixed inset-0 z-[90] flex flex-col" style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(6px)" }}>
+    <div className="safe-top safe-bottom fixed inset-0 z-[90] flex flex-col" style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(6px)" }}>
       <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
         <Type className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
         <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>Editor de creativo · {country}</p>

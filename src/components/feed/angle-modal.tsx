@@ -73,7 +73,7 @@ export function AngleModal({
   return createPortal(
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[80] flex items-center justify-center p-3 md:p-6"
+      className="fixed inset-0 z-[80] flex items-center justify-center safe-modal md:p-6"
       style={{ background: "rgba(4,6,12,0.8)", backdropFilter: "blur(6px)", animation: "aiFade .16s ease both" }}
     >
       <div
