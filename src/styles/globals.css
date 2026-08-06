@@ -136,6 +136,21 @@
 .tip-pop { animation: tipPop 0.13s cubic-bezier(.2,.7,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .tip-pop { animation: none; } }
 
+/* ── Safe area de iOS ──
+   Instalada como web app usamos status bar translúcida + viewport-fit=cover,
+   así que el contenido llega hasta el borde y quedaría DEBAJO del reloj y la
+   Dynamic Island. Estas clases reservan esa franja. En navegador de escritorio
+   env() vale 0, así que no cambian nada. */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+/* Para elementos fijos abajo (FAB del asistente): que no los tape la barra
+   de gestos del iPhone. */
+.safe-fab { bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
+
 /* ── Tutoriales ── */
 @keyframes tutPop { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
 /* Entrar a un video: crece desde la tarjeta */

@@ -119,7 +119,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col transition-transform duration-300 md:translate-x-0",
+          "safe-top safe-bottom fixed inset-y-0 left-0 z-50 flex w-60 flex-col transition-transform duration-300 md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
         style={{ borderRight: "1px solid var(--color-border)", background: "var(--color-background)" }}

@@ -12,7 +12,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <I18nProvider lang={lang}>
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col md:pl-60">
+        {/* safe-top reserva la franja del status bar en la app instalada. Va con
+            el color de la BalanceBar (la barra de más arriba) para que la franja
+            se vea continua con ella y no como un bloque pegado encima. */}
+        <div
+          className="safe-top safe-x flex min-w-0 flex-1 flex-col md:pl-60"
+          style={{ background: "var(--color-surface)" }}
+        >
           <SpendLimitBar />
           <BalanceBar />
           {children}

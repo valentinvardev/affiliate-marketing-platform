@@ -191,7 +191,7 @@ export function AssistantWidget() {
     <>
       {!open && (
         <button type="button" onClick={() => { setMounted(true); setOpen(true); }} title={t("Asistente")}
-          className="fixed bottom-5 right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105"
+          className="safe-fab fixed right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105"
           style={{ background: "var(--color-foreground)", color: "var(--color-background)", boxShadow: "0 8px 30px rgba(0,0,0,0.5)", animation: "aiPop 0.2s ease" }}>
           <Bot className="h-5 w-5" />
         </button>

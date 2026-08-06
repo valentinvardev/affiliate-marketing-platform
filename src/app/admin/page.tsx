@@ -79,7 +79,7 @@ export default async function AdminPage({
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-background)" }}>
+    <div className="safe-top safe-x min-h-screen" style={{ background: "var(--color-background)" }}>
       {/* Header */}
       <header
         className="flex h-14 items-center justify-between px-4 sm:px-6"
