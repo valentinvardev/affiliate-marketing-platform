@@ -18,14 +18,26 @@ export function stripIa(text: string): string {
 }
 
 /** Genera la respuesta de la IA para el chat global (conversacional + RAG, sin datos privados). */
-export async function generateGlobalIaReply(db: DB, opts: { prompt: string; recent: { username: string; text: string }[] }): Promise<string> {
+export async function generateGlobalIaReply(
+  db: DB,
+  opts: {
+    prompt: string;
+    recent: { username: string; text: string }[];
+    /** Identidad configurada en Admin: nombre y personalidad. */
+    identity?: { name: string; persona: string };
+  },
+): Promise<string> {
   if (!env.GOOGLE_AI_KEY) return "";
   const kb = await retrieveContext(db, opts.prompt || opts.recent.map((m) => m.text).join(" "), 5).catch(() => []);
   const kbText = kb.map((c, i) => `[${i + 1}] (${c.source}) ${c.content}`).join("\n\n");
   const convo = opts.recent.map((m) => `${m.username}: ${m.text}`).join("\n");
 
-  const system = `Sos "IA", un miembro del chat de equipo de TapSur (media buying de TikTok Ads, nicho get-paid-to-play).
-Respondé BREVE (1-3 frases), en español, con onda de colega. Es un chat GRUPAL: NUNCA reveles ni inventes datos privados o financieros de nadie (acá no tenés acceso a eso). Si te preguntan cómo funciona la plataforma o de estrategia, usá el contexto de abajo. Si no sabés, decilo simple y honesto.${kbText ? `\n\nContexto de la base de conocimientos:\n${kbText}` : ""}`;
+  const name = opts.identity?.name ?? "IA";
+  const persona = opts.identity?.persona ?? "Sos parte del equipo de TapSur (media buying de TikTok Ads, nicho get-paid-to-play).";
+
+  const system = `Te llamás "${name}" y sos un miembro del chat de equipo.
+${persona}
+Respondé BREVE (1-3 frases), con onda de colega. Es un chat GRUPAL: NUNCA reveles ni inventes datos privados o financieros de nadie (acá no tenés acceso a eso). Si te preguntan cómo funciona la plataforma o de estrategia, usá el contexto de abajo. Si no sabés, decilo simple y honesto.${kbText ? `\n\nContexto de la base de conocimientos:\n${kbText}` : ""}`;
 
   const genAI = new GoogleGenerativeAI(env.GOOGLE_AI_KEY);
   const model = genAI.getGenerativeModel({ model: MODEL, systemInstruction: system, generationConfig: { temperature: 0.85 } });

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { X, Send, MessageCircle, Bot } from "lucide-react";
 import { api } from "@/trpc/react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { Avatar } from "@/components/ui/avatar";
 
 type Msg = {
   id: string;
@@ -12,10 +13,14 @@ type Msg = {
   username: string;
   text: string;
   createdAt: string;
+  avatarUrl?: string | null;
 };
 
 function toMsg(row: {
   id: string; userId: string; username: string; text: string; createdAt: string | Date;
+  // Opcional: los mensajes que llegan por realtime vienen de la tabla cruda,
+  // sin el avatar que agrega el router al listar.
+  avatarUrl?: string | null;
 }): Msg {
   return {
     id:        row.id,
@@ -23,6 +28,7 @@ function toMsg(row: {
     username:  row.username,
     text:      row.text,
     createdAt: typeof row.createdAt === "string" ? row.createdAt : row.createdAt.toISOString(),
+    avatarUrl: row.avatarUrl ?? null,
   };
 }
 
@@ -50,6 +56,22 @@ function playSendBlip() {
     o.start(); o.stop(ac.currentTime + 0.18);
   } catch { /* silencio si no hay audio */ }
 }
+
+/** Etiqueta del separador de día: Hoy / Ayer / fecha. */
+function dayLabel(d: Date): string {
+  const day = new Date(d); day.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((today.getTime() - day.getTime()) / 86_400_000);
+  if (diff === 0) return "Hoy";
+  if (diff === 1) return "Ayer";
+  if (diff < 7) return day.toLocaleDateString(undefined, { weekday: "long" });
+  return day.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+/** Ventana para considerar mensajes "seguidos" del mismo autor. */
+const GROUP_MS = 5 * 60 * 1000;
+
 
 export function LiveChatProvider() {
   const { data: session } = useSession();
@@ -107,6 +129,20 @@ export function LiveChatProvider() {
     return () => window.removeEventListener("chat:open", openChat);
   }, [openChat]);
 
+  /* Avisa a los demas overlays (el FAB del asistente) que el chat esta abierto,
+     asi no quedan uno encima del otro. */
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("chat:state", { detail: { open } }));
+  }, [open]);
+
+  /* Escape cierra el panel */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   /* Scroll to bottom */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -128,6 +164,24 @@ export function LiveChatProvider() {
 
   return (
     <>
+      {/* Fondo: difumina el panel y cierra al tocar afuera. Se mantiene montado
+          para poder animar la opacidad al abrir y cerrar. */}
+      <div
+        onClick={() => setOpen(false)}
+        aria-hidden={!open}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 54,
+          background: "rgba(4,6,12,0.45)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity 0.24s ease",
+        }}
+      />
+
       {/* Sidebar */}
       {/* safe-top/bottom: el panel va de borde a borde vertical, así que sin
           esto el header queda bajo el reloj y el input bajo la barra de gestos.
@@ -207,7 +261,7 @@ export function LiveChatProvider() {
             padding:    "16px 14px",
             display:    "flex",
             flexDirection: "column",
-            gap:        12,
+            gap:        6,
           }}
         >
           {msgs.length === 0 && (
@@ -219,10 +273,38 @@ export function LiveChatProvider() {
             </div>
           )}
 
-          {msgs.map((m) => {
+          {msgs.map((m, i) => {
             const mine = m.userId === me;
             const isIa = m.userId === IA_BOT_ID;
+            const at = new Date(m.createdAt);
+            const prev = i > 0 ? msgs[i - 1] : undefined;
+            const next = i < msgs.length - 1 ? msgs[i + 1] : undefined;
+            const prevAt = prev ? new Date(prev.createdAt) : null;
+            const nextAt = next ? new Date(next.createdAt) : null;
+
+            // Separador cuando cambia el día respecto del mensaje anterior.
+            const newDay = !prevAt || !sameDay(prevAt, at);
+            // Encabezado (avatar + nombre) solo al arrancar una tanda: cambia
+            // de autor, cambia el día, o pasaron más de 5 minutos.
+            const startsRun =
+              newDay || !prev || prev.userId !== m.userId || at.getTime() - prevAt!.getTime() > GROUP_MS;
+            // La hora se muestra una sola vez, al cerrar la tanda, para no
+            // repetir el mismo minuto debajo de cada burbuja.
+            const endsRun =
+              !next || next.userId !== m.userId ||
+              !sameDay(at, nextAt!) || nextAt!.getTime() - at.getTime() > GROUP_MS;
+
             return (
+              <div key={m.id + "-w"} style={{ display: "contents" }}>
+              {newDay && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0 2px" }}>
+                  <span style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
+                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: "capitalize", color: "var(--color-subtle)" }}>
+                    {dayLabel(at)}
+                  </span>
+                  <span style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
+                </div>
+              )}
               <div
                 key={m.id}
                 style={{
@@ -232,10 +314,13 @@ export function LiveChatProvider() {
                   animation:     "chatMsgIn 0.28s ease both",
                 }}
               >
-                {!mine && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: isIa ? "var(--color-accent)" : "var(--color-muted-foreground)", marginBottom: 3, paddingLeft: 4 }}>
-                    {isIa && <Bot style={{ width: 12, height: 12 }} />}
-                    {isIa ? "IA" : m.username}
+                {!mine && startsRun && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 4, paddingLeft: 2 }}>
+                    <Avatar name={m.username} url={m.avatarUrl} size={20} />
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: isIa ? "var(--color-accent)" : "var(--color-muted-foreground)" }}>
+                      {isIa && !m.avatarUrl && <Bot style={{ width: 12, height: 12 }} />}
+                      {m.username}
+                    </span>
                   </span>
                 )}
                 <div
@@ -254,9 +339,12 @@ export function LiveChatProvider() {
                 >
                   {m.text}
                 </div>
-                <span style={{ marginTop: 3, fontSize: 10, color: "var(--color-subtle)" }}>
-                  {fmtTime(m.createdAt)}
-                </span>
+                {endsRun && (
+                  <span style={{ marginTop: 3, fontSize: 10, color: "var(--color-subtle)" }}>
+                    {fmtTime(m.createdAt)}
+                  </span>
+                )}
+              </div>
               </div>
             );
           })}

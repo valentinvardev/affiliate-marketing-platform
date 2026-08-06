@@ -6,6 +6,7 @@ import { api } from "@/trpc/react";
 import { Bot, X, Send, Wrench, AlertTriangle, Sparkles, Loader2, SquarePen } from "lucide-react";
 
 import { t } from "@/lib/i18n-client";
+import { Avatar } from "@/components/ui/avatar";
 const AngleModal = dynamic(() => import("@/components/angles-manager").then((m) => m.AngleModal), { ssr: false });
 
 type PendingAction = { type: "pause_vccs"; count: number } | null;
@@ -106,6 +107,18 @@ function Thinking() {
 }
 
 export function AssistantWidget() {
+  // Identidad configurada en Admin (nombre y foto del bot).
+  const ia = api.config.iaIdentity.useQuery();
+  const iaName = ia.data?.name ?? "IA";
+
+  // El chat global avisa cuando se abre: el FAB se aparta para no quedar encima.
+  const [chatOpen, setChatOpen] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setChatOpen(!!(e as CustomEvent<{ open: boolean }>).detail?.open);
+    window.addEventListener("chat:state", on);
+    return () => window.removeEventListener("chat:state", on);
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false); // sigue montado durante la animación de cierre
   const [input, setInput] = useState("");
@@ -191,8 +204,18 @@ export function AssistantWidget() {
     <>
       {!open && (
         <button type="button" onClick={() => { setMounted(true); setOpen(true); }} title={t("Asistente")}
-          className="safe-fab fixed right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105"
-          style={{ background: "var(--color-foreground)", color: "var(--color-background)", boxShadow: "0 8px 30px rgba(0,0,0,0.5)", animation: "aiPop 0.2s ease" }}>
+          aria-hidden={chatOpen}
+          className="safe-fab fixed right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full hover:scale-105"
+          style={{
+            background: "var(--color-foreground)",
+            color: "var(--color-background)",
+            boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
+            animation: "aiPop 0.2s ease",
+            transition: "opacity .2s ease, transform .2s ease",
+            // Con el chat abierto el FAB se aparta en vez de quedar flotando
+            // encima del panel.
+            ...(chatOpen ? { opacity: 0, pointerEvents: "none", transform: "scale(.85)" } : {}),
+          }}>
           <Bot className="h-5 w-5" />
         </button>
       )}
@@ -215,10 +238,21 @@ export function AssistantWidget() {
             transformOrigin: isMobile ? "center bottom" : "bottom right",
             animation: open ? "aiPanelIn 0.2s ease forwards" : "aiPanelOut 0.16s ease forwards",
           }}>
-          <div className="flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
-            <Bot className="h-4 w-4" style={{ color: "var(--color-foreground)" }} />
-            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{t("Asistente")}</p>
-            <span className="text-[11px]" style={{ color: "var(--color-subtle)" }}>{t("tu segundo cerebro")}</span>
+          <div className="relative flex shrink-0 items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--color-border)" }}>
+            {/* Identidad del bot: foto y nombre según lo definido en Admin. */}
+            <Avatar name={iaName} url={ia.data?.avatar} size={28} />
+            <p className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{iaName}</p>
+
+            {/* Etiqueta centrada en el header, ocupando el lugar del subtítulo
+                viejo. `pointer-events-none` para no tapar los botones. */}
+            <span
+              className="pointer-events-none absolute left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 text-[11px]"
+              style={{ color: "var(--color-subtle)" }}
+            >
+              <Bot className="h-3.5 w-3.5" />
+              {t("Asistente virtual")}
+            </span>
+
             <div className="ml-auto flex items-center gap-1">
               {msgs.length > 0 && (
                 <button type="button" onClick={() => clear.mutate()} disabled={clear.isPending} title={t("Nueva conversación")}

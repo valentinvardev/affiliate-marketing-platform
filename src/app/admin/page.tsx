@@ -9,11 +9,12 @@ import { SignOutButton } from "./sign-out-button";
 import { LogoPresetUploader } from "./logo-preset-uploader";
 import { fetchOffers } from "@/lib/taprain";
 import { AdminOffersTab } from "./admin-offers-tab";
-import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package, Layers, UserCog, Globe, KeyRound, Coins, Smartphone, CreditCard, Brain, Layout , GraduationCap } from "lucide-react";
+import { Check, X, Trash2, Palette, Image as ImageIcon, Users, Package, Layers, UserCog, Globe, KeyRound, Coins, Smartphone, CreditCard, Brain, Layout , GraduationCap, Bot } from "lucide-react";
 import { AdminStacksTab } from "./admin-stacks-tab";
 import { AdminKnowledgeTab } from "./admin-knowledge-tab";
 import { AdminTemplatesTab } from "./admin-templates-tab";
 import { AdminTutorialsTab } from "./admin-tutorials-tab";
+import { AdminIaTab } from "./admin-ia-tab";
 import { AdminAppsTab } from "./admin-apps-tab";
 import { AdminAssignmentsTab } from "./admin-assignments-tab";
 import { AdminDomainsTab } from "./admin-domains-tab";
@@ -72,6 +73,7 @@ export default async function AdminPage({
     { key: "tutorials", label: "Tutoriales", icon: GraduationCap, badge: undefined },
     { key: "apps",    label: "Apps",         icon: Smartphone, badge: undefined },
     { key: "brain",   label: "Cerebro",      icon: Brain,    badge: undefined },
+    { key: "ia",      label: "Identidad IA", icon: Bot,      badge: undefined },
     { key: "colors",  label: "Colores",      icon: Palette,  badge: undefined },
     { key: "logos",   label: "Logos",        icon: ImageIcon, badge: undefined },
     { key: "offers",  label: "Ofertas",       icon: Package,  badge: undefined },
@@ -214,6 +216,7 @@ export default async function AdminPage({
         {/* ── PLANTILLAS TAB ── */}
         {tab === "templates" && <AdminTemplatesTab />}
         {tab === "tutorials" && <AdminTutorialsTab />}
+        {tab === "ia" && <AdminIaTab />}
 
         {/* ── APPS (directorio) TAB ── */}
         {tab === "apps" && <AdminAppsTab />}

@@ -532,6 +532,17 @@ const EN: Record<string, string> = {
   "Cambiar foto de perfil": "Change profile photo",
   "Descargar imagen": "Download image",
 
+  "Asistente virtual": "Virtual assistant",
+  "Identidad de la IA": "AI identity",
+  "Personalidad": "Personality",
+  "Nombre del bot": "Bot name",
+  "Foto del bot": "Bot photo",
+
+  "Se usa en el chat global (comando /ia) y en el asistente. El nombre se aplica también a los mensajes ya enviados.": "Used in the global chat (/ia command) and in the assistant. The name also applies to messages already sent.",
+  "Cómo habla, qué sabe, qué tono usa…": "How it speaks, what it knows, what tone it uses…",
+  "Se antepone a sus instrucciones. Las reglas de seguridad del chat grupal se mantienen igual.": "Prepended to its instructions. The group chat's safety rules stay unchanged.",
+  "Identidad IA": "AI identity",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };
