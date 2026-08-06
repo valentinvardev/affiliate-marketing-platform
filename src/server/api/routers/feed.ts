@@ -17,7 +17,7 @@ export const feedRouter = createTRPCRouter({
         take: input?.limit ?? 30,
         orderBy: { createdAt: "desc" },
         include: {
-          author: { select: { username: true, role: true } },
+          author: { select: { username: true, role: true, avatarUrl: true } },
           slides: { orderBy: { position: "asc" } },
           likes: { where: { userId: me }, select: { id: true } },
           _count: { select: { likes: true, comments: true } },
@@ -33,6 +33,7 @@ export const feedRouter = createTRPCRouter({
         createdAt: p.createdAt,
         author: p.author.username,
         authorRole: p.author.role,
+        authorAvatar: p.author.avatarUrl,
         slides: p.slides.map((s) => ({ id: s.id, url: s.url, caption: s.caption })),
         likeCount: p._count.likes,
         commentCount: p._count.comments,
@@ -62,7 +63,7 @@ export const feedRouter = createTRPCRouter({
       const rows = await ctx.db.feedComment.findMany({
         where: { postId: input.postId },
         orderBy: { createdAt: "asc" },
-        include: { user: { select: { username: true, role: true } } },
+        include: { user: { select: { username: true, role: true, avatarUrl: true } } },
       });
       return rows.map((c) => ({
         id: c.id,
@@ -70,6 +71,7 @@ export const feedRouter = createTRPCRouter({
         createdAt: c.createdAt,
         author: c.user.username,
         authorRole: c.user.role,
+        authorAvatar: c.user.avatarUrl,
         mine: c.userId === ctx.session.user.id,
       }));
     }),

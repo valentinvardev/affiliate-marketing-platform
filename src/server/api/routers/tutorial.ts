@@ -47,7 +47,7 @@ export const tutorialRouter = createTRPCRouter({
       const rows = await ctx.db.tutorialComment.findMany({
         where: { tutorialId: input.tutorialId },
         orderBy: { createdAt: "desc" },
-        include: { user: { select: { id: true, username: true, role: true } } },
+        include: { user: { select: { id: true, username: true, role: true, avatarUrl: true } } },
       });
       return rows.map((c) => ({
         id: c.id,
@@ -55,6 +55,7 @@ export const tutorialRouter = createTRPCRouter({
         createdAt: c.createdAt,
         author: c.user.username,
         authorRole: c.user.role,
+        authorAvatar: c.user.avatarUrl,
         mine: c.userId === ctx.session.user.id,
       }));
     }),

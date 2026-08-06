@@ -112,6 +112,7 @@ model User {
   password  String
   role      String   @default("user")
   approved  Boolean  @default(false)
+  avatarUrl String? // foto de perfil (Supabase Storage)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -10,6 +10,7 @@ import { ConversionTestButton } from "@/components/conversion-toast";
 import { useT } from "@/components/i18n-provider";
 import { t } from "@/lib/i18n-client";
 import { Tooltip } from "@/components/ui/tooltip";
+import { AvatarUploader } from "@/components/avatar-uploader";
 
 type NavItem = {
   href: string;
@@ -174,10 +175,7 @@ export function Sidebar() {
         style={{ borderTop: "1px solid var(--color-border)" }}
       >
         <div className="flex items-center gap-2.5 rounded-md px-2.5 py-2">
-          <CircleUserRound
-            className="h-7 w-7 shrink-0"
-            style={{ color: "var(--color-muted-foreground)" }}
-          />
+          <AvatarUploader name={username} size={28} />
           <div className="flex-1 min-w-0">
             <p className="truncate text-xs font-medium" style={{ color: "var(--color-foreground)" }}>{username}</p>
             {isAdmin && (

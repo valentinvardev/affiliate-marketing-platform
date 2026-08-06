@@ -3,8 +3,32 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ReactCountryFlag from "react-country-flag";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { t } from "@/lib/i18n-client";
+
+/**
+ * Descarga la imagen. Se baja como blob y se dispara con un object URL porque
+ * el atributo `download` de un <a> lo ignora el navegador cuando el archivo es
+ * cross-origin (Supabase, CloudFront): abriría una pestaña en vez de guardar.
+ * Si el fetch falla por CORS, se cae a abrirla en otra pestaña.
+ */
+async function downloadImage(url: string, name: string) {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = await res.blob();
+    const obj = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = obj;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(obj), 10_000);
+  } catch {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 
 export type Slide = { id: string; url: string; caption: string | null };
 
@@ -20,6 +44,7 @@ export function AngleModal({
   countryCode: string | null;
 }) {
   const [i, setI] = useState(0);
+  const [busy, setBusy] = useState(false);
 
   const prev = useCallback(() => setI((v) => (v - 1 + slides.length) % Math.max(slides.length, 1)), [slides.length]);
   const next = useCallback(() => setI((v) => (v + 1) % Math.max(slides.length, 1)), [slides.length]);
@@ -91,6 +116,24 @@ export function AngleModal({
                   style={{ maxWidth: "100%", maxHeight: "58vh", objectFit: "contain", display: "block" }}
                 />
               </div>
+
+              {/* Descargar la diapositiva actual */}
+              {cur && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setBusy(true);
+                    await downloadImage(cur.url, `${(title || "diapositiva").slice(0, 40).replace(/[^\w\-]+/g, "-")}-${i + 1}.jpg`);
+                    setBusy(false);
+                  }}
+                  title={t("Descargar imagen")}
+                  aria-label={t("Descargar imagen")}
+                  className="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full transition-opacity hover:opacity-100"
+                  style={{ opacity: 0.8, background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.22)", color: "#fff", backdropFilter: "blur(4px)" }}
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                </button>
+              )}
 
               {slides.length > 1 && (
                 <>

@@ -529,6 +529,9 @@ const EN: Record<string, string> = {
   "Los ángulos con sus diapositivas y descripción se publican ahí.": "The angles, with their slides and description, are published there.",
   "Ir a Feed": "Go to Feed",
 
+  "Cambiar foto de perfil": "Change profile photo",
+  "Descargar imagen": "Download image",
+
 };
 
 const TABLES: Record<AppLang, Record<string, string>> = { es: {}, en: EN };

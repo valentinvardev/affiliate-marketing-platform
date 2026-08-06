@@ -4,6 +4,24 @@ import bcrypt from "bcryptjs";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 export const accountRouter = createTRPCRouter({
+  /** Foto de perfil del usuario logueado. null = la borra. */
+  me: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: { id: true, username: true, role: true, avatarUrl: true },
+    });
+  }),
+
+  setAvatar: protectedProcedure
+    .input(z.object({ url: z.string().url().nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: { avatarUrl: input.url },
+        select: { avatarUrl: true },
+      });
+    }),
+
   /** Cambia la contraseña del usuario logueado (pide la actual). */
   changePassword: protectedProcedure
     .input(z.object({

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MessageCircle, Send, Loader2, Trash2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { t } from "@/lib/i18n-client";
+import { Avatar } from "@/components/ui/avatar";
 
 function ago(d: Date): string {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -92,12 +93,7 @@ export function Comments({ tutorialId }: { tutorialId: string }) {
                 className="flex items-start gap-2.5 rounded-lg p-3"
                 style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}
               >
-                <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-                  style={{ background: "var(--color-surface-raised)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}
-                >
-                  {c.author.charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={c.author} url={c.authorAvatar} size={28} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold" style={{ color: "var(--color-foreground)" }}>{c.author}</span>

@@ -10,6 +10,7 @@ import { api } from "@/trpc/react";
 import { AngleModal, type Slide } from "@/components/feed/angle-modal";
 import { FeedComposer } from "@/components/feed/feed-composer";
 import { t } from "@/lib/i18n-client";
+import { Avatar } from "@/components/ui/avatar";
 
 type Post = {
   id: string;
@@ -21,6 +22,7 @@ type Post = {
   createdAt: Date;
   author: string;
   authorRole: string;
+  authorAvatar: string | null;
   slides: Slide[];
   likeCount: number;
   commentCount: number;
@@ -115,12 +117,7 @@ function PostCard({ post, isAdmin, onOpen }: { post: Post; isAdmin: boolean; onO
     <article className="rounded-xl p-4" style={{ border: "1px solid var(--color-border)", background: "var(--color-surface-raised)" }}>
       {/* Cabecera estilo red social */}
       <div className="flex items-center gap-2.5">
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-          style={{ background: "var(--color-surface-overlay)", color: "var(--color-muted-foreground)", border: "1px solid var(--color-border)" }}
-        >
-          {post.author.charAt(0).toUpperCase()}
-        </span>
+        <Avatar name={post.author} url={post.authorAvatar} size={36} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>{post.author}</span>
@@ -274,6 +271,7 @@ function Comments({ postId }: { postId: string }) {
           {list.data.map((c) => (
             <div key={c.id} className="flex items-start gap-2 rounded-lg px-3 py-2"
               style={{ background: "var(--color-surface-overlay)", border: "1px solid var(--color-border)" }}>
+              <Avatar name={c.author} url={c.authorAvatar} size={24} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-semibold" style={{ color: "var(--color-foreground)" }}>{c.author}</span>
